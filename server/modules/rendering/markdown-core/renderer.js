@@ -40,9 +40,12 @@ module.exports = {
       mkdown.use(underline)
     }
 
-    mkdown.use(mdAttrs, {
-      allowedAttributes: ['id', 'class', 'target']
-    })
+    if (this.config.mdAttrs) {
+      mkdown.use(mdAttrs, {
+        allowedAttributes: ['id', 'class', 'target']
+      })
+    }
+
     mkdown.use(mdDecorate)
 
     for (let child of this.children) {

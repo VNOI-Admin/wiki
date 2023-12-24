@@ -265,9 +265,10 @@ const md = new MarkdownIt({
     }
   }
 })
-  .use(mdAttrs, {
-    allowedAttributes: ['id', 'class', 'target']
-  })
+  // TODO: some how read the config from backend?
+  // .use(mdAttrs, {
+  //   allowedAttributes: ['id', 'class', 'target']
+  // })
   .use(mdDecorate)
   .use(underline)
   .use(mdEmoji)
