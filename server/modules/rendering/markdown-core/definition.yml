@@ -61,3 +61,10 @@ props:
       - Spanish
       - Swedish
     public: true
+  mdAttrs:
+    type: Boolean
+    default: false
+    title: Use markdown-it-attrs
+    hint: Enable the markdown-it-attrs plugin. This could cause conflicts with Latex due to the use of {}
+    order: 7
+    public: true
