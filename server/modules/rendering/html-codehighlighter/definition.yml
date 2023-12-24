@@ -11,5 +11,5 @@ props:
     type: Boolean
     default: false
     title: Allow custom line number start
-    hint: For example, using ```javascript=5 will start the line numbers at 5.
+    hint: For example, using ```javascript=5 will start the line numbering at 5
     order: 1
