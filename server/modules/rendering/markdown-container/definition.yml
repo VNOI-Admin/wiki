@@ -1,0 +1,8 @@
+key: markdownContainer
+title: Container
+description: Creating block-level custom containers for markdown-it markdown parser.
+author: requarks.io
+icon: mdi-dots-vertical
+enabledDefault: true
+dependsOn: markdownCore
+props: {}

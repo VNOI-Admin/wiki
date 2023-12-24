@@ -210,6 +210,7 @@ import mdMark from 'markdown-it-mark'
 import mdMultiTable from 'markdown-it-multimd-table'
 import mdFootnote from 'markdown-it-footnote'
 import mdImsize from 'markdown-it-imsize'
+import mdContainer from 'markdown-it-container'
 import katex from 'katex'
 import underline from '../../libs/markdown-it-underline'
 import 'katex/dist/contrib/mhchem'
@@ -276,6 +277,46 @@ const md = new MarkdownIt({
   .use(mdMark)
   .use(mdFootnote)
   .use(mdImsize)
+
+// From https://github.com/hackmdio/codimd/blob/b6eba056e5b3efe9ee0e5c1cde4236dfd4901381/public/js/extra.js#L1220
+function renderContainer (tokens, idx, options, env, self) {
+  tokens[idx].attrJoin('role', 'alert')
+  tokens[idx].attrJoin('class', 'alert')
+  tokens[idx].attrJoin('class', `alert-${tokens[idx].info.trim()}`)
+  return self.renderToken(...arguments)
+}
+
+md.use(mdContainer, 'success', { render: renderContainer })
+md.use(mdContainer, 'info', { render: renderContainer })
+md.use(mdContainer, 'warning', { render: renderContainer })
+md.use(mdContainer, 'danger', { render: renderContainer })
+md.use(mdContainer, 'spoiler', {
+  validate: function (params) {
+    return params.trim().match(/^spoiler(\s+.*)?$/)
+  },
+  render: function (tokens, idx) {
+    const m = tokens[idx].info.trim().match(/^spoiler(\s+.*)?$/)
+
+    if (tokens[idx].nesting === 1) {
+      // opening tag
+      let summary = m[1] && m[1].trim()
+      if (summary) {
+        // Note: This part is implemented by myself, since codimd doesn't support state, but hackmd does.
+
+        const state = summary.match(/\{state="open"\}/) ? 'open' : ''
+        if (state === 'open') {
+          summary = summary.replace(/\{state="open"\}/, '')
+        }
+        return `<details ${state}><summary>${md.renderInline(summary)}</summary>\n`
+      } else {
+        return '<details>\n'
+      }
+    } else {
+      // closing tag
+      return '</details>\n'
+    }
+  }
+})
 
 // DOMPurify fix for draw.io
 DOMPurify.addHook('uponSanitizeElement', (elm) => {
