@@ -9,6 +9,12 @@ module.exports = {
         $(elm).addClass('language-', result.language)
       }
       $(elm).parent().addClass('prismjs line-numbers')
+
+      if (config.customStartNumber) {
+        const startNumberMatches = codeClasses.match(/language-.*=(\d+)/)
+        const startNumber = startNumberMatches ? parseInt(startNumberMatches[1]) : 1
+        $(elm).parent().attr('data-start', startNumber)
+      }
     })
   }
 }

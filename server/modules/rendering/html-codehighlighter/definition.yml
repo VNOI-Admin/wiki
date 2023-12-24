@@ -6,4 +6,10 @@ icon: mdi-code-braces
 enabledDefault: true
 dependsOn: htmlCore
 step: pre
-props: {}
+props:
+  customStartNumber:
+    type: Boolean
+    default: false
+    title: Allow custom line number start
+    hint: For example, using ```javascript=5 will start the line numbering at 5
+    order: 1

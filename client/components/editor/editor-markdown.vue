@@ -258,7 +258,10 @@ const md = new MarkdownIt({
     } else if (['mermaid', 'plantuml'].includes(lang)) {
       return `<pre class="codeblock-${lang}"><code>${_.escape(str)}</code></pre>`
     } else {
-      return `<pre class="line-numbers"><code class="language-${lang}">${_.escape(str)}</code></pre>`
+      // support start at a custom line number
+      const startLineMatches = lang.match(/=(\d+)$/)
+      const startLine = startLineMatches ? startLineMatches[1] : 1
+      return `<pre class="line-numbers" data-start="${startLine}"><code class="language-${lang}">${_.escape(str)}</code></pre>`
     }
   }
 })
