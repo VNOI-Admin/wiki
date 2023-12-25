@@ -22,6 +22,26 @@ katex.__defineMacro('\\pu', function(context) {
 //  a mathematical minus, U+2212. So we need that extra 0.56.
 katex.__defineMacro('\\tripledash', '{\\vphantom{-}\\raisebox{2.56mu}{$\\mkern2mu' + '\\tiny\\text{-}\\mkern1mu\\text{-}\\mkern1mu\\text{-}\\mkern2mu$}}')
 
+// Add \eqref, \ref, and \label to the KaTeX macros.
+katex.__defineMacro('\\eqref', function(context) {
+  const tokens = context.consumeArgs(1)[0]
+  const label = tokens.map((token) => token.text).join('')
+  return `\\href{#ktx-#1}{(\\text{#1})}`.replaceAll('#1', label)
+})
+
+katex.__defineMacro('\\ref', function(context) {
+  console.log(context)
+  const tokens = context.consumeArgs(1)[0]
+  const label = tokens.map((token) => token.text).join('')
+  return `\\href{#ktx-#1}{\\text{#1}}`.replaceAll('#1', label)
+})
+
+katex.__defineMacro('\\label', function(context) {
+  const tokens = context.consumeArgs(1)[0]
+  const label = tokens.map((token) => token.text).join('')
+  return '\\htmlId{ktx-#1}{}'.replaceAll('#1', label)
+})
+
 module.exports = {
   init (mdinst, conf) {
     const macros = {}
@@ -30,7 +50,9 @@ module.exports = {
       mdinst.renderer.rules.katex_inline = (tokens, idx) => {
         try {
           return katex.renderToString(tokens[idx].content, {
-            displayMode: false, macros
+            displayMode: false,
+            macros,
+            trust: (context) => ['\\htmlId', '\\href'].includes(context.command)
           })
         } catch (err) {
           WIKI.logger.warn(err)
@@ -45,7 +67,9 @@ module.exports = {
       mdinst.renderer.rules.katex_block = (tokens, idx) => {
         try {
           return `<p>` + katex.renderToString(tokens[idx].content, {
-            displayMode: true, macros
+            displayMode: true,
+            macros,
+            trust: (context) => ['\\htmlId', '\\href'].includes(context.command)
           }) + `</p>`
         } catch (err) {
           WIKI.logger.warn(err)
