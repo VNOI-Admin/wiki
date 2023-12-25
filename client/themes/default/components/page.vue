@@ -652,6 +652,10 @@ export default {
             return this.$vuetify.goTo(target, this.scrollOpts)
           }
 
+          if (href.startsWith('#ktx-')) {
+            return this.$vuetify.goTo(document.getElementById(href.replace('#', '')), this.scrollOpts)
+          }
+
           this.$vuetify.goTo(href, this.scrollOpts)
         }
       })
