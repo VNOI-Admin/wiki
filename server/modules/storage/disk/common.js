@@ -107,7 +107,7 @@ module.exports = {
       await WIKI.models.pages.createPage({
         path: contentPath.path,
         locale: contentPath.locale,
-        title: _.get(pageData, 'title', titleFromFile ?? defaultTitle),
+        title: _.get(pageData, 'title', titleFromFile || defaultTitle),
         description: _.get(pageData, 'description', '') || '',
         tags: newTags || [],
         isPublished: _.get(pageData, 'isPublished', true),
