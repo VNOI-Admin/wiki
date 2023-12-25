@@ -23,24 +23,11 @@ katex.__defineMacro('\\pu', function(context) {
 katex.__defineMacro('\\tripledash', '{\\vphantom{-}\\raisebox{2.56mu}{$\\mkern2mu' + '\\tiny\\text{-}\\mkern1mu\\text{-}\\mkern1mu\\text{-}\\mkern2mu$}}')
 
 // Add \eqref, \ref, and \label to the KaTeX macros.
-katex.__defineMacro('\\eqref', function(context) {
-  const tokens = context.consumeArgs(1)[0]
-  const label = tokens.map((token) => token.text).join('')
-  return `\\href{#ktx-#1}{(\\text{#1})}`.replaceAll('#1', label)
-})
+katex.__defineMacro('\\eqref', '\\href{##ktx-#1}{(\\text{#1})}')
 
-katex.__defineMacro('\\ref', function(context) {
-  console.log(context)
-  const tokens = context.consumeArgs(1)[0]
-  const label = tokens.map((token) => token.text).join('')
-  return `\\href{#ktx-#1}{\\text{#1}}`.replaceAll('#1', label)
-})
+katex.__defineMacro('\\ref', '\\href{##ktx-#1}{\\text{#1}}')
 
-katex.__defineMacro('\\label', function(context) {
-  const tokens = context.consumeArgs(1)[0]
-  const label = tokens.map((token) => token.text).join('')
-  return '\\htmlId{ktx-#1}{}'.replaceAll('#1', label)
-})
+katex.__defineMacro('\\label', '\\htmlId{ktx-#1}{}')
 
 module.exports = {
   init (mdinst, conf) {
