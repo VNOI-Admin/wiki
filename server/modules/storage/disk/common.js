@@ -75,6 +75,9 @@ module.exports = {
     const normalizedRelPath = relPath.replace(/\\/g, '/')
     const contentPath = pageHelper.getPagePath(normalizedRelPath)
     const itemContents = await fs.readFile(path.join(fullPath, relPath), 'utf8')
+    // get title from the first 15 lines of the file. Beyond that, it's probably content.
+    const titleFromFile = (itemContents.split('\n').slice(0, 15).find(line => line.startsWith('# ')) ?? '').slice(1).trim()
+    const defaultTitle = _.last(contentPath.path.split('/'))
     const pageData = WIKI.models.pages.parseMetadata(itemContents, contentType)
     const currentPage = await WIKI.models.pages.getPageFromDb({
       path: contentPath.path,
@@ -84,9 +87,11 @@ module.exports = {
     if (currentPage) {
       // Already in the DB, can mark as modified
       WIKI.logger.info(`(STORAGE/${moduleName}) Page marked as modified: ${normalizedRelPath}`)
+      // If the title is the default title, use the title from the file
+      const title = currentPage.title === defaultTitle ? titleFromFile : currentPage.title
       await WIKI.models.pages.updatePage({
         id: currentPage.id,
-        title: _.get(pageData, 'title', currentPage.title),
+        title: _.get(pageData, 'title', title),
         description: _.get(pageData, 'description', currentPage.description) || '',
         tags: newTags || currentPage.tags.map(t => t.tag),
         isPublished: _.get(pageData, 'isPublished', currentPage.isPublished),
@@ -102,7 +107,7 @@ module.exports = {
       await WIKI.models.pages.createPage({
         path: contentPath.path,
         locale: contentPath.locale,
-        title: _.get(pageData, 'title', _.last(contentPath.path.split('/'))),
+        title: _.get(pageData, 'title', titleFromFile ?? defaultTitle),
         description: _.get(pageData, 'description', '') || '',
         tags: newTags || [],
         isPublished: _.get(pageData, 'isPublished', true),
