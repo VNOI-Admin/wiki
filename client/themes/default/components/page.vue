@@ -498,7 +498,7 @@ export default {
       upBtnShown: false,
       pageEditFab: false,
       scrollOpts: {
-        duration: 1500,
+        duration: 0,
         offset: 0,
         easing: 'easeInOutCubic'
       },
@@ -640,7 +640,23 @@ export default {
         el.onclick = ev => {
           ev.preventDefault()
           ev.stopPropagation()
-          this.$vuetify.goTo(decodeURIComponent(ev.currentTarget.hash), this.scrollOpts)
+          const href = decodeURIComponent(ev.currentTarget.hash ?? ev.currentTarget.href?.baseVal ?? '')
+
+          // mjx component is an SVG element, which is not a valid target for goTo
+          // so we need to find the nearest parent element that is an HTMLElement
+          if (href.startsWith('#mjx-')) {
+            let target = document.getElementById(href.replace('#', ''))
+            while (target && !(target instanceof HTMLElement)) {
+              target = target.parentNode
+            }
+            return this.$vuetify.goTo(target, this.scrollOpts)
+          }
+
+          if (href.startsWith('#ktx-')) {
+            return this.$vuetify.goTo(document.getElementById(href.replace('#', '')), this.scrollOpts)
+          }
+
+          this.$vuetify.goTo(href, this.scrollOpts)
         }
       })
 
