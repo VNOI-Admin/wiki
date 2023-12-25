@@ -246,6 +246,9 @@ Prism.plugins.NormalizeWhitespace.setDefaults({
   'tabs-to-spaces': 2
 })
 
+// Add \eqref, \ref, and \label to the KaTeX macros.
+katexHelper.enableLabelAndReference(katex)
+
 // Markdown Instance
 const md = new MarkdownIt({
   html: true,
@@ -374,7 +377,9 @@ md.inline.ruler.after('escape', 'katex_inline', katexHelper.katexInline)
 md.renderer.rules.katex_inline = (tokens, idx) => {
   try {
     return katex.renderToString(tokens[idx].content, {
-      displayMode: false, macros
+      displayMode: false,
+      macros,
+      trust: (context) => ['\\htmlId', '\\href'].includes(context.command)
     })
   } catch (err) {
     console.warn(err)
@@ -387,7 +392,9 @@ md.block.ruler.after('blockquote', 'katex_block', katexHelper.katexBlock, {
 md.renderer.rules.katex_block = (tokens, idx) => {
   try {
     return `<p>` + katex.renderToString(tokens[idx].content, {
-      displayMode: true, macros
+      displayMode: true,
+      macros,
+      trust: (context) => ['\\htmlId', '\\href'].includes(context.command)
     }) + `</p>`
   } catch (err) {
     console.warn(err)
