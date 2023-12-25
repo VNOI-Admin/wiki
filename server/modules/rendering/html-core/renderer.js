@@ -207,11 +207,6 @@ module.exports = {
         headerSlug = $(elm).attr('id')
       }
 
-      // -> Cannot start with a number (CSS selector limitation)
-      if (headerSlug.match(/^\d/)) {
-        headerSlug = `h-${headerSlug}`
-      }
-
       // -> Make sure header is unique
       if (headers.indexOf(headerSlug) >= 0) {
         let isUnique = false
