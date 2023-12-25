@@ -1,45 +1,40 @@
-// Test if potential opening or closing delimieter
-// Assumes that there is a "$" at state.src[pos]
-function isValidDelim (state, pos) {
-  // In VNOI Wiki, we don't have non-whitespace conditions for opening and closing,
-  // and we don't check that closing delimeter isn't followed by a number.
-  // So we just return true.
-  return {
-    canOpen: true,
-    canClose: true
-  }
-  // let prevChar
-  // let nextChar
-  // let max = state.posMax
-  // let canOpen = true
-  // let canClose = true
+module.exports = {
+  // Test if potential opening or closing delimieter
+  // Assumes that there is a "$" at state.src[pos]
+  isValidDelim (state, pos) {
+    // In VNOI Wiki, we don't have non-whitespace conditions for opening and closing,
+    // and we don't check that closing delimeter isn't followed by a number.
+    // So we just return true.
+    return {
+      canOpen: true,
+      canClose: true
+    }
+    // let prevChar
+    // let nextChar
+    // let max = state.posMax
+    // let canOpen = true
+    // let canClose = true
 
-  // prevChar = pos > 0 ? state.src.charCodeAt(pos - 1) : -1
-  // nextChar = pos + 1 <= max ? state.src.charCodeAt(pos + 1) : -1
+    // prevChar = pos > 0 ? state.src.charCodeAt(pos - 1) : -1
+    // nextChar = pos + 1 <= max ? state.src.charCodeAt(pos + 1) : -1
 
-  // // Check non-whitespace conditions for opening and closing, and
-  // // check that closing delimeter isn't followed by a number
-  // if (prevChar === 0x20/* " " */ || prevChar === 0x09/* \t */ ||
-  //         (nextChar >= 0x30/* "0" */ && nextChar <= 0x39/* "9" */)) {
-  //   canClose = false
-  // }
-  // if (nextChar === 0x20/* " " */ || nextChar === 0x09/* \t */) {
-  //   canOpen = false
-  // }
+    // // Check non-whitespace conditions for opening and closing, and
+    // // check that closing delimeter isn't followed by a number
+    // if (prevChar === 0x20/* " " */ || prevChar === 0x09/* \t */ ||
+    //         (nextChar >= 0x30/* "0" */ && nextChar <= 0x39/* "9" */)) {
+    //   canClose = false
+    // }
+    // if (nextChar === 0x20/* " " */ || nextChar === 0x09/* \t */) {
+    //   canOpen = false
+    // }
+  },
 
-  // return {
-  //   canOpen: canOpen,
-  //   canClose: canClose
-  // }
-}
-
-export default {
-  katexInline (state, silent) {
+  latexInline (tokenName, state, silent) {
     let start, match, token, res, pos
 
     if (state.src[state.pos] !== '$') { return false }
 
-    res = isValidDelim(state, state.pos)
+    res = this.isValidDelim(state, state.pos)
     if (!res.canOpen) {
       if (!silent) { state.pending += '$' }
       state.pos += 1
@@ -78,7 +73,7 @@ export default {
     }
 
     // Check for valid closing delimiter
-    res = isValidDelim(state, match)
+    res = this.isValidDelim(state, match)
     if (!res.canClose) {
       if (!silent) { state.pending += '$' }
       state.pos = start
@@ -86,7 +81,7 @@ export default {
     }
 
     if (!silent) {
-      token = state.push('katex_inline', 'math', 0)
+      token = state.push(tokenName, 'math', 0)
       token.markup = '$'
       token.content = state.src.slice(start, match)
     }
@@ -95,7 +90,7 @@ export default {
     return true
   },
 
-  katexBlock (state, start, end, silent) {
+  latexBlock (tokenName, state, start, end, silent) {
     let firstLine; let lastLine; let next; let lastPos; let found = false; let token
     let pos = state.bMarks[start] + state.tShift[start]
     let max = state.eMarks[start]
@@ -135,7 +130,7 @@ export default {
 
     state.line = next + 1
 
-    token = state.push('katex_block', 'math', 0)
+    token = state.push(tokenName, 'math', 0)
     token.block = true
     token.content = (firstLine && firstLine.trim() ? firstLine + '\n' : '') +
     state.getLines(start + 1, next, state.tShift[start], true) +
@@ -144,4 +139,5 @@ export default {
     token.markup = '$$'
     return true
   }
+
 }
