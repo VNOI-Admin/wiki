@@ -652,7 +652,7 @@ export default {
             return this.$vuetify.goTo(target, this.scrollOpts)
           }
 
-          if (href.startsWith('#ktx-')) {
+          if (href.startsWith('#ktx-') || href.match(/^#\d/)) {
             return this.$vuetify.goTo(document.getElementById(href.replace('#', '')), this.scrollOpts)
           }
 
