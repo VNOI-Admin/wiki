@@ -706,6 +706,7 @@ export default {
       this.$root.$emit('pageDelete')
     },
     handleSideNavVisibility () {
+      this.centeringPageContent()
       if (window.innerWidth === this.winWidth) { return }
       this.winWidth = window.innerWidth
       if (this.$vuetify.breakpoint.mdAndUp) {
@@ -713,6 +714,32 @@ export default {
       } else {
         this.navShown = false
       }
+    },
+    centeringPageContent() {
+      // I couldn't centering like old wiki via css (skill issue) so I did it with js
+      const contentCol = document.querySelector('.contents').parentElement
+      const layoutRow = contentCol.parentElement
+      const tocCol = layoutRow.querySelector('.page-col-sd')
+
+      const tocPosition = this.$store.get('site/tocPosition')
+      const marginSide = tocPosition === 'right' ? 'marginRight' : 'marginLeft'
+
+      if (tocCol === null) {
+        contentCol.style[marginSide] = 'auto'
+        return
+      }
+
+      const tocColWidth = tocCol.offsetWidth
+      const pageColContentWidth = contentCol.offsetWidth
+      const layoutRowWidth = layoutRow.offsetWidth
+
+      let marginSmallSide = (layoutRowWidth - pageColContentWidth) / 2 - tocColWidth
+
+      if (marginSmallSide < 0) {
+        marginSmallSide = 0
+      }
+
+      contentCol.style[marginSide] = `${marginSmallSide}px`
     },
     goToComments (focusNewComment = false) {
       this.$vuetify.goTo('#discussion', this.scrollOpts)
