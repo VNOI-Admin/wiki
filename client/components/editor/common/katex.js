@@ -34,12 +34,16 @@ function isValidDelim (state, pos) {
 }
 
 export default {
-  enableLabelAndReference (katex) {
+  enableCustomMacros (katex) {
+    // label and ref
     katex.__defineMacro('\\eqref', '\\href{##ktx-#1}{(\\text{#1})}')
 
     katex.__defineMacro('\\ref', '\\href{##ktx-#1}{\\text{#1}}')
 
     katex.__defineMacro('\\label', '\\htmlId{ktx-#1}{}')
+
+    // support \*
+    katex.__defineMacro('\\*', '*')
   },
   katexInline (state, silent) {
     let start, match, token, res, pos

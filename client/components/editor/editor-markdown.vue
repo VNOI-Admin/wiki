@@ -247,7 +247,7 @@ Prism.plugins.NormalizeWhitespace.setDefaults({
 })
 
 // Add \eqref, \ref, and \label to the KaTeX macros.
-katexHelper.enableLabelAndReference(katex)
+katexHelper.enableCustomMacros(katex)
 
 // Markdown Instance
 const md = new MarkdownIt({
