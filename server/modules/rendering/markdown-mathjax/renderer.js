@@ -32,7 +32,10 @@ module.exports = {
         ]
       },
       tex: {
-        packages: {'[+]': extensions}
+        packages: {'[+]': extensions},
+        macros: {
+          '*': '{*}'
+        }
       }
     })
     if (conf.useInline) {

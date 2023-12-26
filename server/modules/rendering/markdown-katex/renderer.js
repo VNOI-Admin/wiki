@@ -23,6 +23,9 @@ katex.__defineMacro('\\pu', function(context) {
 //  a mathematical minus, U+2212. So we need that extra 0.56.
 katex.__defineMacro('\\tripledash', '{\\vphantom{-}\\raisebox{2.56mu}{$\\mkern2mu' + '\\tiny\\text{-}\\mkern1mu\\text{-}\\mkern1mu\\text{-}\\mkern2mu$}}')
 
+// support \*
+katex.__defineMacro('\\*', '*')
+
 // Add \eqref, \ref, and \label to the KaTeX macros.
 katex.__defineMacro('\\eqref', '\\href{##ktx-#1}{(\\text{#1})}')
 
