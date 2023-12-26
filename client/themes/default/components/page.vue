@@ -706,8 +706,8 @@ export default {
       this.$root.$emit('pageDelete')
     },
     handleSideNavVisibility () {
-      this.centeringPageContent()
       if (window.innerWidth === this.winWidth) { return }
+      this.centeringPageContent()
       this.winWidth = window.innerWidth
       if (this.$vuetify.breakpoint.mdAndUp) {
         this.navShown = true
