@@ -193,8 +193,13 @@ let bootstrap = () => {
   const i18n = localization.init()
 
   let darkModeEnabled = siteConfig.darkMode
-  if ((store.get('user/appearance') || '').length > 0) {
-    darkModeEnabled = (store.get('user/appearance') === 'dark')
+  const localTheme = localStorage.getItem('theme')
+  const userAppearance = store.get('user/appearance') || ''
+
+  if (userAppearance.length > 0) {
+    darkModeEnabled = (userAppearance === 'dark')
+  } else if (localTheme) {
+    darkModeEnabled = (localTheme === 'dark')
   }
 
   window.WIKI = new Vue({
