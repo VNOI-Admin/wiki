@@ -188,6 +188,15 @@
               span {{$t('common:actions.exit')}}
             v-divider(vertical)
 
+          //- THEME TOGGLE
+
+          v-tooltip(bottom)
+            template(v-slot:activator='{ on }')
+              v-btn(icon, tile, height='64', v-on='on', @click='toggleTheme', :aria-label='$t(`common:header.toggleTheme`)')
+                v-icon(color='grey') {{ $vuetify.theme.dark ? 'mdi-white-balance-sunny' : 'mdi-weather-night' }}
+            span {{ $vuetify.theme.dark ? $t('common:header.lightMode') : $t('common:header.darkMode') }}
+          v-divider(vertical)
+
           //- ACCOUNT
 
           v-menu(v-if='isAuthenticated', offset-y, bottom, min-width='300', transition='slide-y-transition', left)
@@ -477,6 +486,12 @@ export default {
     },
     goHome () {
       window.location.assign('/')
+    },
+    toggleTheme () {
+      this.$vuetify.theme.dark = !this.$vuetify.theme.dark
+
+      const newTheme = this.$vuetify.theme.dark ? 'dark' : 'light'
+      localStorage.setItem('theme', newTheme)
     }
   }
 }
