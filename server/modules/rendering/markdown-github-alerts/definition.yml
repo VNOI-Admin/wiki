@@ -1,0 +1,8 @@
+key: markdownGithubAlerts
+title: Github Alerts
+description: Support GitHub-style alerts for markdown-it.
+author: requarks.io
+icon: mdi-alert-circle
+enabledDefault: true
+dependsOn: markdownCore
+props: {}

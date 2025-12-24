@@ -210,6 +210,7 @@ import mdMark from 'markdown-it-mark'
 import mdMultiTable from 'markdown-it-multimd-table'
 import mdFootnote from 'markdown-it-footnote'
 import mdImsize from 'markdown-it-imsize'
+import mdGithubAlerts from 'markdown-it-github-alerts'
 import mdContainer from 'markdown-it-container'
 import katex from 'katex'
 import underline from '../../libs/markdown-it-underline'
@@ -284,6 +285,7 @@ const md = new MarkdownIt({
   .use(mdMark)
   .use(mdFootnote)
   .use(mdImsize)
+  .use(mdGithubAlerts)
 
 // From https://github.com/hackmdio/codimd/blob/b6eba056e5b3efe9ee0e5c1cde4236dfd4901381/public/js/extra.js#L1220
 function renderContainer (tokens, idx, options, env, self) {
