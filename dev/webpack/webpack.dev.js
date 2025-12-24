@@ -40,9 +40,9 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.js$/,
+        test: /\.m?js$/,
         exclude: (modulePath) => {
-          return modulePath.includes('node_modules') && !modulePath.includes('vuetify')
+          return modulePath.includes('node_modules') && !modulePath.includes('vuetify') && !modulePath.includes('markdown-it-github-alerts')
         },
         use: [
           {
