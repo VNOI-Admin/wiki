@@ -192,9 +192,9 @@
 
           v-tooltip(bottom)
             template(v-slot:activator='{ on }')
-              v-btn(icon, tile, height='64', v-on='on', @click='toggleTheme', :aria-label='$t(`common:header.toggleTheme`)')
+              v-btn(icon, tile, height='64', v-on='on', @click='toggleTheme', aria-label='Toggle Theme')
                 v-icon(color='grey') {{ $vuetify.theme.dark ? 'mdi-white-balance-sunny' : 'mdi-weather-night' }}
-            span {{ $vuetify.theme.dark ? $t('common:header.lightMode') : $t('common:header.darkMode') }}
+            span {{ $vuetify.theme.dark ? 'Light Mode' : 'Dark Mode' }}
           v-divider(vertical)
 
           //- ACCOUNT
