@@ -1,0 +1,17 @@
+key: mariadb
+title: Database - MariaDB / MySQL
+description: MariaDB / MySQL native FULLTEXT search engine.
+author: ldkn
+logo: https://static.requarks.io/logo/mariadb.svg
+website: https://github.com/leduythuccs
+isAvailable: true
+props:
+  searchMode:
+    type: String
+    title: Search Mode
+    hint: Boolean mode supports prefix matching (word*); Natural mode ranks whole-word relevance.
+    default: boolean
+    enum:
+      - boolean
+      - natural
+    order: 1
