@@ -162,6 +162,16 @@
                     hint='Allow users to leave comments on pages.'
                     )
 
+                  v-divider.mt-3
+                  v-switch.mt-3(
+                    inset
+                    label='Folder Listing'
+                    color='indigo'
+                    v-model='config.featureFolderListing'
+                    persistent-hint
+                    hint='Show a listing of child pages/folders when browsing to a folder path that has no page, instead of a 404.'
+                    )
+
                   //- v-divider.mt-3
                   //- v-switch(
                   //-   inset
@@ -295,6 +305,7 @@ export default {
         featurePageRatings: false,
         featurePageComments: false,
         featurePersonalWikis: false,
+        featureFolderListing: false,
         featureTinyPNG: false,
         pageExtensions: '',
         editFab: false,
@@ -363,6 +374,7 @@ export default {
               $featurePageRatings: Boolean
               $featurePageComments: Boolean
               $featurePersonalWikis: Boolean
+              $featureFolderListing: Boolean
               $editFab: Boolean
               $editMenuBar: Boolean
               $editMenuBtn: Boolean
@@ -387,6 +399,7 @@ export default {
                   featurePageRatings: $featurePageRatings
                   featurePageComments: $featurePageComments
                   featurePersonalWikis: $featurePersonalWikis
+                  featureFolderListing: $featureFolderListing
                   editFab: $editFab
                   editMenuBar: $editMenuBar
                   editMenuBtn: $editMenuBtn
@@ -420,6 +433,7 @@ export default {
             featurePageRatings: _.get(this.config, 'featurePageRatings', false),
             featurePageComments: _.get(this.config, 'featurePageComments', false),
             featurePersonalWikis: _.get(this.config, 'featurePersonalWikis', false),
+            featureFolderListing: _.get(this.config, 'featureFolderListing', false),
             editFab: _.get(this.config, 'editFab', false),
             editMenuBar: _.get(this.config, 'editMenuBar', false),
             editMenuBtn: _.get(this.config, 'editMenuBtn', false),
@@ -482,6 +496,7 @@ export default {
               featurePageRatings
               featurePageComments
               featurePersonalWikis
+              featureFolderListing
               editFab
               editMenuBar
               editMenuBtn

@@ -1,0 +1,5 @@
+extends master.pug
+
+block body
+  #root.is-fullscreen
+    folder-view(locale=locale, path=path, folder-title=folderTitle, items=items, can-write=canWrite.toString())

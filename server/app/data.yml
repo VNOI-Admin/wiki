@@ -81,6 +81,7 @@ defaults:
       featurePageRatings: true
       featurePageComments: true
       featurePersonalWikis: true
+      featureFolderListing: true
     security:
       securityOpenRedirect: true
       securityIframe: true

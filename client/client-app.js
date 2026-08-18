@@ -158,6 +158,7 @@ Vue.component('nav-header', () => import(/* webpackMode: "eager" */ './component
 Vue.component('new-page', () => import(/* webpackChunkName: "new-page" */ './components/new-page.vue'))
 Vue.component('notify', () => import(/* webpackMode: "eager" */ './components/common/notify.vue'))
 Vue.component('not-found', () => import(/* webpackChunkName: "not-found" */ './components/not-found.vue'))
+Vue.component('folder-view', () => import(/* webpackChunkName: "folder-view" */ './components/folder-view.vue'))
 Vue.component('page-selector', () => import(/* webpackPrefetch: true, webpackChunkName: "ui-extra" */ './components/common/page-selector.vue'))
 Vue.component('page-source', () => import(/* webpackChunkName: "source" */ './components/source.vue'))
 Vue.component('profile', () => import(/* webpackChunkName: "profile" */ './components/profile.vue'))

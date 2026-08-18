@@ -562,11 +562,38 @@ router.get('/*', async (req, res, next) => {
         _.set(res.locals, 'pageMeta.title', 'Welcome')
         res.render('welcome', { locale: pageArgs.locale })
       } else {
-        _.set(res.locals, 'pageMeta.title', 'Page Not Found')
-        if (effectivePermissions.pages.write) {
-          res.status(404).render('new', { path: pageArgs.path, locale: pageArgs.locale })
+        // -> No page here: if this path is a folder in the tree, show its listing
+        let folder = null
+        if (WIKI.config.features.featureFolderListing) {
+          folder = await WIKI.models.knex('pageTree').first('id', 'title').where({
+            path: pageArgs.path,
+            localeCode: pageArgs.locale,
+            isFolder: true
+          })
+        }
+        if (folder) {
+          const children = (await WIKI.models.knex('pageTree').where({
+            parent: folder.id,
+            localeCode: pageArgs.locale
+          }).orderBy([{ column: 'isFolder', order: 'desc' }, 'title']))
+            .filter(r => WIKI.auth.checkAccess(req.user, ['read:pages'], { path: r.path, locale: r.localeCode }))
+            .map(r => ({ id: r.id, path: r.path, title: r.title, isFolder: r.isFolder, locale: r.localeCode }))
+
+          _.set(res.locals, 'pageMeta.title', folder.title)
+          res.render('folder', {
+            path: pageArgs.path,
+            locale: pageArgs.locale,
+            folderTitle: folder.title,
+            items: Buffer.from(JSON.stringify(children)).toString('base64'),
+            canWrite: effectivePermissions.pages.write
+          })
         } else {
-          res.status(404).render('notfound', { action: 'view' })
+          _.set(res.locals, 'pageMeta.title', 'Page Not Found')
+          if (effectivePermissions.pages.write) {
+            res.status(404).render('new', { path: pageArgs.path, locale: pageArgs.locale })
+          } else {
+            res.status(404).render('notfound', { action: 'view' })
+          }
         }
       }
     } catch (err) {
