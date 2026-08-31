@@ -25,6 +25,11 @@
                 v-list-item-title(v-text='item.title')
                 v-list-item-subtitle.caption(v-text='item.description')
                 .caption.grey--text(v-text='item.path')
+              v-list-item-action(v-if='statusFor(item)')
+                v-tooltip(left)
+                  template(v-slot:activator='{ on }')
+                    v-icon(v-on='on', :color='statusFor(item).color', small) {{ statusFor(item).icon }}
+                  span {{ statusFor(item).label }}
               v-list-item-action
                 v-chip(label, outlined) {{item.locale.toUpperCase()}}
             v-divider(v-if='idx < results.length - 1')
@@ -132,6 +137,21 @@ export default {
     })
   },
   methods: {
+    /**
+     * Status to show beside a search hit.
+     *
+     * Resolves by path rather than by `item.id`: the id comes from whichever search
+     * engine is configured, and only the DB engine guarantees it is the numeric
+     * pages.id. Paths are reliable across every engine.
+     *
+     * @param {Object} item Search hit
+     * @returns {Object|null} Status to show, or null when there is nothing to mark
+     */
+    statusFor (item) {
+      if (!this.$progress.isEnabled) { return null }
+      const status = this.$progress.getStatusByHref(`/${item.locale}/${item.path}`)
+      return (status && status.showMarker) ? status : null
+    },
     setSearchTerm(term) {
       this.search = term
     },

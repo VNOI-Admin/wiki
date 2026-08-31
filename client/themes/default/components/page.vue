@@ -58,9 +58,17 @@
             style='margin-top: auto; margin-bottom: auto;'
             :class='$vuetify.rtl ? `pr-4` : `pl-4`'
             )
-            .page-header-headings
-              .headline.grey--text(:class='$vuetify.theme.dark ? `text--lighten-2` : `text--darken-3`') {{title}}
-              .caption.grey--text.text--darken-1 {{description}}
+            .page-header-main
+              .page-header-headings
+                .headline.grey--text(:class='$vuetify.theme.dark ? `text--lighten-2` : `text--darken-3`') {{title}}
+                .caption.grey--text.text--darken-1 {{description}}
+              page-progress-selector(
+                variant='inline'
+                :page-id='pageId'
+                :locale='locale'
+                :path='path'
+                :title='title'
+                )
             .page-edit-shortcuts(
               v-if='editShortcutsObj.editMenuBar'
               :class='tocPosition === `right` ? `is-right` : ``'
@@ -105,6 +113,14 @@
                       v-icon.px-3(color='grey lighten-1', small) {{ $vuetify.rtl ? `mdi-chevron-left` : `mdi-chevron-right` }}
                       v-list-item-title.px-3.caption.grey--text(:class='$vuetify.theme.dark ? `text--lighten-1` : `text--darken-1`') {{tocSubItem.title}}
                     //- v-divider(inset, v-if='tocIdx < toc.length - 1')
+
+            page-progress-selector(
+              variant='card'
+              :page-id='pageId'
+              :locale='locale'
+              :path='path'
+              :title='title'
+              )
 
             v-card.page-tags-card.mb-5(v-if='tags.length > 0')
               .pa-5
@@ -328,6 +344,13 @@
               .caption {{$t('common:page.unpublishedWarning')}}
             .contents(ref='container')
               slot(name='contents')
+            page-progress-selector(
+              variant='block'
+              :page-id='pageId'
+              :locale='locale'
+              :path='path'
+              :title='title'
+              )
             .comments-container#discussion(v-if='commentsEnabled && commentsPerms.read && !printView')
               .comments-header
                 v-icon.mr-2(dark) mdi-comment-text-outline
@@ -360,6 +383,7 @@
 import { StatusIndicator } from 'vue-status-indicator'
 import Tabset from './tabset.vue'
 import NavSidebar from './nav-sidebar.vue'
+import PageProgressSelector from '../../../components/common/page-progress-selector.vue'
 import Prism from 'prismjs'
 import mermaid from 'mermaid'
 import { get, sync } from 'vuex-pathify'
@@ -407,6 +431,7 @@ Prism.plugins.toolbar.registerButton('copy-to-clipboard', (env) => {
 export default {
   components: {
     NavSidebar,
+    PageProgressSelector,
     StatusIndicator
   },
   props: {
@@ -600,6 +625,15 @@ export default {
     }
 
     this.$store.set('page/mode', 'view')
+
+    // -> Keep this page's stored path current if it has been renamed or moved. A no-op
+    //    (and no storage write) unless the reader has actually tracked this page.
+    this.$progress.recordVisit({
+      pageId: this.pageId,
+      locale: this.locale,
+      path: this.path,
+      title: this.title
+    })
   },
   mounted () {
     if (this.$vuetify.theme.dark) {
@@ -660,8 +694,15 @@ export default {
         }
       })
 
+      // -> Mark links to pages the reader has tracked. Re-runs on every status change
+      //    (including changes made in another tab) until the component is destroyed.
+      this.progressTeardown = this.$progress.decorate(this.$refs.container)
+
       window.boot.notify('page-ready')
     })
+  },
+  beforeDestroy () {
+    if (this.progressTeardown) { this.progressTeardown() }
   },
   methods: {
     goHome () {
@@ -789,11 +830,19 @@ export default {
     position: relative;
   }
 
+  .page-header-main {
+    display: flex;
+    align-items: center;
+  }
+
   .page-header-headings {
     min-height: 52px;
     display: flex;
     justify-content: center;
     flex-direction: column;
+    // -> Allow the headings to shrink so the progress button is never pushed off-screen
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .page-edit-shortcuts {

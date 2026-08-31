@@ -1,0 +1,16 @@
+query {
+  progress {
+    config {
+      isEnabled
+      showLinkMarkers
+      statuses {
+        id
+        label
+        icon
+        color
+        isDefault
+        showMarker
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+mutation($isEnabled: Boolean!, $showLinkMarkers: Boolean!, $statuses: [ProgressStatusInput]!) {
+  progress {
+    setConfig(isEnabled: $isEnabled, showLinkMarkers: $showLinkMarkers, statuses: $statuses) {
+      responseResult {
+        succeeded
+        errorCode
+        slug
+        message
+      }
+    }
+  }
+}

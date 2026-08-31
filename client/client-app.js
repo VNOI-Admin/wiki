@@ -26,6 +26,7 @@ import Cookies from 'js-cookie'
 
 import boot from './modules/boot'
 import localization from './modules/localization'
+import progress from './modules/progress'
 
 // ====================================
 // Load Helpers
@@ -138,6 +139,7 @@ Vue.use(VueApollo)
 Vue.use(VueClipboards)
 Vue.use(localization.VueI18Next)
 Vue.use(helpers)
+Vue.use(progress)
 Vue.use(Vuetify)
 Vue.use(VueMoment, { moment })
 Vue.use(Vuescroll)

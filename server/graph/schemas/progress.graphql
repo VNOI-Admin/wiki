@@ -1,0 +1,59 @@
+# ===============================================
+# PROGRESS TRACKING
+# ===============================================
+
+extend type Query {
+  progress: ProgressQuery
+}
+
+extend type Mutation {
+  progress: ProgressMutation
+}
+
+# -----------------------------------------------
+# QUERIES
+# -----------------------------------------------
+
+type ProgressQuery {
+  config: ProgressConfig @auth(requires: ["manage:system"])
+}
+
+# -----------------------------------------------
+# MUTATIONS
+# -----------------------------------------------
+
+type ProgressMutation {
+  setConfig(
+    isEnabled: Boolean!
+    showLinkMarkers: Boolean!
+    statuses: [ProgressStatusInput]!
+  ): DefaultResponse @auth(requires: ["manage:system"])
+}
+
+# -----------------------------------------------
+# TYPES
+# -----------------------------------------------
+
+type ProgressConfig {
+  isEnabled: Boolean!
+  showLinkMarkers: Boolean!
+  statuses: [ProgressStatus]!
+}
+
+type ProgressStatus {
+  id: String!
+  label: String!
+  icon: String!
+  color: String!
+  isDefault: Boolean!
+  showMarker: Boolean!
+}
+
+input ProgressStatusInput {
+  id: String!
+  label: String!
+  icon: String!
+  color: String!
+  isDefault: Boolean!
+  showMarker: Boolean!
+}

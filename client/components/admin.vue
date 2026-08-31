@@ -38,6 +38,9 @@
             v-list-item(to='/theme', color='primary', v-if='hasPermission([`manage:system`, `manage:theme`])')
               v-list-item-avatar(size='24', tile): v-icon mdi-palette-outline
               v-list-item-title {{ $t('admin:theme.title') }}
+            v-list-item(to='/progress', color='primary', v-if='hasPermission(`manage:system`)')
+              v-list-item-avatar(size='24', tile): v-icon mdi-progress-check
+              v-list-item-title {{ $t('admin:progress.title', 'Progress Tracking') }}
           template(v-if='hasPermission([`manage:system`, `manage:groups`, `write:groups`, `manage:users`, `write:users`])')
             v-divider.my-2
             v-subheader.pl-4 {{ $t('admin:nav.users') }}
@@ -153,6 +156,7 @@ const router = new VueRouter({
     { path: '/pages/visualize', component: () => import(/* webpackChunkName: "admin" */ './admin/admin-pages-visualize.vue') },
     { path: '/tags', component: () => import(/* webpackChunkName: "admin" */ './admin/admin-tags.vue') },
     { path: '/theme', component: () => import(/* webpackChunkName: "admin" */ './admin/admin-theme.vue') },
+    { path: '/progress', component: () => import(/* webpackChunkName: "admin" */ './admin/admin-progress.vue') },
     { path: '/groups', component: () => import(/* webpackChunkName: "admin" */ './admin/admin-groups.vue') },
     { path: '/groups/:id(\\d+)', component: () => import(/* webpackChunkName: "admin" */ './admin/admin-groups-edit.vue') },
     { path: '/users', component: () => import(/* webpackChunkName: "admin" */ './admin/admin-users.vue') },

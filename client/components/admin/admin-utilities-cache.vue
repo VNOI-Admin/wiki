@@ -87,6 +87,9 @@ export default {
       this.loading = false
     },
     async flushClientLocaleCache () {
+      // NOTE: this must stay scoped to the `i18next_res` prefix. Reader progress data
+      // lives in localStorage under `wiki-progress:` (client/modules/progress/) and is
+      // not recoverable if cleared from here.
       for (let i = 0; i < window.localStorage.length; i++) {
         const lsKey = window.localStorage.key(i)
         if (_.startsWith(lsKey, 'i18next_res')) {

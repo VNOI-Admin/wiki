@@ -61,6 +61,14 @@ defaults:
       iconset: 'md'
       darkMode: false
       tocPosition: 'left'
+    progress:
+      isEnabled: true
+      showLinkMarkers: true
+      # Intentionally empty: WIKI.configSvc.loadFromDb() merges DB config over these
+      # defaults with _.defaultsDeep, which merges arrays *element-wise*. A non-empty
+      # default here would resurrect statuses an admin deleted. Seed values live in
+      # server/helpers/progress.js and are applied when this list is empty.
+      statuses: []
     auth:
       autoLogin: false
       enforce2FA: false

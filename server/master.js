@@ -9,6 +9,7 @@ const KnexSessionStore = require('connect-session-knex')(session)
 const favicon = require('serve-favicon')
 const path = require('path')
 const _ = require('lodash')
+const progressHelper = require('./helpers/progress')
 
 /* global WIKI */
 
@@ -155,7 +156,8 @@ module.exports = async () => {
       company: WIKI.config.company,
       contentLicense: WIKI.config.contentLicense,
       footerOverride: WIKI.config.footerOverride,
-      logoUrl: WIKI.config.logoUrl
+      logoUrl: WIKI.config.logoUrl,
+      progress: progressHelper.getConfig()
     }
     res.locals.langs = await WIKI.models.locales.getNavLocales({ cache: true })
     res.locals.analyticsCode = await WIKI.models.analytics.getCode({ cache: true })
