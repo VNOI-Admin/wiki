@@ -58,9 +58,17 @@
             style='margin-top: auto; margin-bottom: auto;'
             :class='$vuetify.rtl ? `pr-4` : `pl-4`'
             )
-            .page-header-headings
-              .headline.grey--text(:class='$vuetify.theme.dark ? `text--lighten-2` : `text--darken-3`') {{title}}
-              .caption.grey--text.text--darken-1 {{description}}
+            .page-header-main
+              .page-header-headings
+                .headline.grey--text(:class='$vuetify.theme.dark ? `text--lighten-2` : `text--darken-3`') {{title}}
+                .caption.grey--text.text--darken-1 {{description}}
+              page-progress-selector(
+                variant='inline'
+                :page-id='pageId'
+                :locale='locale'
+                :path='path'
+                :title='title'
+                )
             .page-edit-shortcuts(
               v-if='editShortcutsObj.editMenuBar'
               :class='tocPosition === `right` ? `is-right` : ``'
@@ -106,7 +114,8 @@
                       v-list-item-title.px-3.caption.grey--text(:class='$vuetify.theme.dark ? `text--lighten-1` : `text--darken-1`') {{tocSubItem.title}}
                     //- v-divider(inset, v-if='tocIdx < toc.length - 1')
 
-            page-progress-card(
+            page-progress-selector(
+              variant='card'
               :page-id='pageId'
               :locale='locale'
               :path='path'
@@ -335,6 +344,14 @@
               .caption {{$t('common:page.unpublishedWarning')}}
             .contents(ref='container')
               slot(name='contents')
+            page-progress-selector(
+              variant='block'
+              heading='Mark your progress on this page'
+              :page-id='pageId'
+              :locale='locale'
+              :path='path'
+              :title='title'
+              )
             .comments-container#discussion(v-if='commentsEnabled && commentsPerms.read && !printView')
               .comments-header
                 v-icon.mr-2(dark) mdi-comment-text-outline
@@ -367,7 +384,7 @@
 import { StatusIndicator } from 'vue-status-indicator'
 import Tabset from './tabset.vue'
 import NavSidebar from './nav-sidebar.vue'
-import PageProgressCard from '../../../components/common/page-progress-card.vue'
+import PageProgressSelector from '../../../components/common/page-progress-selector.vue'
 import Prism from 'prismjs'
 import mermaid from 'mermaid'
 import { get, sync } from 'vuex-pathify'
@@ -415,7 +432,7 @@ Prism.plugins.toolbar.registerButton('copy-to-clipboard', (env) => {
 export default {
   components: {
     NavSidebar,
-    PageProgressCard,
+    PageProgressSelector,
     StatusIndicator
   },
   props: {
@@ -814,11 +831,19 @@ export default {
     position: relative;
   }
 
+  .page-header-main {
+    display: flex;
+    align-items: center;
+  }
+
   .page-header-headings {
     min-height: 52px;
     display: flex;
     justify-content: center;
     flex-direction: column;
+    // -> Allow the headings to shrink so the progress button is never pushed off-screen
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .page-edit-shortcuts {
