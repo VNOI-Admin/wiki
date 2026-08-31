@@ -5,56 +5,51 @@
         .admin-header
           img.animated.fadeInUp(src='/_assets/svg/icon-checkmark.svg', alt='Progress Tracking', style='width: 80px;')
           .admin-header-title
-            .headline.primary--text.animated.fadeInLeft Progress Tracking
-            .subtitle-1.grey--text.animated.fadeInLeft.wait-p2s Let readers track which articles they have read
+            .headline.primary--text.animated.fadeInLeft {{ $t('admin:progress.title', 'Progress Tracking') }}
+            .subtitle-1.grey--text.animated.fadeInLeft.wait-p2s {{ $t('admin:progress.subtitle', 'Let readers track which articles they have read') }}
           v-spacer
           v-btn.animated.fadeInRight(color='success', depressed, @click='save', large, :loading='loading')
             v-icon(left) mdi-check
-            span Apply
+            span {{ $t('common:actions.apply') }}
         v-form.pt-3
           v-layout(row wrap)
             v-flex(lg5 xs12)
               v-card.animated.fadeInUp
                 v-toolbar(color='primary', dark, dense, flat)
-                  v-toolbar-title.subtitle-1 Options
+                  v-toolbar-title.subtitle-1 {{ $t('admin:progress.options', 'Options') }}
                 v-card-text
                   v-switch(
                     inset
-                    label='Enable progress tracking'
+                    :label='$t(`admin:progress.isEnabled`, `Enable progress tracking`)'
                     color='primary'
                     v-model='config.isEnabled'
                     persistent-hint
-                    hint='Show a progress selector on every page. Progress is stored in each reader\'s browser only — never on the server.'
+                    :hint='$t(`admin:progress.isEnabledHint`, `Show a progress selector on every page. Progress is stored in each reader’s browser only — never on the server.`)'
                     )
                   v-divider.mt-3
                   v-switch.mt-3(
                     inset
-                    label='Show status markers on page links'
+                    :label='$t(`admin:progress.showLinkMarkers`, `Show status markers on page links`)'
                     color='primary'
                     v-model='config.showLinkMarkers'
                     :disabled='!config.isEnabled'
                     persistent-hint
-                    hint='Add a small status icon next to any link pointing at a page the reader has tracked.'
+                    :hint='$t(`admin:progress.showLinkMarkersHint`, `Add a small status icon next to any link pointing at a page the reader has tracked.`)'
                     )
                 v-card-text.pt-0
                   v-alert(color='blue-grey', outlined, dense, icon='mdi-information-outline')
-                    .caption
-                      | Progress data never leaves the reader's browser, so disabling this
-                      | feature hides it without deleting anything. Readers export and import
-                      | their own data from the progress card on any page.
+                    .caption {{ $t('admin:progress.info', 'Progress data never leaves the reader’s browser, so disabling this feature hides it without deleting anything. Readers export and import their own data from the progress card on any page.') }}
 
             v-flex(lg7 xs12)
               v-card.animated.fadeInUp.wait-p2s
                 v-toolbar(color='primary', dark, dense, flat)
-                  v-toolbar-title.subtitle-1 Statuses
+                  v-toolbar-title.subtitle-1 {{ $t('admin:progress.statuses', 'Statuses') }}
                   v-spacer
                   v-btn.text-none(small, text, dark, @click='addStatus')
                     v-icon(left, small) mdi-plus
-                    span Add status
+                    span {{ $t('admin:progress.addStatus', 'Add status') }}
                 v-card-text
-                  .caption.grey--text.mb-3
-                    | Drag to reorder. The status marked as default means "not started" — it is
-                    | never shown as a marker on links, and pages in it are not stored.
+                  .caption.grey--text.mb-3 {{ $t('admin:progress.statusesHint', 'Drag to reorder. The status marked as default means "not started" - it is never shown as a marker on links, and pages in it are not stored.') }}
                   v-alert(v-if='validationError', color='red', outlined, dense, icon='mdi-alert-circle-outline')
                     .caption {{ validationError }}
                   draggable(v-model='config.statuses', handle='.status-drag-handle')
@@ -70,17 +65,17 @@
                           v-flex(xs12 sm3)
                             v-text-field.mr-2(
                               v-model='status.id'
-                              label='ID'
+                              :label='$t(`admin:progress.fieldId`, `ID`)'
                               dense
                               outlined
                               hide-details
                               :disabled='!isNewStatus(status)'
-                              :hint='isNewStatus(status) ? `` : `Existing readers reference this ID`'
+                              :hint='isNewStatus(status) ? `` : $t(`admin:progress.idLocked`, `Existing readers reference this ID`)'
                               )
                           v-flex(xs12 sm3)
                             v-text-field.mr-2(
                               v-model='status.label'
-                              label='Label'
+                              :label='$t(`admin:progress.fieldLabel`, `Label`)'
                               dense
                               outlined
                               hide-details
@@ -88,7 +83,7 @@
                           v-flex(xs12 sm3)
                             v-text-field.mr-2(
                               v-model='status.icon'
-                              label='Icon'
+                              :label='$t(`admin:progress.fieldIcon`, `Icon`)'
                               placeholder='mdi-check-circle'
                               dense
                               outlined
@@ -98,7 +93,7 @@
                             v-select(
                               v-model='status.color'
                               :items='colors'
-                              label='Color'
+                              :label='$t(`admin:progress.fieldColor`, `Color`)'
                               dense
                               outlined
                               hide-details
@@ -107,13 +102,13 @@
                           template(v-slot:activator='{ on }')
                             v-btn.ml-2(icon, small, v-on='on', @click='setDefault(idx)')
                               v-icon(:color='status.isDefault ? `primary` : `grey lighten-1`', small) {{ status.isDefault ? `mdi-radiobox-marked` : `mdi-radiobox-blank` }}
-                          span Use as the default ("not started") status
+                          span {{ $t('admin:progress.setDefault', 'Use as the default ("not started") status') }}
                         v-tooltip(bottom)
                           template(v-slot:activator='{ on }')
                             v-btn(icon, small, v-on='on', @click='removeStatus(idx)', :disabled='config.statuses.length < 2')
                               v-icon(color='red lighten-1', small) mdi-close
-                          span Remove
-                  .caption.grey--text.mt-2(v-if='config.statuses.length < 1') No statuses configured. Save to restore the defaults.
+                          span {{ $t('admin:progress.remove', 'Remove') }}
+                  .caption.grey--text.mt-2(v-if='config.statuses.length < 1') {{ $t('admin:progress.empty', 'No statuses configured. Save to restore the defaults.') }}
 </template>
 
 <script>
@@ -187,32 +182,41 @@ export default {
       const statuses = this.config.statuses
 
       if (statuses.length < 1) {
-        this.validationError = 'Add at least one status.'
+        this.validationError = this.$t('admin:progress.errorNoStatuses', 'Add at least one status.')
         return false
       }
       const bad = _.find(statuses, s => !statusIdRegex.test(s.id))
       if (bad) {
-        this.validationError = `"${bad.id || '(empty)'}" is not a valid ID. Use lowercase letters, numbers and dashes.`
+        this.validationError = this.$t('admin:progress.errorBadId', {
+          defaultValue: '"{{id}}" is not a valid ID. Use lowercase letters, numbers and dashes.',
+          id: bad.id || this.$t('admin:progress.emptyId', '(empty)')
+        })
         return false
       }
       const duplicate = _.findKey(_.countBy(statuses, 'id'), n => n > 1)
       if (duplicate) {
-        this.validationError = `The ID "${duplicate}" is used more than once.`
+        this.validationError = this.$t('admin:progress.errorDuplicateId', {
+          defaultValue: 'The ID "{{id}}" is used more than once.',
+          id: duplicate
+        })
         return false
       }
       if (_.some(statuses, s => _.isEmpty(_.trim(s.label)))) {
-        this.validationError = 'Every status needs a label.'
+        this.validationError = this.$t('admin:progress.errorNoLabel', 'Every status needs a label.')
         return false
       }
       if (!_.some(statuses, 'isDefault')) {
-        this.validationError = 'Mark one status as the default.'
+        this.validationError = this.$t('admin:progress.errorNoDefault', 'Mark one status as the default.')
         return false
       }
       const removed = _.difference(this.persistedIds, _.map(statuses, 'id'))
       if (removed.length > 0) {
         // -> Not an error: records keep their status id, so re-adding it restores them.
         this.$store.commit('showNotification', {
-          message: `Removed ${removed.join(', ')}. Readers who used ${removed.length === 1 ? 'it' : 'them'} keep their data until ${removed.length === 1 ? 'it is' : 'they are'} re-added.`,
+          message: this.$t('admin:progress.removedWarning', {
+            defaultValue: 'Removed {{ids}}. Readers who used them keep their data until they are re-added.',
+            ids: removed.join(', ')
+          }),
           style: 'warning',
           icon: 'alert'
         })
@@ -244,7 +248,7 @@ export default {
         if (resp.succeeded) {
           this.persistedIds = _.map(this.config.statuses, 'id')
           this.$store.commit('showNotification', {
-            message: 'Progress tracking settings updated successfully.',
+            message: this.$t('admin:progress.saveSuccess', 'Progress tracking settings updated successfully.'),
             style: 'success',
             icon: 'check'
           })

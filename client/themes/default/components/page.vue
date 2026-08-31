@@ -346,7 +346,6 @@
               slot(name='contents')
             page-progress-selector(
               variant='block'
-              heading='Mark your progress on this page'
               :page-id='pageId'
               :locale='locale'
               :path='path'

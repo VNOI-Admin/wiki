@@ -5,7 +5,7 @@ import ProgressStorage, { STORAGE_KEY } from '../modules/progress/progress-stora
 import ProgressManager from '../modules/progress/progress-manager'
 import StatusRegistry from '../modules/progress/status-registry'
 import { decorateLinks } from '../modules/progress/link-decorator'
-import { buildExport, parseImport } from '../modules/progress/import-export'
+import { buildExport, parseImport, ImportError } from '../modules/progress/import-export'
 import { parsePagePath, makeAliasKey } from '../modules/progress/page-path'
 
 global.siteConfig = { lang: 'en' }
@@ -255,11 +255,34 @@ describe('link-decorator', () => {
 })
 
 describe('import-export/parseImport', () => {
-  it('rejects files that are not progress exports', () => {
-    expect(() => parseImport('{not json')).toThrow(/not valid JSON/)
-    expect(() => parseImport('{"format":"something-else"}')).toThrow(/not exported from/)
-    expect(() => parseImport(JSON.stringify({ format: 'vnoj-wiki-progress', version: 99 }))).toThrow(/newer version/)
-    expect(() => parseImport(JSON.stringify({ format: 'vnoj-wiki-progress', version: 1 }))).toThrow(/missing its records/)
+  it('rejects files that are not progress exports, with a translatable code', () => {
+    const codeOf = input => {
+      try { parseImport(input) } catch (err) { return err.code }
+      throw new Error('expected parseImport to throw')
+    }
+    expect(codeOf('{not json')).toEqual(ImportError.codes.NOT_JSON)
+    expect(codeOf('null')).toEqual(ImportError.codes.NOT_OBJECT)
+    expect(codeOf('{"format":"something-else"}')).toEqual(ImportError.codes.WRONG_FORMAT)
+    expect(codeOf(JSON.stringify({ format: 'vnoj-wiki-progress', version: 99 }))).toEqual(ImportError.codes.NEWER_VERSION)
+    expect(codeOf(JSON.stringify({ format: 'vnoj-wiki-progress', version: 1 }))).toEqual(ImportError.codes.MISSING_RECORDS)
+    expect(codeOf(JSON.stringify({ format: 'vnoj-wiki-progress', version: 1, records: [] }))).toEqual(ImportError.codes.NO_RECORDS)
+  })
+
+  it('carries interpolation params for the message', () => {
+    try {
+      parseImport(JSON.stringify({ format: 'vnoj-wiki-progress', version: 99 }))
+    } catch (err) {
+      expect(err.params).toEqual({ version: 99 })
+    }
+  })
+
+  it('never puts user-facing English in the module', () => {
+    // -> Messages come from the locale files; the module only carries codes.
+    const codeOf = input => {
+      try { parseImport(input) } catch (err) { return err.message }
+      throw new Error('expected parseImport to throw')
+    }
+    expect(codeOf('{not json')).toEqual('notJson')
   })
 
   it('drops records without a usable page id', () => {

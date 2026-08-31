@@ -40,7 +40,7 @@
               v-list-item-title {{ $t('admin:theme.title') }}
             v-list-item(to='/progress', color='primary', v-if='hasPermission(`manage:system`)')
               v-list-item-avatar(size='24', tile): v-icon mdi-progress-check
-              v-list-item-title Progress Tracking
+              v-list-item-title {{ $t('admin:progress.title', 'Progress Tracking') }}
           template(v-if='hasPermission([`manage:system`, `manage:groups`, `write:groups`, `manage:users`, `write:users`])')
             v-divider.my-2
             v-subheader.pl-4 {{ $t('admin:nav.users') }}

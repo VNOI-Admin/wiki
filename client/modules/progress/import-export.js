@@ -59,31 +59,59 @@ export function downloadExport (payload, filename) {
 }
 
 /**
+ * An import failure, carrying a stable code the UI turns into a localized message.
+ *
+ * The module stays i18n-agnostic: it knows what went wrong, not how to say it.
+ */
+export class ImportError extends Error {
+  /**
+   * @param {string} code One of ImportError.codes
+   * @param {Object} [params] Interpolation values for the message
+   */
+  constructor (code, params = {}) {
+    super(code)
+    this.name = 'ImportError'
+    this.code = code
+    this.params = params
+  }
+}
+
+ImportError.codes = {
+  NOT_JSON: 'notJson',
+  NOT_OBJECT: 'notProgressData',
+  WRONG_FORMAT: 'wrongFormat',
+  NEWER_VERSION: 'newerVersion',
+  MISSING_RECORDS: 'missingRecords',
+  NO_RECORDS: 'noRecords',
+  UNREADABLE: 'unreadable'
+}
+
+/**
  * Validate and extract records from an import payload.
  *
  * @param {string} text Raw file contents
  * @returns {{ records: ProgressRecord[] }} Parsed records
- * @throws {Error} With a message suitable for display when the file is unusable
+ * @throws {ImportError} When the file is unusable
  */
 export function parseImport (text) {
   let payload = null
   try {
     payload = JSON.parse(text)
   } catch (err) {
-    throw new Error('This file is not valid JSON.')
+    throw new ImportError(ImportError.codes.NOT_JSON)
   }
 
   if (!payload || typeof payload !== 'object') {
-    throw new Error('This file does not contain progress data.')
+    throw new ImportError(ImportError.codes.NOT_OBJECT)
   }
   if (payload.format !== EXPORT_FORMAT) {
-    throw new Error('This file was not exported from a wiki progress tracker.')
+    throw new ImportError(ImportError.codes.WRONG_FORMAT)
   }
   if (_.toInteger(payload.version) > EXPORT_VERSION) {
-    throw new Error(`This file was exported by a newer version (v${payload.version}). Update the wiki, then try again.`)
+    throw new ImportError(ImportError.codes.NEWER_VERSION, { version: payload.version })
   }
   if (!_.isArray(payload.records)) {
-    throw new Error('This file is missing its records list.')
+    throw new ImportError(ImportError.codes.MISSING_RECORDS)
   }
 
   const records = payload.records.filter(record => {
@@ -92,7 +120,7 @@ export function parseImport (text) {
   })
 
   if (records.length < 1) {
-    throw new Error('This file contains no usable records.')
+    throw new ImportError(ImportError.codes.NO_RECORDS)
   }
 
   return { records }
@@ -108,7 +136,7 @@ export function readFile (file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(reader.result)
-    reader.onerror = () => reject(new Error('Could not read the selected file.'))
+    reader.onerror = () => reject(new ImportError(ImportError.codes.UNREADABLE))
     reader.readAsText(file)
   })
 }

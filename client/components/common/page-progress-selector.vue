@@ -8,10 +8,10 @@
       .overline.pb-2.deep-purple--text(
         v-if='variant === `card`'
         :class='$vuetify.theme.dark ? `text--lighten-3` : ``'
-        ) {{ heading }}
+        ) {{ headingText }}
       .page-progress-prompt(v-if='variant === `block`')
-        .subtitle-2 {{ heading }}
-        .caption.grey--text Saved in this browser only.
+        .subtitle-2 {{ headingText }}
+        .caption.grey--text {{ $t('common:progress.savedLocally', 'Saved in this browser only.') }}
 
       v-menu(offset-y, bottom, min-width='220', :left='variant !== `card`')
         template(v-slot:activator='{ on: menu }')
@@ -21,7 +21,7 @@
             outlined
             :block='variant === `card`'
             :color='currentStatus.color'
-            :aria-label='`Progress: ` + currentStatus.label'
+            :aria-label='$t(`common:progress.statusAria`, { defaultValue: `Progress: {{status}}`, status: currentStatus.label })'
             )
             v-icon(left, v-bind='iconSize') {{ currentStatus.icon }}
             span.page-progress-label {{ currentStatus.label }}
@@ -41,11 +41,11 @@
       .page-progress-actions(v-if='showDataLink')
         v-btn.text-none.px-1(@click='dialogData = true', text, x-small, color='grey')
           v-icon(left, x-small) mdi-database-cog-outline
-          span Manage data
+          span {{ $t('common:progress.manageData', 'Manage data') }}
         v-tooltip(bottom, v-if='!isPersistent')
           template(v-slot:activator='{ on }')
             v-icon.ml-2(v-on='on', color='orange', x-small) mdi-alert-outline
-          span Progress cannot be saved in this browser
+          span {{ $t('common:progress.notPersistent', 'Progress cannot be saved in this browser') }}
 
     progress-data-dialog(v-if='showDataLink', v-model='dialogData')
 </template>
@@ -93,10 +93,6 @@ export default {
       type: String,
       default: 'card',
       validator: v => ['card', 'inline', 'block'].includes(v)
-    },
-    heading: {
-      type: String,
-      default: 'Progress'
     }
   },
   data () {
@@ -110,6 +106,12 @@ export default {
     },
     isPersistent () {
       return this.$progress.isPersistent
+    },
+    headingText () {
+      if (this.variant === 'block') {
+        return this.$t('common:progress.blockHeading', 'Mark your progress on this page')
+      }
+      return this.$t('common:progress.title', 'Progress')
     },
     /**
      * The sidebar card is hidden below the `lg` breakpoint, so the bottom block has to

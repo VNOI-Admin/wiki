@@ -3,21 +3,19 @@
     v-card
       .dialog-header.is-short.is-indigo
         v-icon.mr-3(color='white') mdi-database-cog-outline
-        span Progress Data
+        span {{ $t('common:progress.dialog.title', 'Progress Data') }}
       v-card-text
         .body-2.grey--text(:class='$vuetify.theme.dark ? `text--lighten-1` : `text--darken-2`')
-          | Your reading progress is stored in this browser only. It is never sent to the
-          | server and is not shared between devices. Export it to move it elsewhere, or
-          | to keep a backup.
+          | {{ $t('common:progress.dialog.intro', 'Your reading progress is stored in this browser only. It is never sent to the server and is not shared between devices. Export it to move it elsewhere, or to keep a backup.') }}
         v-alert.mt-4.mb-0(v-if='!isPersistent', color='orange', outlined, dense, icon='mdi-alert-outline')
-          .caption This browser is blocking local storage, so changes will be lost when you close the tab.
+          .caption {{ $t('common:progress.dialog.storageBlocked', 'This browser is blocking local storage, so changes will be lost when you close the tab.') }}
 
         v-divider.mt-4
 
         .d-flex.align-center.mt-4
           div
-            .subtitle-2 Tracked pages
-            .caption.grey--text {{ count }} {{ count === 1 ? 'page' : 'pages' }}
+            .subtitle-2 {{ $t('common:progress.dialog.trackedPages', 'Pages tracked') }}
+            .caption.grey--text {{ count }}
           v-spacer
           v-btn.text-none(
             @click='exportData'
@@ -27,49 +25,57 @@
             color='primary'
             )
             v-icon(left, small) mdi-download
-            span Export JSON
+            span {{ $t('common:progress.dialog.export', 'Export JSON') }}
 
         v-divider.mt-4
 
         .mt-4
-          .subtitle-2 Import
-          .caption.grey--text.mb-2 Importing replaces all current progress data.
+          .subtitle-2 {{ $t('common:progress.dialog.import', 'Import') }}
+          .caption.grey--text.mb-2 {{ $t('common:progress.dialog.importHint', 'Importing replaces all current progress data.') }}
           input.d-none(ref='fileInput', type='file', accept='application/json,.json', @change='onFileSelected')
           v-btn.text-none(@click='pickFile', outlined, small, color='primary')
             v-icon(left, small) mdi-upload
-            span Choose file…
+            span {{ $t('common:progress.dialog.chooseFile', 'Choose file…') }}
           v-alert.mt-3.mb-0(v-if='importError', color='red', outlined, dense, icon='mdi-alert-circle-outline')
             .caption {{ importError }}
 
         template(v-if='pendingRecords')
           v-divider.mt-4
           v-alert.mt-4.mb-0(color='orange', outlined, dense)
-            .caption.mb-2
-              | Replace all current data ({{ count }} {{ count === 1 ? 'page' : 'pages' }})
-              |  with {{ pendingRecords.length }} imported {{ pendingRecords.length === 1 ? 'record' : 'records' }}?
+            .caption.mb-2 {{ confirmReplaceText }}
             .d-flex
               v-btn.text-none.mr-2(@click='confirmImport', small, color='orange', dark, depressed)
-                span Replace
+                span {{ $t('common:progress.dialog.replace', 'Replace') }}
               v-btn.text-none(@click='pendingRecords = null', small, text)
-                span Cancel
+                span {{ $t('common:actions.cancel') }}
 
         v-divider.mt-4
 
         .d-flex.align-center.mt-4
           div
-            .subtitle-2 Clear all
-            .caption.grey--text Delete every tracked page from this browser.
+            .subtitle-2 {{ $t('common:progress.dialog.clearTitle', 'Clear all') }}
+            .caption.grey--text {{ $t('common:progress.dialog.clearHint', 'Delete every tracked page from this browser.') }}
           v-spacer
           v-btn.text-none(@click='clearAll', :disabled='count < 1', outlined, small, color='red')
             v-icon(left, small) mdi-delete
-            span Clear
+            span {{ $t('common:progress.dialog.clear', 'Clear') }}
       v-card-chin
         v-spacer
-        v-btn.text-none(text, @click='isShown = false') Close
+        v-btn.text-none(text, @click='isShown = false') {{ $t('common:actions.close') }}
 </template>
 
 <script>
 import { buildExport, buildExportFilename, downloadExport, parseImport, readFile } from '../../modules/progress/import-export'
+
+const importErrorDefaults = {
+  notJson: 'This file is not valid JSON.',
+  notProgressData: 'This file does not contain progress data.',
+  wrongFormat: 'This file was not exported from a wiki progress tracker.',
+  newerVersion: 'This file was exported by a newer version (v{{version}}). Update the wiki, then try again.',
+  missingRecords: 'This file is missing its records list.',
+  noRecords: 'This file contains no usable records.',
+  unreadable: 'Could not read the selected file.'
+}
 
 /**
  * Import / export / clear dialog for locally stored progress data.
@@ -100,6 +106,13 @@ export default {
     },
     isPersistent () {
       return this.$progress.isPersistent
+    },
+    confirmReplaceText () {
+      return this.$t('common:progress.dialog.confirmReplace', {
+        defaultValue: 'Replace your current data ({{current}} pages) with {{incoming}} pages from the file?',
+        current: this.count,
+        incoming: this.pendingRecords ? this.pendingRecords.length : 0
+      })
     }
   },
   methods: {
@@ -127,7 +140,16 @@ export default {
         const { records } = parseImport(await readFile(file))
         this.pendingRecords = records
       } catch (err) {
-        this.importError = err.message
+        // -> parseImport/readFile throw an ImportError carrying a stable code, so the
+        //    module stays free of user-facing text.
+        if (err.code) {
+          this.importError = this.$t(`common:progress.importError.${err.code}`, {
+            defaultValue: importErrorDefaults[err.code],
+            ...err.params
+          })
+        } else {
+          this.importError = err.message
+        }
       }
     },
     confirmImport () {
@@ -135,7 +157,10 @@ export default {
       this.$progress.replaceAll(this.pendingRecords)
       this.pendingRecords = null
       this.$store.commit('showNotification', {
-        message: `Imported progress for ${total} ${total === 1 ? 'page' : 'pages'}.`,
+        message: this.$t('common:progress.dialog.imported', {
+          defaultValue: 'Imported progress data ({{count}} pages).',
+          count: total
+        }),
         style: 'success',
         icon: 'check'
       })
@@ -143,7 +168,7 @@ export default {
     clearAll () {
       this.$progress.clearAll()
       this.$store.commit('showNotification', {
-        message: 'All progress data cleared.',
+        message: this.$t('common:progress.dialog.cleared', 'All progress data cleared.'),
         style: 'success',
         icon: 'check'
       })
