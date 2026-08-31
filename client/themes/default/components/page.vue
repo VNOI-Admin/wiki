@@ -106,6 +106,13 @@
                       v-list-item-title.px-3.caption.grey--text(:class='$vuetify.theme.dark ? `text--lighten-1` : `text--darken-1`') {{tocSubItem.title}}
                     //- v-divider(inset, v-if='tocIdx < toc.length - 1')
 
+            page-progress-card(
+              :page-id='pageId'
+              :locale='locale'
+              :path='path'
+              :title='title'
+              )
+
             v-card.page-tags-card.mb-5(v-if='tags.length > 0')
               .pa-5
                 .overline.teal--text.pb-2(:class='$vuetify.theme.dark ? `text--lighten-3` : ``') {{$t('common:page.tags')}}
@@ -360,6 +367,7 @@
 import { StatusIndicator } from 'vue-status-indicator'
 import Tabset from './tabset.vue'
 import NavSidebar from './nav-sidebar.vue'
+import PageProgressCard from '../../../components/common/page-progress-card.vue'
 import Prism from 'prismjs'
 import mermaid from 'mermaid'
 import { get, sync } from 'vuex-pathify'
@@ -407,6 +415,7 @@ Prism.plugins.toolbar.registerButton('copy-to-clipboard', (env) => {
 export default {
   components: {
     NavSidebar,
+    PageProgressCard,
     StatusIndicator
   },
   props: {
@@ -600,6 +609,15 @@ export default {
     }
 
     this.$store.set('page/mode', 'view')
+
+    // -> Keep this page's stored path current if it has been renamed or moved. A no-op
+    //    (and no storage write) unless the reader has actually tracked this page.
+    this.$progress.recordVisit({
+      pageId: this.pageId,
+      locale: this.locale,
+      path: this.path,
+      title: this.title
+    })
   },
   mounted () {
     if (this.$vuetify.theme.dark) {
@@ -660,8 +678,15 @@ export default {
         }
       })
 
+      // -> Mark links to pages the reader has tracked. Re-runs on every status change
+      //    (including changes made in another tab) until the component is destroyed.
+      this.progressTeardown = this.$progress.decorate(this.$refs.container)
+
       window.boot.notify('page-ready')
     })
+  },
+  beforeDestroy () {
+    if (this.progressTeardown) { this.progressTeardown() }
   },
   methods: {
     goHome () {

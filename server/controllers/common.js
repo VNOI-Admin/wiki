@@ -577,7 +577,9 @@ router.get('/*', async (req, res, next) => {
             localeCode: pageArgs.locale
           }).orderBy([{ column: 'isFolder', order: 'desc' }, 'title']))
             .filter(r => WIKI.auth.checkAccess(req.user, ['read:pages'], { path: r.path, locale: r.localeCode }))
-            .map(r => ({ id: r.id, path: r.path, title: r.title, isFolder: r.isFolder, locale: r.localeCode }))
+            // -> `id` is the pageTree node id (used as a list key); `pageId` is the
+            //    actual pages.id, and is null for folders.
+            .map(r => ({ id: r.id, pageId: r.pageId, path: r.path, title: r.title, isFolder: r.isFolder, locale: r.localeCode }))
 
           _.set(res.locals, 'pageMeta.title', folder.title)
           res.render('folder', {

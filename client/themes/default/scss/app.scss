@@ -1,5 +1,32 @@
 /* THEME SPECIFIC STYLES */
 
+// ---------------------------------
+// PROGRESS MARKERS
+// ---------------------------------
+// Appended by client/modules/progress/link-decorator.js to links pointing at pages the
+// reader has given a status. Defined at the top level rather than inside `.contents`
+// because the same marker is used in the folder listing and search results.
+
+.progress-marker {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: baseline;
+  padding-left: 3px;
+  text-decoration: none;
+  line-height: 1;
+
+  > i.mdi {
+    font-size: 1.05em;
+    line-height: 1;
+  }
+
+  // -> Progress is a per-reader annotation, not part of the document
+  @media print {
+    display: none;
+  }
+}
+
+
 .v-main .contents {
   color: mc('grey', '800');
   padding: .5rem 0 50px;

@@ -29,6 +29,11 @@
                       v-list-item-title {{ item.title }}
                       v-list-item-subtitle {{ item.path }}
                     v-list-item-action
+                      v-tooltip(left, v-if='statusFor(item)')
+                        template(v-slot:activator='{ on }')
+                          v-icon(v-on='on', :color='statusFor(item).color', small) {{ statusFor(item).icon }}
+                        span {{ statusFor(item).label }}
+                    v-list-item-action
                       v-icon(small) mdi-chevron-right
               v-card-text(v-else)
                 .text-center.grey--text.py-5 This folder is empty.
@@ -81,10 +86,32 @@ export default {
     // Seed page store so nav-header (search scope, home) has locale/path context
     this.$store.set('page/locale', this.locale)
     this.$store.set('page/path', this.path)
+
+    // Listings carry page ids, so a rename shows up here too: recordVisit re-points
+    // any tracked page at its current path (and is a no-op for untracked ones).
+    this.parsedItems.forEach(item => {
+      if (!item.isFolder && item.pageId) {
+        this.$progress.recordVisit({
+          pageId: item.pageId,
+          locale: item.locale,
+          path: item.path,
+          title: item.title
+        })
+      }
+    })
   },
   methods: {
     goHome () {
       window.location.assign('/')
+    },
+    /**
+     * @param {Object} item Listing entry
+     * @returns {Object|null} Status to show, or null when there is nothing to mark
+     */
+    statusFor (item) {
+      if (item.isFolder || !item.pageId || !this.$progress.isEnabled) { return null }
+      const status = this.$progress.getStatusByPageId(item.pageId)
+      return status.showMarker ? status : null
     }
   }
 }
