@@ -1,0 +1,13 @@
+mutation ($id: String!) {
+  roadmap {
+    exportYaml(id: $id) {
+      responseResult {
+        succeeded
+        errorCode
+        slug
+        message
+      }
+      yaml
+    }
+  }
+}

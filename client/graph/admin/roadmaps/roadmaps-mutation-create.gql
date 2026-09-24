@@ -1,0 +1,35 @@
+mutation ($id: String!, $input: RoadmapInput!) {
+  roadmap {
+    create(id: $id, input: $input) {
+      responseResult {
+        succeeded
+        errorCode
+        slug
+        message
+      }
+      roadmap {
+        id
+        title
+        description
+        isEnabled
+        sortOrder
+        sections {
+          id
+          title
+          sortOrder
+          nodes {
+            id
+            title
+            description
+            difficulty
+            articlePath
+            externalUrl
+            sortOrder
+          }
+        }
+        createdAt
+        updatedAt
+      }
+    }
+  }
+}

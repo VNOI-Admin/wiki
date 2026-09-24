@@ -1,0 +1,13 @@
+query {
+  roadmap {
+    list {
+      id
+      title
+      description
+      isEnabled
+      sortOrder
+      nodeCount
+      updatedAt
+    }
+  }
+}

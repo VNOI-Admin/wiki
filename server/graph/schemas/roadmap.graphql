@@ -1,0 +1,93 @@
+extend type Query {
+  roadmap: RoadmapQuery
+}
+
+extend type Mutation {
+  roadmap: RoadmapMutation
+}
+
+type RoadmapQuery {
+  list: [RoadmapSummary]!
+  single(id: String!): RoadmapFull
+}
+
+type RoadmapMutation {
+  create(id: String!, input: RoadmapInput!): RoadmapResponse @auth(requires: ["manage:system"])
+  update(id: String!, input: RoadmapInput!): RoadmapResponse @auth(requires: ["manage:system"])
+  delete(id: String!): DefaultResponse @auth(requires: ["manage:system"])
+  importYaml(yaml: String!): RoadmapResponse @auth(requires: ["manage:system"])
+  exportYaml(id: String!): RoadmapExportResponse @auth(requires: ["manage:system"])
+}
+
+type RoadmapSummary {
+  id: String!
+  title: String!
+  description: String!
+  isEnabled: Boolean!
+  sortOrder: Int!
+  nodeCount: Int!
+  updatedAt: String!
+}
+
+type RoadmapFull {
+  id: String!
+  title: String!
+  description: String!
+  isEnabled: Boolean!
+  sortOrder: Int!
+  sections: [RoadmapSectionGql]!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type RoadmapSectionGql {
+  id: String!
+  title: String!
+  sortOrder: Int!
+  nodes: [RoadmapNodeGql]!
+}
+
+type RoadmapNodeGql {
+  id: String!
+  title: String!
+  description: String!
+  difficulty: Float!
+  articlePath: String!
+  externalUrl: String!
+  sortOrder: Int!
+}
+
+input RoadmapInput {
+  title: String!
+  description: String
+  isEnabled: Boolean
+  sortOrder: Int
+  sections: [RoadmapSectionInput]!
+}
+
+input RoadmapSectionInput {
+  id: String
+  title: String!
+  sortOrder: Int!
+  nodes: [RoadmapNodeInput]!
+}
+
+input RoadmapNodeInput {
+  id: String
+  title: String!
+  description: String
+  difficulty: Float
+  articlePath: String
+  externalUrl: String
+  sortOrder: Int!
+}
+
+type RoadmapResponse {
+  responseResult: ResponseStatus
+  roadmap: RoadmapFull
+}
+
+type RoadmapExportResponse {
+  responseResult: ResponseStatus
+  yaml: String
+}
