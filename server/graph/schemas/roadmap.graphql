@@ -12,11 +12,11 @@ type RoadmapQuery {
 }
 
 type RoadmapMutation {
-  create(id: String!, input: RoadmapInput!): RoadmapResponse @auth(requires: ["manage:system"])
-  update(id: String!, input: RoadmapInput!): RoadmapResponse @auth(requires: ["manage:system"])
-  delete(id: String!): DefaultResponse @auth(requires: ["manage:system"])
-  importYaml(yaml: String!): RoadmapResponse @auth(requires: ["manage:system"])
-  exportYaml(id: String!): RoadmapExportResponse @auth(requires: ["manage:system"])
+  create(id: String!, input: RoadmapInput!): RoadmapResponse @auth(requires: ["write:pages", "manage:pages", "manage:system"])
+  update(id: String!, input: RoadmapInput!): RoadmapResponse @auth(requires: ["write:pages", "manage:pages", "manage:system"])
+  delete(id: String!): DefaultResponse @auth(requires: ["manage:pages", "manage:system"])
+  importYaml(yaml: String!): RoadmapResponse @auth(requires: ["write:pages", "manage:pages", "manage:system"])
+  exportYaml(id: String!): RoadmapExportResponse @auth(requires: ["write:pages", "manage:pages", "manage:system"])
 }
 
 type RoadmapSummary {

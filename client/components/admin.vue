@@ -41,7 +41,7 @@
             v-list-item(to='/progress', color='primary', v-if='hasPermission(`manage:system`)')
               v-list-item-avatar(size='24', tile): v-icon mdi-progress-check
               v-list-item-title {{ $t('admin:progress.title', 'Progress Tracking') }}
-            v-list-item(to='/roadmaps', color='primary', v-if='hasPermission(`manage:system`)')
+            v-list-item(to='/roadmaps', color='primary', v-if='hasPermission([`manage:system`, `manage:pages`, `write:pages`])')
               v-list-item-avatar(size='24', tile): v-icon mdi-map-marker-path
               v-list-item-title Roadmaps
           template(v-if='hasPermission([`manage:system`, `manage:groups`, `write:groups`, `manage:users`, `write:users`])')
