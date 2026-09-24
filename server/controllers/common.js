@@ -412,6 +412,30 @@ router.get('/_userav/:uid', async (req, res, next) => {
 })
 
 /**
+ * Roadmap listing
+ */
+router.get('/roadmaps', async (req, res, next) => {
+  if (!WIKI.auth.checkAccess(req.user, ['read:pages'])) {
+    _.set(res.locals, 'pageMeta.title', 'Unauthorized')
+    return res.status(403).render('unauthorized', { action: 'view' })
+  }
+  const roadmaps = await WIKI.models.roadmaps.query()
+    .where('isEnabled', true)
+    .orderBy('sortOrder')
+    .select('id', 'title', 'description', 'sortOrder', 'sections')
+  const summaries = roadmaps.map(r => ({
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    nodeCount: WIKI.models.roadmaps.nodeCount(r.sections)
+  }))
+  _.set(res.locals, 'pageMeta.title', 'Learning Roadmaps')
+  res.render('roadmaps', {
+    roadmaps: Buffer.from(JSON.stringify(summaries)).toString('base64')
+  })
+})
+
+/**
  * Learning Roadmap
  */
 router.get('/roadmap/:id', async (req, res, next) => {

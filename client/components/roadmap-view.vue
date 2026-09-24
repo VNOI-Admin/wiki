@@ -36,7 +36,7 @@ export default {
   computed: {
     parsedRoadmap () {
       try {
-        return JSON.parse(atob(this.roadmap))
+        return JSON.parse(Buffer.from(this.roadmap, 'base64').toString('utf8'))
       } catch (e) {
         return { title: '', description: '', sections: [] }
       }
