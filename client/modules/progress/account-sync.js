@@ -2,6 +2,7 @@ import Vue from 'vue'
 import _ from 'lodash'
 import gql from 'graphql-tag'
 import ProgressStorage, { STORAGE_KEY } from './progress-storage'
+import { recordKey } from './progress-manager'
 
 const QUERY_MINE = gql`
   query {
@@ -26,7 +27,7 @@ const MUTATION_SAVE = gql`
 `
 
 /**
- * Merge two record lists by pageId; the newer `updatedAt` wins.
+ * Merge two record lists by record key; the newer `updatedAt` wins.
  *
  * @param {ProgressRecord[]} a
  * @param {ProgressRecord[]} b
@@ -35,9 +36,11 @@ const MUTATION_SAVE = gql`
 export function mergeRecords (a, b) {
   const byId = {}
   _.concat(a || [], b || []).forEach(record => {
-    const existing = byId[record.pageId]
+    const key = recordKey(record)
+    if (!key) { return }
+    const existing = byId[key]
     if (!existing || (record.updatedAt || 0) >= (existing.updatedAt || 0)) {
-      byId[record.pageId] = record
+      byId[key] = record
     }
   })
   return _.values(byId)

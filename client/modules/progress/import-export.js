@@ -115,8 +115,10 @@ export function parseImport (text) {
   }
 
   const records = payload.records.filter(record => {
+    if (_.isEmpty(_.get(record, 'statusId'))) { return false }
+    if (_.get(record, 'roadmapId') && _.get(record, 'nodeId')) { return true }
     const id = _.toInteger(_.get(record, 'pageId'))
-    return _.isFinite(id) && id > 0 && !_.isEmpty(_.get(record, 'statusId'))
+    return _.isFinite(id) && id > 0
   })
 
   if (records.length < 1) {

@@ -19,6 +19,11 @@ const iconRegex = /^mdi-[a-z0-9]+(-[a-z0-9]+)*$/
 
 const MAX_RECORDS = 10000
 
+// -> Same id formats as server/models/roadmaps.js
+const roadmapIdRegex = /^[a-z0-9]+(-[a-z0-9]+)*$/
+const nodeIdRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+const urlRegex = /^https?:\/\//
+
 /**
  * Seed statuses, applied when no statuses have been configured yet.
  *
@@ -105,35 +110,53 @@ module.exports = {
    * is capped at MAX_RECORDS (newest kept).
    *
    * @param {Array} rawRecords
-   * @returns {Array} Records: { pageId, statusId, locale, path, title, updatedAt }
+   * @returns {Array} Page records { pageId, statusId, locale, path, title, updatedAt } and
+   *   external roadmap node records { roadmapId, nodeId, statusId, title, url, updatedAt }
    */
   normalizeRecords (rawRecords) {
     if (!_.isArray(rawRecords)) { return [] }
-    const byId = {}
+    const byKey = {}
     rawRecords.forEach(raw => {
       if (!raw || typeof raw !== 'object') { return }
-      const pageId = Number(raw.pageId)
       const statusId = _.toLower(_.trim(String(_.get(raw, 'statusId', ''))))
-      if (!Number.isInteger(pageId) || pageId < 1 || !statusIdRegex.test(statusId)) { return }
-      const updatedAt = Number(raw.updatedAt)
-      const record = {
-        pageId,
-        statusId,
-        locale: _.trim(String(_.get(raw, 'locale', ''))).substring(0, 10),
-        path: _.trim(String(_.get(raw, 'path', ''))).substring(0, 255),
-        title: _.trim(String(_.get(raw, 'title', ''))).substring(0, 255),
-        updatedAt: _.isFinite(updatedAt) && updatedAt > 0 ? Math.floor(updatedAt) : 0
+      if (!statusIdRegex.test(statusId)) { return }
+      const updatedAtRaw = Number(raw.updatedAt)
+      const updatedAt = _.isFinite(updatedAtRaw) && updatedAtRaw > 0 ? Math.floor(updatedAtRaw) : 0
+      const title = _.trim(String(_.get(raw, 'title', ''))).substring(0, 255)
+
+      let key = null
+      let record = null
+      if (raw.roadmapId || raw.nodeId) {
+        const roadmapId = String(_.get(raw, 'roadmapId', ''))
+        const nodeId = _.toLower(String(_.get(raw, 'nodeId', '')))
+        if (roadmapId.length > 64 || !roadmapIdRegex.test(roadmapId) || !nodeIdRegex.test(nodeId)) { return }
+        const url = _.trim(String(_.get(raw, 'url', ''))).substring(0, 2048)
+        key = `node:${roadmapId}/${nodeId}`
+        record = { roadmapId, nodeId, statusId, title, url: urlRegex.test(url) ? url : '', updatedAt }
+      } else {
+        const pageId = Number(raw.pageId)
+        if (!Number.isInteger(pageId) || pageId < 1) { return }
+        key = String(pageId)
+        record = {
+          pageId,
+          statusId,
+          locale: _.trim(String(_.get(raw, 'locale', ''))).substring(0, 10),
+          path: _.trim(String(_.get(raw, 'path', ''))).substring(0, 255),
+          title,
+          updatedAt
+        }
       }
-      const existing = byId[pageId]
+
+      const existing = byKey[key]
       if (!existing || record.updatedAt >= existing.updatedAt) {
-        byId[pageId] = record
+        byKey[key] = record
       }
     })
-    return _.orderBy(_.values(byId), ['updatedAt'], ['desc']).slice(0, MAX_RECORDS)
+    return _.orderBy(_.values(byKey), ['updatedAt'], ['desc']).slice(0, MAX_RECORDS)
   },
 
   /**
-   * Merge two record lists by pageId; the newer `updatedAt` wins.
+   * Merge two record lists by page id / roadmap node; the newer `updatedAt` wins.
    *
    * @param {Array} a
    * @param {Array} b

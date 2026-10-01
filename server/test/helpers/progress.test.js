@@ -88,3 +88,20 @@ describe('helpers/progress/mergeRecords', () => {
     expect(byId).toEqual({ 1: 'completed', 2: 'reading', 3: 'reading' })
   })
 })
+
+describe('helpers/progress/normalizeRecords (roadmap nodes)', () => {
+  const { normalizeRecords } = require('../../helpers/progress')
+  const NODE = '3f2b6c1e-8a4d-4f5e-9b7a-1c2d3e4f5a6b'
+
+  it('keeps valid node records and drops malformed ones', () => {
+    const result = normalizeRecords([
+      { roadmapId: 'dp', nodeId: NODE, statusId: 'completed', url: 'https://x.y', updatedAt: 1 },
+      { roadmapId: 'Bad Id', nodeId: NODE, statusId: 'completed' },
+      { roadmapId: 'dp', nodeId: 'not-a-uuid', statusId: 'completed' },
+      { roadmapId: 'dp', nodeId: NODE, statusId: 'reading', url: 'javascript:alert(1)', updatedAt: 0 }
+    ])
+    expect(result).toEqual([
+      { roadmapId: 'dp', nodeId: NODE, statusId: 'completed', title: '', url: 'https://x.y', updatedAt: 1 }
+    ])
+  })
+})

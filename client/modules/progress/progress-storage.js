@@ -4,8 +4,14 @@ export const STORAGE_KEY = 'wiki-progress:v1'
 export const SCHEMA_VERSION = 1
 
 /**
+ * A progress record is either about a wiki page (keyed by `pageId`) or about a roadmap
+ * node that links outside the wiki (keyed by `roadmapId` + `nodeId`, see recordKey()).
+ *
  * @typedef {Object} ProgressRecord
- * @property {number} pageId Numeric Wiki.js page id — the canonical key
+ * @property {number} [pageId] Numeric Wiki.js page id — the canonical key for pages
+ * @property {string} [roadmapId] Roadmap id, for external roadmap nodes
+ * @property {string} [nodeId] Roadmap node id, for external roadmap nodes
+ * @property {string} [url] Denormalized external URL of a roadmap node
  * @property {string} statusId Status id; preserved verbatim even if unconfigured
  * @property {string} locale Denormalized, so exports are readable and rebuild aliases
  * @property {string} path Denormalized page path
@@ -17,7 +23,7 @@ export const SCHEMA_VERSION = 1
  * @typedef {Object} ProgressState
  * @property {number} version Schema version, drives the migration chain
  * @property {number} updatedAt Epoch ms of last write
- * @property {Object.<string, ProgressRecord>} records Keyed by String(pageId)
+ * @property {Object.<string, ProgressRecord>} records Keyed by recordKey()
  * @property {Object.<string, number>} aliases `locale/path` -> pageId
  */
 

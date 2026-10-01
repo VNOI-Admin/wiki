@@ -13,6 +13,7 @@
               v-for='section in parsedRoadmap.sections'
               :key='section.id'
               :section='section'
+              :roadmap-id='parsedRoadmap.id'
               :node-status='nodeStatus'
             )
             .text-center.py-8(v-if='parsedRoadmap.sections.length === 0')
@@ -49,14 +50,22 @@ export default {
       const _aliases = this.$progress.state.aliases // eslint-disable-line no-unused-vars
       const _records = this.$progress.state.records // eslint-disable-line no-unused-vars
       return (node) => {
-        if (!node.articlePath) return this.$progress.registry.getDefault()
-        const slash = node.articlePath.indexOf('/')
-        if (slash < 0) return this.$progress.registry.getDefault()
-        const locale = node.articlePath.slice(0, slash)
-        const path = node.articlePath.slice(slash + 1)
-        const pageId = this.$progress.getPageIdByPath(locale, path)
-        if (!pageId) return this.$progress.registry.getDefault()
-        return this.$progress.getStatusByPageId(pageId)
+        if (node.articlePath) {
+          // -> The server resolves pageId; fall back to the alias index for pages
+          //    created after the roadmap was rendered
+          let pageId = node.pageId || null
+          if (!pageId) {
+            const slash = node.articlePath.indexOf('/')
+            if (slash > 0) {
+              pageId = this.$progress.getPageIdByPath(node.articlePath.slice(0, slash), node.articlePath.slice(slash + 1))
+            }
+          }
+          return pageId ? this.$progress.getStatusByPageId(pageId) : this.$progress.registry.getDefault()
+        }
+        if (node.externalUrl) {
+          return this.$progress.getStatusByNode(this.parsedRoadmap.id, node.id)
+        }
+        return this.$progress.registry.getDefault()
       }
     },
     roadmapStats () {

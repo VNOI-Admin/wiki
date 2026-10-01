@@ -145,3 +145,31 @@ describe('account-sync', () => {
     expect(server.calls.every(c => c.op === 'mine')).toBe(true)
   })
 })
+
+describe('progress-manager/roadmap nodes', () => {
+  const NODE = '3f2b6c1e-8a4d-4f5e-9b7a-1c2d3e4f5a6b'
+
+  it('tracks external roadmap nodes separately from pages', () => {
+    const manager = makeManager()
+    expect(manager.getStatusByNode('dp', NODE).id).toEqual('none')
+    manager.setNodeStatus('dp', NODE, 'completed', { title: 'CF blog', url: 'https://codeforces.com/blog/1' })
+    expect(manager.getStatusByNode('dp', NODE).id).toEqual('completed')
+    expect(manager.getStatusByNode('other', NODE).id).toEqual('none')
+    expect(manager.state.aliases).toEqual({})
+
+    manager.setNodeStatus('dp', NODE, 'none')
+    expect(manager.count).toEqual(0)
+  })
+
+  it('round-trips node records through adopt and merge', () => {
+    const manager = makeManager()
+    const node = { roadmapId: 'dp', nodeId: NODE, statusId: 'reading', url: 'https://x.y', updatedAt: 5 }
+    const page = { pageId: 1, statusId: 'reading', locale: 'en', path: 'a', updatedAt: 5 }
+    manager.adopt([node, page])
+    expect(manager.count).toEqual(2)
+
+    const merged = mergeRecords([node, page], [{ ...node, statusId: 'completed', updatedAt: 9 }])
+    expect(merged.length).toEqual(2)
+    expect(merged.find(r => r.nodeId).statusId).toEqual('completed')
+  })
+})

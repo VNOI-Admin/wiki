@@ -16,6 +16,7 @@
         v-for='node in section.nodes'
         :key='node.id'
         :node='node'
+        :roadmap-id='roadmapId'
         :status='nodeStatus(node)'
         class='mb-2'
       )
@@ -31,6 +32,7 @@ export default {
   components: { RoadmapNodeCard },
   props: {
     section: { type: Object, required: true },
+    roadmapId: { type: String, default: '' },
     nodeStatus: { type: Function, required: true }
   },
   computed: {
