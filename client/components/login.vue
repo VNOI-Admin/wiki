@@ -33,7 +33,7 @@
                   :value='stg.key'
                   :color='stg.strategy.color'
                   )
-                  v-avatar.mr-3(tile, size='24', v-html='stg.strategy.icon')
+                  v-avatar.mr-3(tile, size='24', v-html='stg.icon || stg.strategy.icon')
                   span.text-none {{stg.displayName}}
         //-------------------------------------------------
         //- LOGIN FORM
@@ -666,6 +666,7 @@ export default {
           authentication {
             activeStrategies(enabledOnly: true) {
               key
+              icon
               strategy {
                 key
                 logo
