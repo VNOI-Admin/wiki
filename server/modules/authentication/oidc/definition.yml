@@ -85,3 +85,22 @@ props:
     title: ACR Values
     hint: (optional) Authentication Context Class Reference
     order: 13
+  mapPermissions:
+    type: Boolean
+    title: Map Groups from Permissions
+    hint: Map groups based on permissions claim values using the permissions-to-group mapping below
+    default: false
+    order: 14
+  permissionsClaim:
+    type: String
+    title: Permissions Claim
+    hint: Field containing the permissions array
+    default: permissions
+    maxWidth: 500
+    order: 15
+  permissionsGroupMap:
+    type: String
+    title: Permissions to Group Map
+    hint: 'JSON mapping of permission name to wiki group name, e.g. {"admin": "Administrators", "editor": "Editors"}'
+    default: '{}'
+    order: 16
