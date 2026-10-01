@@ -225,6 +225,15 @@ export default class ProgressStorage {
   }
 
   /**
+   * Stop listening for writes from other tabs.
+   */
+  dispose () {
+    if (this.onStorageEvent) {
+      window.removeEventListener('storage', this.onStorageEvent)
+    }
+  }
+
+  /**
    * Remove all stored progress data.
    */
   clear () {

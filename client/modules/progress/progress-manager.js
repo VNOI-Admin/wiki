@@ -238,11 +238,12 @@ export default class ProgressManager {
   }
 
   /**
-   * Replace all data (import). Overwrites rather than merges, by design.
+   * Build the record map and alias index from a record list.
    *
    * @param {ProgressRecord[]} records
+   * @returns {{records: Object, aliases: Object}}
    */
-  replaceAll (records) {
+  buildState (records) {
     const nextRecords = {}
     const nextAliases = {}
 
@@ -257,16 +258,41 @@ export default class ProgressManager {
         title: String(record.title || ''),
         updatedAt: _.toInteger(record.updatedAt) || Date.now()
       }
-      // -> Rebuild the alias index from the export, so link markers work immediately
-      //    for pages this browser has never visited.
+      // -> Rebuild the alias index from the record list, so link markers work
+      //    immediately for pages this browser has never visited.
       if (record.locale && record.path) {
         nextAliases[makeAliasKey(record.locale, record.path)] = id
       }
     })
 
-    this.state.records = nextRecords
-    this.state.aliases = nextAliases
+    return { records: nextRecords, aliases: nextAliases }
+  }
+
+  /**
+   * Replace all data (import). Overwrites rather than merges, by design.
+   *
+   * @param {ProgressRecord[]} records
+   */
+  replaceAll (records) {
+    const next = this.buildState(records)
+    this.state.records = next.records
+    this.state.aliases = next.aliases
     this.persist({ type: 'change', reason: 'import' })
+  }
+
+  /**
+   * Adopt records loaded from the reader's account.
+   *
+   * Like replaceAll, but emits `reason: 'account'` so the account sync knows this
+   * change came from the server and must not be pushed back.
+   *
+   * @param {ProgressRecord[]} records
+   */
+  adopt (records) {
+    const next = this.buildState(records)
+    this.state.records = next.records
+    this.state.aliases = next.aliases
+    this.persist({ type: 'change', reason: 'account' })
   }
 
   /** Delete all progress data. */

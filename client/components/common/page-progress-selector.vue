@@ -11,7 +11,8 @@
         ) {{ headingText }}
       .page-progress-prompt(v-if='variant === `block`')
         .subtitle-2 {{ headingText }}
-        .caption.grey--text {{ $t('common:progress.savedLocally', 'Saved in this browser only.') }}
+        .caption.grey--text(v-if='isAccountBacked') {{ $t('common:progress.savedToAccount', 'Saved to your account.') }}
+        .caption.grey--text(v-else) {{ $t('common:progress.savedLocally', 'Saved in this browser only.') }}
 
       v-menu(offset-y, bottom, min-width='220', :left='variant !== `card`')
         template(v-slot:activator='{ on: menu }')
@@ -104,8 +105,12 @@ export default {
     isEnabled () {
       return this.$progress.isEnabled === true && this.pageId > 0
     },
+    isAccountBacked () {
+      return this.$progress.isAccountBacked === true
+    },
     isPersistent () {
-      return this.$progress.isPersistent
+      // -> The account is the real store; the browser copy is only a cache
+      return this.isAccountBacked || this.$progress.isPersistent
     },
     headingText () {
       if (this.variant === 'block') {

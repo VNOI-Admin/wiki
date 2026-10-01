@@ -6,8 +6,13 @@
         span {{ $t('common:progress.dialog.title', 'Progress Data') }}
       v-card-text
         .body-2.grey--text(:class='$vuetify.theme.dark ? `text--lighten-1` : `text--darken-2`')
-          | {{ $t('common:progress.dialog.intro', 'Your reading progress is stored in this browser only. It is never sent to the server and is not shared between devices. Export it to move it elsewhere, or to keep a backup.') }}
-        v-alert.mt-4.mb-0(v-if='!isPersistent', color='orange', outlined, dense, icon='mdi-alert-outline')
+          template(v-if='isAccountBacked')
+            | {{ $t('common:progress.dialog.introAccount', 'Your reading progress is saved to your account and synced across your devices. Export it to keep a backup.') }}
+          template(v-else)
+            | {{ $t('common:progress.dialog.intro', 'Your reading progress is stored in this browser only. It is never sent to the server and is not shared between devices. Export it to move it elsewhere, or to keep a backup.') }}
+        v-alert.mt-4.mb-0(v-if='hasSyncError', color='orange', outlined, dense, icon='mdi-cloud-alert')
+          .caption {{ $t('common:progress.dialog.syncError', 'Could not reach the server. Your changes are kept in this browser and will be saved to your account when the connection is back.') }}
+        v-alert.mt-4.mb-0(v-if='!isAccountBacked && !isPersistent', color='orange', outlined, dense, icon='mdi-alert-outline')
           .caption {{ $t('common:progress.dialog.storageBlocked', 'This browser is blocking local storage, so changes will be lost when you close the tab.') }}
 
         v-divider.mt-4
@@ -54,7 +59,8 @@
         .d-flex.align-center.mt-4
           div
             .subtitle-2 {{ $t('common:progress.dialog.clearTitle', 'Clear all') }}
-            .caption.grey--text {{ $t('common:progress.dialog.clearHint', 'Delete every tracked page from this browser.') }}
+            .caption.grey--text(v-if='isAccountBacked') {{ $t('common:progress.dialog.clearHintAccount', 'Delete every tracked page from your account.') }}
+            .caption.grey--text(v-else) {{ $t('common:progress.dialog.clearHint', 'Delete every tracked page from this browser.') }}
           v-spacer
           v-btn.text-none(@click='clearAll', :disabled='count < 1', outlined, small, color='red')
             v-icon(left, small) mdi-delete
@@ -78,10 +84,11 @@ const importErrorDefaults = {
 }
 
 /**
- * Import / export / clear dialog for locally stored progress data.
+ * Import / export / clear dialog for progress data.
  *
  * Reachable from the progress card rather than the user profile, because the feature is
- * for anonymous readers and the profile page requires authentication.
+ * also for anonymous readers and the profile page requires authentication. For
+ * logged-in readers the same actions apply to their account (via AccountSync).
  */
 export default {
   props: {
@@ -106,6 +113,12 @@ export default {
     },
     isPersistent () {
       return this.$progress.isPersistent
+    },
+    isAccountBacked () {
+      return this.$progress.isAccountBacked === true
+    },
+    hasSyncError () {
+      return this.isAccountBacked && this.$progress.sync && this.$progress.sync.status.state === 'error'
     },
     confirmReplaceText () {
       return this.$t('common:progress.dialog.confirmReplace', {
