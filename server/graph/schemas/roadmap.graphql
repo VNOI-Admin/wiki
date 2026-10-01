@@ -14,6 +14,7 @@ type RoadmapQuery {
 type RoadmapMutation {
   create(id: String!, input: RoadmapInput!): RoadmapResponse @auth(requires: ["write:pages", "manage:pages", "manage:system"])
   update(id: String!, input: RoadmapInput!): RoadmapResponse @auth(requires: ["write:pages", "manage:pages", "manage:system"])
+  setEnabled(id: String!, isEnabled: Boolean!): DefaultResponse @auth(requires: ["write:pages", "manage:pages", "manage:system"])
   delete(id: String!): DefaultResponse @auth(requires: ["manage:pages", "manage:system"])
   importYaml(yaml: String!): RoadmapResponse @auth(requires: ["write:pages", "manage:pages", "manage:system"])
   exportYaml(id: String!): RoadmapExportResponse @auth(requires: ["write:pages", "manage:pages", "manage:system"])

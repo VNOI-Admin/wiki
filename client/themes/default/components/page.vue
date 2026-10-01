@@ -2,9 +2,9 @@
   v-app(v-scroll='upBtnScroll', :dark='$vuetify.theme.dark', :class='$vuetify.rtl ? `is-rtl` : `is-ltr`')
     nav-header(v-if='!printView')
     v-navigation-drawer(
-      v-if='navMode !== `NONE` && !printView'
-      :class='$vuetify.theme.dark ? `grey darken-4-d4` : `primary`'
-      dark
+      v-if='hasNav && !printView'
+      :class='drawerColor'
+      :dark='$vuetify.theme.dark || !roadmapShown'
       app
       clipped
       mobile-breakpoint='600'
@@ -13,9 +13,26 @@
       :right='$vuetify.rtl'
       )
       vue-scroll(:ops='scrollStyle')
-        nav-sidebar(:color='$vuetify.theme.dark ? `grey darken-4-d4` : `primary`', :items='sidebarDecoded', :nav-mode='navMode')
+        nav-roadmap(
+          v-if='roadmapShown'
+          :roadmap='currentRoadmap'
+          :roadmaps='roadmapsDecoded'
+          :locale='locale'
+          :path='path'
+          :can-show-menu='navMode !== `NONE`'
+          @select='selectRoadmap'
+          @show-menu='setRoadmapHidden(true)'
+          )
+        nav-sidebar(
+          v-else
+          :color='$vuetify.theme.dark ? `grey darken-4-d4` : `primary`'
+          :items='sidebarDecoded'
+          :nav-mode='navMode'
+          :has-roadmap='roadmapAvailable'
+          @show-roadmap='setRoadmapHidden(false)'
+          )
 
-    v-fab-transition(v-if='navMode !== `NONE`')
+    v-fab-transition(v-if='hasNav')
       v-btn(
         fab
         color='primary'
@@ -386,8 +403,10 @@
 import { StatusIndicator } from 'vue-status-indicator'
 import Tabset from './tabset.vue'
 import NavSidebar from './nav-sidebar.vue'
+import NavRoadmap from './nav-roadmap.vue'
 import PageProgressSelector from '../../../components/common/page-progress-selector.vue'
 import { isProgressExcluded, NO_PROGRESS_TAG } from '../../../modules/progress'
+import { pickRoadmap, touchRoadmap } from '../../../modules/roadmap-context'
 import Prism from 'prismjs'
 import mermaid from 'mermaid'
 import { get, sync } from 'vuex-pathify'
@@ -396,6 +415,8 @@ import ClipboardJS from 'clipboard'
 import Vue from 'vue'
 
 Vue.component('Tabset', Tabset)
+
+const ROADMAP_PREF_KEY = 'navRoadmapPref'
 
 Prism.plugins.autoloader.languages_path = '/_assets/js/prism/'
 Prism.plugins.NormalizeWhitespace.setDefaults({
@@ -435,6 +456,7 @@ Prism.plugins.toolbar.registerButton('copy-to-clipboard', (env) => {
 export default {
   components: {
     NavSidebar,
+    NavRoadmap,
     PageProgressSelector,
     StatusIndicator
   },
@@ -495,6 +517,11 @@ export default {
       type: String,
       default: ''
     },
+    // -> Roadmaps containing this page (base64 JSON)
+    roadmaps: {
+      type: String,
+      default: ''
+    },
     navMode: {
       type: String,
       default: 'MIXED'
@@ -523,6 +550,8 @@ export default {
   data() {
     return {
       navShown: false,
+      currentRoadmapId: null,
+      roadmapHidden: false,
       navExpanded: false,
       upBtnShown: false,
       pageEditFab: false,
@@ -593,6 +622,30 @@ export default {
     sidebarDecoded () {
       return JSON.parse(Buffer.from(this.sidebar, 'base64').toString())
     },
+    roadmapsDecoded () {
+      try {
+        return this.roadmaps ? JSON.parse(Buffer.from(this.roadmaps, 'base64').toString()) : []
+      } catch (err) {
+        return []
+      }
+    },
+    currentRoadmap () {
+      return _.find(this.roadmapsDecoded, ['id', this.currentRoadmapId]) || null
+    },
+    // -> Small screens only get the regular menu: the roadmap would crowd them
+    roadmapAvailable () {
+      return !!this.currentRoadmap && this.$vuetify.breakpoint.mdAndUp
+    },
+    roadmapShown () {
+      return this.roadmapAvailable && (!this.roadmapHidden || this.navMode === 'NONE')
+    },
+    hasNav () {
+      return this.navMode !== 'NONE' || this.roadmapAvailable
+    },
+    drawerColor () {
+      if (this.$vuetify.theme.dark) { return 'grey darken-4-d4' }
+      return this.roadmapShown ? 'white' : 'primary'
+    },
     tocDecoded () {
       return JSON.parse(Buffer.from(this.toc, 'base64').toString())
     },
@@ -637,6 +690,16 @@ export default {
     }
 
     this.$store.set('page/mode', 'view')
+
+    // -> Roadmap sidebar: the roadmap the reader came from or used last
+    const roadmap = pickRoadmap(this.roadmapsDecoded)
+    if (roadmap) {
+      this.currentRoadmapId = roadmap.id
+      touchRoadmap(roadmap.id)
+      try {
+        this.roadmapHidden = window.localStorage.getItem(ROADMAP_PREF_KEY) === 'menu'
+      } catch (err) {}
+    }
 
     // -> Keep this page's stored path current if it has been renamed or moved. A no-op
     //    (and no storage write) unless the reader has actually tracked this page.
@@ -717,6 +780,16 @@ export default {
     if (this.progressTeardown) { this.progressTeardown() }
   },
   methods: {
+    selectRoadmap (roadmap) {
+      this.currentRoadmapId = roadmap.id
+      touchRoadmap(roadmap.id)
+    },
+    setRoadmapHidden (hidden) {
+      this.roadmapHidden = hidden
+      try {
+        window.localStorage.setItem(ROADMAP_PREF_KEY, hidden ? 'menu' : 'roadmap')
+      } catch (err) {}
+    },
     goHome () {
       window.location.assign('/')
     },

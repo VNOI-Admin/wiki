@@ -448,28 +448,7 @@ router.get('/roadmap/:id', async (req, res, next) => {
   _.set(res.locals, 'pageMeta.title', roadmap.title)
   _.set(res.locals, 'pageMeta.description', roadmap.description)
 
-  // -> Resolve article nodes to page ids, so readers can set progress on pages they
-  //    have never visited (progress is keyed by page id)
-  const articleNodes = _.flatMap(roadmap.sections || [], s => _.filter(s.nodes || [], 'articlePath'))
-  if (articleNodes.length > 0) {
-    const pairs = _.uniqBy(articleNodes.map(n => {
-      const slash = n.articlePath.indexOf('/')
-      return { localeCode: n.articlePath.slice(0, slash), path: n.articlePath.slice(slash + 1) }
-    }), p => `${p.localeCode}/${p.path}`)
-    const pages = await WIKI.models.pages.query()
-      .select('id', 'localeCode', 'path', 'title')
-      .where(builder => {
-        pairs.forEach(p => { builder.orWhere(p) })
-      })
-    const byPath = _.keyBy(pages, p => `${p.localeCode}/${p.path}`)
-    articleNodes.forEach(n => {
-      const page = byPath[n.articlePath]
-      if (page) {
-        n.pageId = page.id
-        n.pageTitle = page.title
-      }
-    })
-  }
+  await WIKI.models.roadmaps.resolveArticleNodes([roadmap.sections])
 
   res.render('roadmap', {
     roadmap: Buffer.from(JSON.stringify(roadmap)).toString('base64')
@@ -613,10 +592,19 @@ router.get('/*', async (req, res, next) => {
           let pageFilename = WIKI.config.lang.namespacing ? `${pageArgs.locale}/${page.path}` : page.path
           pageFilename += page.contentType === 'markdown' ? '.md' : '.html'
 
+          // -> Roadmaps containing this page, for the roadmap sidebar
+          let roadmaps = []
+          try {
+            roadmaps = await WIKI.models.roadmaps.getForPage(pageArgs.locale, page.path)
+          } catch (err) {
+            WIKI.logger.warn(`Failed to load roadmaps for page ${page.id}: ${err.message}`)
+          }
+
           // -> Render view
           res.render('page', {
             page,
             sidebar,
+            roadmaps,
             injectCode,
             comments: commentTmpl,
             effectivePermissions,

@@ -38,6 +38,7 @@ module.exports = {
           createdAt: now,
           updatedAt: now
         })
+        WIKI.models.roadmaps.clearCache()
         return { responseResult: graphHelper.generateSuccess('Roadmap created'), roadmap }
       } catch (err) {
         return graphHelper.generateError(err)
@@ -56,7 +57,21 @@ module.exports = {
           ...result.data,
           updatedAt: now
         })
+        WIKI.models.roadmaps.clearCache()
         return { responseResult: graphHelper.generateSuccess('Roadmap updated'), roadmap }
+      } catch (err) {
+        return graphHelper.generateError(err)
+      }
+    },
+    async setEnabled (obj, { id, isEnabled }) {
+      try {
+        const patched = await WIKI.models.roadmaps.query().patch({
+          isEnabled,
+          updatedAt: new Date().toISOString()
+        }).where('id', id)
+        if (!patched) throw new Error(`Roadmap "${id}" not found.`)
+        WIKI.models.roadmaps.clearCache()
+        return { responseResult: graphHelper.generateSuccess(isEnabled ? 'Roadmap enabled' : 'Roadmap disabled') }
       } catch (err) {
         return graphHelper.generateError(err)
       }
@@ -65,6 +80,7 @@ module.exports = {
       try {
         const deleted = await WIKI.models.roadmaps.query().deleteById(id)
         if (!deleted) throw new Error(`Roadmap "${id}" not found.`)
+        WIKI.models.roadmaps.clearCache()
         return { responseResult: graphHelper.generateSuccess('Roadmap deleted') }
       } catch (err) {
         return graphHelper.generateError(err)
@@ -90,6 +106,7 @@ module.exports = {
             updatedAt: now
           })
         }
+        WIKI.models.roadmaps.clearCache()
         return { responseResult: graphHelper.generateSuccess('Roadmap imported'), roadmap }
       } catch (err) {
         return graphHelper.generateError(err)

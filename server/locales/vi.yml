@@ -36,6 +36,11 @@ common:
       missingRecords: 'Tệp này thiếu danh sách bản ghi.'
       noRecords: 'Tệp này không có bản ghi nào dùng được.'
       unreadable: 'Không đọc được tệp đã chọn.'
+  roadmap:
+    viewFull: 'Xem toàn bộ lộ trình'
+    switch: 'Đổi lộ trình'
+    show: 'Hiện lộ trình'
+    completed: 'Đã hoàn thành {{completed}} / {{total}}'
 
 admin:
   progress:

@@ -165,4 +165,64 @@ module.exports = class Roadmap extends Model {
   static nodeCount (sections) {
     return _.sumBy(sections || [], s => _.get(s, 'nodes.length', 0))
   }
+
+  /**
+   * Resolve article nodes to page ids in place, so readers can set progress on pages
+   * they have never visited (progress is keyed by page id).
+   */
+  static async resolveArticleNodes (sectionsList) {
+    const articleNodes = _.flatMap(sectionsList, sections => _.flatMap(sections || [], s => _.filter(s.nodes || [], 'articlePath')))
+    if (articleNodes.length < 1) return
+    const pairs = _.uniqBy(articleNodes.map(n => {
+      const slash = n.articlePath.indexOf('/')
+      return { localeCode: n.articlePath.slice(0, slash), path: n.articlePath.slice(slash + 1) }
+    }), p => `${p.localeCode}/${p.path}`)
+    const pages = await WIKI.models.pages.query()
+      .select('id', 'localeCode', 'path', 'title')
+      .where(builder => {
+        pairs.forEach(p => { builder.orWhere(p) })
+      })
+    const byPath = _.keyBy(pages, p => `${p.localeCode}/${p.path}`)
+    articleNodes.forEach(n => {
+      const page = byPath[n.articlePath]
+      if (page) {
+        n.pageId = page.id
+        n.pageTitle = page.title
+      }
+    })
+  }
+
+  /**
+   * Enabled roadmaps that contain the article at locale/path, for the page sidebar.
+   * Backed by a short-lived cache, so a page view costs no extra query.
+   */
+  static async getForPage (locale, path) {
+    let index = WIKI.cache.get(SIDEBAR_CACHE_KEY)
+    if (!index) {
+      const rows = await WIKI.models.roadmaps.query()
+        .where('isEnabled', true)
+        .orderBy('sortOrder')
+        .select('id', 'title', 'sections')
+      // -> Only what the sidebar renders
+      index = rows.map(r => ({
+        id: r.id,
+        title: r.title,
+        sections: (r.sections || []).map(s => ({
+          id: s.id,
+          title: s.title,
+          nodes: (s.nodes || []).map(n => _.pick(n, ['id', 'title', 'articlePath', 'externalUrl']))
+        }))
+      }))
+      await Roadmap.resolveArticleNodes(index.map(r => r.sections))
+      WIKI.cache.set(SIDEBAR_CACHE_KEY, index, 300)
+    }
+    const articlePath = `${locale}/${path}`
+    return index.filter(r => _.some(r.sections, s => _.some(s.nodes, ['articlePath', articlePath])))
+  }
+
+  static clearCache () {
+    WIKI.cache.del(SIDEBAR_CACHE_KEY)
+  }
 }
+
+const SIDEBAR_CACHE_KEY = 'roadmaps:sidebar'

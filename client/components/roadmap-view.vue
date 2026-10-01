@@ -25,6 +25,7 @@
 <script>
 import RoadmapStatsBar from './roadmap-stats-bar.vue'
 import RoadmapSection from './roadmap-section.vue'
+import { getNodeStatus, touchRoadmap } from '../modules/roadmap-context'
 
 export default {
   components: { RoadmapStatsBar, RoadmapSection },
@@ -49,24 +50,7 @@ export default {
       // Touch observable state so Vue registers the dependency at the computed level
       const _aliases = this.$progress.state.aliases // eslint-disable-line no-unused-vars
       const _records = this.$progress.state.records // eslint-disable-line no-unused-vars
-      return (node) => {
-        if (node.articlePath) {
-          // -> The server resolves pageId; fall back to the alias index for pages
-          //    created after the roadmap was rendered
-          let pageId = node.pageId || null
-          if (!pageId) {
-            const slash = node.articlePath.indexOf('/')
-            if (slash > 0) {
-              pageId = this.$progress.getPageIdByPath(node.articlePath.slice(0, slash), node.articlePath.slice(slash + 1))
-            }
-          }
-          return pageId ? this.$progress.getStatusByPageId(pageId) : this.$progress.registry.getDefault()
-        }
-        if (node.externalUrl) {
-          return this.$progress.getStatusByNode(this.parsedRoadmap.id, node.id)
-        }
-        return this.$progress.registry.getDefault()
-      }
+      return (node) => getNodeStatus(this.$progress, this.parsedRoadmap.id, node)
     },
     roadmapStats () {
       const c = { completed: 0, reading: 0, skipped: 0, notStarted: 0, total: 0 }
@@ -84,6 +68,10 @@ export default {
       c.percent = c.total ? Math.round(100 * c.completed / c.total) : 0
       return c
     }
+  },
+  created () {
+    // -> Pages opened from here show this roadmap in their sidebar
+    touchRoadmap(this.parsedRoadmap.id)
   }
 }
 </script>
