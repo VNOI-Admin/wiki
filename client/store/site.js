@@ -11,6 +11,7 @@ const state = {
   mascot: true,
   title: siteConfig.title,
   logoUrl: siteConfig.logoUrl,
+  headerLinks: siteConfig.headerLinks || [],
   search: '',
   searchIsFocused: false,
   searchIsLoading: false,

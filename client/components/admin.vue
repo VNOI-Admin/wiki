@@ -23,6 +23,9 @@
             v-list-item(to='/navigation', color='primary', v-if='hasPermission([`manage:system`, `manage:navigation`])')
               v-list-item-avatar(size='24', tile): v-icon mdi-near-me
               v-list-item-title {{ $t('admin:navigation.title') }}
+            v-list-item(to='/header-links', color='primary', v-if='hasPermission([`manage:system`, `manage:navigation`])')
+              v-list-item-avatar(size='24', tile): v-icon mdi-link-variant
+              v-list-item-title {{ $t('admin:headerLinks.title', 'Header Links') }}
             v-list-item(to='/pages', color='primary', v-if='hasPermission([`manage:system`, `write:pages`, `manage:pages`, `delete:pages`])')
               v-list-item-avatar(size='24', tile): v-icon mdi-file-document-outline
               v-list-item-title {{ $t('admin:pages.title') }}
@@ -154,6 +157,7 @@ const router = new VueRouter({
     { path: '/general', component: () => import(/* webpackChunkName: "admin" */ './admin/admin-general.vue') },
     { path: '/locale', component: () => import(/* webpackChunkName: "admin" */ './admin/admin-locale.vue') },
     { path: '/navigation', component: () => import(/* webpackChunkName: "admin" */ './admin/admin-navigation.vue') },
+    { path: '/header-links', component: () => import(/* webpackChunkName: "admin" */ './admin/admin-header-links.vue') },
     { path: '/pages', component: () => import(/* webpackChunkName: "admin" */ './admin/admin-pages.vue') },
     { path: '/pages/:id(\\d+)', component: () => import(/* webpackChunkName: "admin" */ './admin/admin-pages-edit.vue') },
     { path: '/pages/visualize', component: () => import(/* webpackChunkName: "admin" */ './admin/admin-pages-visualize.vue') },

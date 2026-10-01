@@ -1,0 +1,9 @@
+query {
+  navigation {
+    headerLinks {
+      name
+      url
+      order
+    }
+  }
+}

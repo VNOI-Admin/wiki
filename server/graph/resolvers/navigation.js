@@ -1,4 +1,5 @@
 const graphHelper = require('../../helpers/graph')
+const headerLinksHelper = require('../../helpers/header-links')
 
 /* global WIKI */
 
@@ -15,6 +16,9 @@ module.exports = {
     },
     config (obj, args, context, info) {
       return WIKI.config.nav
+    },
+    headerLinks (obj, args, context, info) {
+      return headerLinksHelper.getLinks()
     }
   },
   NavigationMutation: {
@@ -43,6 +47,18 @@ module.exports = {
 
         return {
           responseResult: graphHelper.generateSuccess('Navigation config updated successfully')
+        }
+      } catch (err) {
+        return graphHelper.generateError(err)
+      }
+    },
+    async updateHeaderLinks (obj, args, context) {
+      try {
+        WIKI.config.headerLinks = headerLinksHelper.normalizeLinks(args.links)
+        await WIKI.configSvc.saveToDb(['headerLinks'])
+
+        return {
+          responseResult: graphHelper.generateSuccess('Header links updated successfully')
         }
       } catch (err) {
         return graphHelper.generateError(err)

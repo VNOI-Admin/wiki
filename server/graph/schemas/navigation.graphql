@@ -17,6 +17,7 @@ extend type Mutation {
 type NavigationQuery {
   tree: [NavigationTree]! @auth(requires: ["manage:navigation", "manage:system"])
   config: NavigationConfig! @auth(requires: ["manage:navigation", "manage:system"])
+  headerLinks: [NavigationHeaderLink]! @auth(requires: ["manage:navigation", "manage:system"])
 }
 
 # -----------------------------------------------
@@ -29,6 +30,9 @@ type NavigationMutation {
   ): DefaultResponse @auth(requires: ["manage:navigation", "manage:system"])
   updateConfig(
     mode: NavigationMode!
+  ): DefaultResponse @auth(requires: ["manage:navigation", "manage:system"])
+  updateHeaderLinks(
+    links: [NavigationHeaderLinkInput]!
   ): DefaultResponse @auth(requires: ["manage:navigation", "manage:system"])
 }
 
@@ -66,6 +70,18 @@ input NavigationItemInput {
   target: String
   visibilityMode: String
   visibilityGroups: [Int]
+}
+
+type NavigationHeaderLink {
+  name: String!
+  url: String!
+  order: Int!
+}
+
+input NavigationHeaderLinkInput {
+  name: String!
+  url: String!
+  order: Int!
 }
 
 type NavigationConfig {
