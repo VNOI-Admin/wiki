@@ -1,0 +1,12 @@
+mutation ($id: String!, $isEnabled: Boolean!) {
+  roadmap {
+    setEnabled(id: $id, isEnabled: $isEnabled) {
+      responseResult {
+        succeeded
+        errorCode
+        slug
+        message
+      }
+    }
+  }
+}

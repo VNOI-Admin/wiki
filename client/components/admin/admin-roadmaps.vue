@@ -23,27 +23,31 @@
             :loading='loading'
             item-key='id'
             sort-by='sortOrder'
+            style='cursor: pointer;'
+            @click:row='item => $router.push("/roadmaps/" + item.id)'
           )
             template(v-slot:item.isEnabled='{ item }')
-              v-switch(
-                v-model='item.isEnabled'
-                dense
-                inset
-                hide-details
-                color='primary'
-                @change='toggleEnabled(item)'
-              )
+              div(@click.stop)
+                v-switch(
+                  v-model='item.isEnabled'
+                  dense
+                  inset
+                  hide-details
+                  color='primary'
+                  @change='toggleEnabled(item)'
+                )
             template(v-slot:item.nodeCount='{ item }')
               v-chip(x-small, outlined) {{ item.nodeCount }}
             template(v-slot:item.updatedAt='{ item }')
               span.caption {{ new Date(item.updatedAt).toLocaleDateString() }}
             template(v-slot:item.actions='{ item }')
-              v-btn(icon, small, color='primary', :href='"/roadmap/" + item.id', target='_blank')
-                v-icon(small) mdi-open-in-new
-              v-btn(icon, small, @click='$router.push("/roadmaps/" + item.id)')
-                v-icon(small) mdi-pencil
-              v-btn(icon, small, color='error', @click='confirmDelete(item)')
-                v-icon(small) mdi-delete-outline
+              .text-no-wrap(@click.stop)
+                v-btn(icon, small, color='primary', :href='"/roadmap/" + item.id', target='_blank')
+                  v-icon(small) mdi-open-in-new
+                v-btn(icon, small, @click='$router.push("/roadmaps/" + item.id)')
+                  v-icon(small) mdi-pencil
+                v-btn(icon, small, color='error', @click='confirmDelete(item)')
+                  v-icon(small) mdi-delete-outline
 
     v-dialog(v-model='importDialog', max-width='640')
       v-card
@@ -89,7 +93,7 @@
 import _ from 'lodash'
 
 import listQuery from 'gql/admin/roadmaps/roadmaps-query-list.gql'
-import updateMutation from 'gql/admin/roadmaps/roadmaps-mutation-update.gql'
+import setEnabledMutation from 'gql/admin/roadmaps/roadmaps-mutation-set-enabled.gql'
 import deleteMutation from 'gql/admin/roadmaps/roadmaps-mutation-delete.gql'
 import importMutation from 'gql/admin/roadmaps/roadmaps-mutation-import.gql'
 
@@ -133,19 +137,10 @@ export default {
     async toggleEnabled (item) {
       try {
         const resp = await this.$apollo.mutate({
-          mutation: updateMutation,
-          variables: {
-            id: item.id,
-            input: {
-              title: item.title,
-              description: item.description,
-              isEnabled: item.isEnabled,
-              sortOrder: item.sortOrder,
-              sections: item.sections || []
-            }
-          }
+          mutation: setEnabledMutation,
+          variables: { id: item.id, isEnabled: item.isEnabled }
         })
-        const result = _.get(resp, 'data.roadmap.update.responseResult')
+        const result = _.get(resp, 'data.roadmap.setEnabled.responseResult')
         if (!result.succeeded) throw new Error(result.message)
       } catch (err) {
         item.isEnabled = !item.isEnabled

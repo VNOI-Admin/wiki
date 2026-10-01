@@ -63,6 +63,19 @@ module.exports = {
         return graphHelper.generateError(err)
       }
     },
+    async setEnabled (obj, { id, isEnabled }) {
+      try {
+        const patched = await WIKI.models.roadmaps.query().patch({
+          isEnabled,
+          updatedAt: new Date().toISOString()
+        }).where('id', id)
+        if (!patched) throw new Error(`Roadmap "${id}" not found.`)
+        WIKI.models.roadmaps.clearCache()
+        return { responseResult: graphHelper.generateSuccess(isEnabled ? 'Roadmap enabled' : 'Roadmap disabled') }
+      } catch (err) {
+        return graphHelper.generateError(err)
+      }
+    },
     async delete (obj, { id }) {
       try {
         const deleted = await WIKI.models.roadmaps.query().deleteById(id)
