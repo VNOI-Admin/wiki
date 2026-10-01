@@ -10,6 +10,7 @@ const favicon = require('serve-favicon')
 const path = require('path')
 const _ = require('lodash')
 const progressHelper = require('./helpers/progress')
+const headerLinksHelper = require('./helpers/header-links')
 
 /* global WIKI */
 
@@ -157,7 +158,8 @@ module.exports = async () => {
       contentLicense: WIKI.config.contentLicense,
       footerOverride: WIKI.config.footerOverride,
       logoUrl: WIKI.config.logoUrl,
-      progress: progressHelper.getConfig()
+      progress: progressHelper.getConfig(),
+      headerLinks: headerLinksHelper.getLinks()
     }
     res.locals.langs = await WIKI.models.locales.getNavLocales({ cache: true })
     res.locals.analyticsCode = await WIKI.models.analytics.getCode({ cache: true })

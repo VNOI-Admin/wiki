@@ -3,6 +3,7 @@ common:
     toggleTheme: 'Đổi giao diện'
     lightMode: 'Chế độ sáng'
     darkMode: 'Chế độ tối'
+    links: 'Liên kết'
   progress:
     title: 'Tiến độ'
     blockHeading: 'Đánh dấu tiến độ của bạn ở trang này'
@@ -43,6 +44,21 @@ common:
     completed: 'Đã hoàn thành {{completed}} / {{total}}'
 
 admin:
+  headerLinks:
+    title: 'Liên kết thanh điều hướng'
+    subtitle: 'Các liên kết hiển thị trên thanh điều hướng phía trên'
+    links: 'Liên kết'
+    add: 'Thêm liên kết'
+    hint: 'Liên kết được hiển thị theo thứ tự từ nhỏ đến lớn. URL có thể là địa chỉ http(s):// đầy đủ hoặc một đường dẫn trong trang, ví dụ /vi/home.'
+    fieldName: 'Tên'
+    fieldUrl: 'URL'
+    fieldOrder: 'Thứ tự'
+    remove: 'Xoá'
+    empty: 'Chưa có liên kết nào.'
+    errorNoName: 'Mỗi liên kết cần có tên.'
+    errorBadUrl: 'URL của "{{name}}" phải bắt đầu bằng http://, https:// hoặc /.'
+    errorBadOrder: 'Thứ tự phải là số nguyên.'
+    saveSuccess: 'Đã cập nhật liên kết thanh điều hướng.'
   progress:
     title: 'Theo dõi tiến độ'
     subtitle: 'Cho phép người đọc theo dõi những bài đã đọc'

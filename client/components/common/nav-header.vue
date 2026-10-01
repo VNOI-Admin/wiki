@@ -18,7 +18,8 @@
         autocomplete='none'
       )
     v-layout(row)
-      v-flex(xs5, md4)
+      //- With header links, give the search column's width to the links
+      v-flex(xs5, :md4='!hasHeaderLinks', :md5='hasHeaderLinks')
         v-toolbar.nav-header-inner(color='black', dark, flat, :class='$vuetify.rtl ? `pr-3` : `pl-3`')
           v-avatar(tile, size='34', @click='goHome')
             v-img.org-logo(:src='logoUrl')
@@ -45,7 +46,47 @@
           //-         v-list-item-subtitle.overline.grey--text.text--lighten-2 Coming soon
           v-toolbar-title(:class='{ "mx-3": $vuetify.breakpoint.mdAndUp, "mx-1": $vuetify.breakpoint.smAndDown }')
             span.subheading {{title}}
-      v-flex(md4, v-if='$vuetify.breakpoint.mdAndUp')
+          //- HEADER LINKS (collapse into a menu when they don't fit)
+          .nav-header-links(v-if='hasHeaderLinks', ref='linksBox')
+            .nav-header-links-measure(aria-hidden='true')
+              v-btn.text-none(
+                v-for='(link, idx) of headerLinks'
+                :key='`headerlink-measure-` + idx'
+                ref='linkMeasure'
+                text
+                tile
+                height='64'
+                tabindex='-1'
+                )
+                span.body-2 {{link.name}}
+            v-btn.text-none(
+              v-for='(link, idx) of visibleLinks'
+              :key='`headerlink-` + idx'
+              :href='link.url'
+              text
+              tile
+              height='64'
+              )
+              span.body-2 {{link.name}}
+            v-menu(v-if='overflowLinks.length > 0', offset-y, bottom, transition='slide-y-transition', left)
+              template(v-slot:activator='{ on: menu, attrs }')
+                v-btn(
+                  icon
+                  v-bind='attrs'
+                  v-on='menu'
+                  tile
+                  height='64'
+                  :aria-label='$t(`common:header.links`, `Links`)'
+                  )
+                  v-icon(color='grey') {{ visibleLinks.length > 0 ? `mdi-chevron-down` : `mdi-link-variant` }}
+              v-list(nav, :light='!$vuetify.theme.dark', :dark='$vuetify.theme.dark', :class='$vuetify.theme.dark ? `grey darken-4` : ``')
+                v-list-item.pl-4(
+                  v-for='(link, idx) of overflowLinks'
+                  :key='`headerlink-menu-` + idx'
+                  :href='link.url'
+                  )
+                  v-list-item-title.body-2 {{link.name}}
+      v-flex(:md4='!hasHeaderLinks', :md3='hasHeaderLinks', v-if='$vuetify.breakpoint.mdAndUp')
         v-toolbar.nav-header-inner(color='black', dark, flat)
           slot(name='mid')
             transition(name='navHeaderSearch', v-if='searchIsShown')
@@ -292,6 +333,7 @@ export default {
       deletePageModal: false,
       locales: siteLangs,
       isDevMode: false,
+      visibleLinkCount: Infinity,
       duplicateOpts: {
         locale: 'en',
         path: 'new-page',
@@ -308,6 +350,16 @@ export default {
     isLoading: get('isLoading'),
     title: get('site/title'),
     logoUrl: get('site/logoUrl'),
+    headerLinks: get('site/headerLinks'),
+    hasHeaderLinks () {
+      return this.headerLinks.length > 0
+    },
+    visibleLinks () {
+      return _.take(this.headerLinks, this.visibleLinkCount)
+    },
+    overflowLinks () {
+      return _.drop(this.headerLinks, this.visibleLinkCount)
+    },
     path: get('page/path'),
     locale: get('page/locale'),
     mode: get('page/mode'),
@@ -379,8 +431,50 @@ export default {
       this.pageDelete()
     })
     this.isDevMode = siteConfig.devMode === true
+    this.$watch('headerLinks', () => this.$nextTick(this.fitHeaderLinks), { immediate: true })
+    this.linksResizeHandler = _.throttle(this.fitHeaderLinks, 100, { leading: true, trailing: true })
+    if (typeof ResizeObserver !== 'undefined') {
+      this.linksResizeObserver = new ResizeObserver(this.linksResizeHandler)
+    } else {
+      window.addEventListener('resize', this.linksResizeHandler)
+    }
+  },
+  beforeDestroy () {
+    if (this.linksResizeObserver) {
+      this.linksResizeObserver.disconnect()
+    } else {
+      window.removeEventListener('resize', this.linksResizeHandler)
+    }
   },
   methods: {
+    /**
+     * Show as many header links as fit next to the title; the rest go in a menu.
+     * Widths come from an invisible copy of every link, so the result doesn't
+     * depend on which links are currently shown.
+     */
+    fitHeaderLinks () {
+      const box = this.$refs.linksBox
+      if (!box) { return }
+      if (this.linksResizeObserver && this.observedLinksBox !== box) {
+        this.linksResizeObserver.disconnect()
+        this.linksResizeObserver.observe(box)
+        this.observedLinksBox = box
+      }
+      const widths = _.map(this.$refs.linkMeasure || [], btn => Math.ceil(btn.$el.getBoundingClientRect().width))
+      const available = box.clientWidth
+      if (_.sum(widths) <= available) {
+        this.visibleLinkCount = widths.length
+        return
+      }
+      // -> Keep room for the overflow menu button
+      let used = 48
+      let count = 0
+      while (count < widths.length && used + widths[count] <= available) {
+        used += widths[count]
+        count++
+      }
+      this.visibleLinkCount = count
+    },
     searchFocus () {
       this.searchIsFocused = true
     },
@@ -548,9 +642,32 @@ export default {
     }
   }
 
+  &-links {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+
+    .v-btn {
+      flex-shrink: 0;
+    }
+
+    &-measure {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: max-content;
+      display: flex;
+      visibility: hidden;
+      pointer-events: none;
+    }
+  }
+
   &-dev {
     background-color: mc('red', '600');
     position: absolute;
+    z-index: 5;
     top: 11px;
     left: 255px;
     padding: 5px 15px;

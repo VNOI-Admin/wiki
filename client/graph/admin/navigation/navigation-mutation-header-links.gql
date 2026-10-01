@@ -1,0 +1,12 @@
+mutation($links: [NavigationHeaderLinkInput]!) {
+  navigation {
+    updateHeaderLinks(links: $links) {
+      responseResult {
+        succeeded
+        errorCode
+        slug
+        message
+      }
+    }
+  }
+}
