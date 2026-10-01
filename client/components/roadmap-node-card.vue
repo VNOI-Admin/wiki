@@ -23,8 +23,10 @@
     .node-status
       v-menu(v-if='href && canSetStatus' offset-y left)
         template(v-slot:activator='{ on }')
+          //- .prevent: the card itself is a link, the chip must only open the menu
           v-chip(
             v-on='on'
+            @click.native.prevent
             small
             :color='status.color'
             dark
@@ -32,6 +34,7 @@
           )
             v-icon(left, x-small) {{ status.icon }}
             | {{ status.label }}
+            v-icon(right, x-small) mdi-menu-down
         v-list(dense)
           v-list-item(
             v-for='s in allStatuses'
@@ -41,6 +44,8 @@
             v-list-item-avatar(size='20')
               v-icon(small, :color='s.color') {{ s.icon }}
             v-list-item-title {{ s.label }}
+            v-list-item-action.my-0(v-if='s.id === status.id')
+              v-icon(small, color='primary') mdi-check
       v-chip(
         v-else-if='!href'
         small
@@ -65,6 +70,7 @@
 export default {
   props: {
     node: { type: Object, required: true },
+    roadmapId: { type: String, default: '' },
     status: { type: Object, required: true }
   },
   computed: {
@@ -76,16 +82,21 @@ export default {
       if (this.node.externalUrl) return this.node.externalUrl
       return null
     },
-    pageId () {
+    articleLocation () {
       if (!this.node.articlePath) return null
       const slash = this.node.articlePath.indexOf('/')
       if (slash < 0) return null
-      const locale = this.node.articlePath.slice(0, slash)
-      const path = this.node.articlePath.slice(slash + 1)
-      return this.$progress.getPageIdByPath(locale, path)
+      return { locale: this.node.articlePath.slice(0, slash), path: this.node.articlePath.slice(slash + 1) }
+    },
+    pageId () {
+      if (!this.articleLocation) return null
+      // -> Resolved by the server; the alias index covers pages created since
+      return this.node.pageId || this.$progress.getPageIdByPath(this.articleLocation.locale, this.articleLocation.path)
     },
     canSetStatus () {
-      return !!this.pageId
+      if (!this.$progress.isEnabled) return false
+      // -> External links have no page, so their progress is tracked per roadmap node
+      return !!this.pageId || (this.isExternal && !!this.roadmapId)
     },
     allStatuses () {
       return this.$progress.registry.list()
@@ -94,7 +105,15 @@ export default {
   methods: {
     setStatus (statusId) {
       if (this.pageId) {
-        this.$progress.setStatus(this.pageId, statusId)
+        this.$progress.setStatus(this.pageId, statusId, {
+          ...this.articleLocation,
+          title: this.node.pageTitle || this.node.title
+        })
+      } else if (this.isExternal && this.roadmapId) {
+        this.$progress.setNodeStatus(this.roadmapId, this.node.id, statusId, {
+          title: this.node.title,
+          url: this.node.externalUrl
+        })
       }
     }
   }

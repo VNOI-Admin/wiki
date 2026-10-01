@@ -16,6 +16,9 @@ extend type Mutation {
 
 type ProgressQuery {
   config: ProgressConfig @auth(requires: ["manage:system"])
+
+  # JSON-encoded record list of the logged-in reader; null for guests
+  mine: String
 }
 
 # -----------------------------------------------
@@ -28,11 +31,24 @@ type ProgressMutation {
     showLinkMarkers: Boolean!
     statuses: [ProgressStatusInput]!
   ): DefaultResponse @auth(requires: ["manage:system"])
+
+  # records: JSON-encoded record list. merge=true merges newer-wins into the stored
+  # list (used once after login); otherwise the stored list is replaced.
+  save(
+    records: String!
+    merge: Boolean
+  ): ProgressSaveResponse
 }
 
 # -----------------------------------------------
 # TYPES
 # -----------------------------------------------
+
+type ProgressSaveResponse {
+  responseResult: ResponseStatus!
+  # JSON-encoded record list now stored
+  records: String
+}
 
 type ProgressConfig {
   isEnabled: Boolean!

@@ -63,6 +63,7 @@
                 .headline.grey--text(:class='$vuetify.theme.dark ? `text--lighten-2` : `text--darken-3`') {{title}}
                 .caption.grey--text.text--darken-1 {{description}}
               page-progress-selector(
+                v-if='!progressExcluded'
                 variant='inline'
                 :page-id='pageId'
                 :locale='locale'
@@ -115,6 +116,7 @@
                     //- v-divider(inset, v-if='tocIdx < toc.length - 1')
 
             page-progress-selector(
+              v-if='!progressExcluded'
               variant='card'
               :page-id='pageId'
               :locale='locale'
@@ -122,13 +124,13 @@
               :title='title'
               )
 
-            v-card.page-tags-card.mb-5(v-if='tags.length > 0')
+            v-card.page-tags-card.mb-5(v-if='visibleTags.length > 0')
               .pa-5
                 .overline.teal--text.pb-2(:class='$vuetify.theme.dark ? `text--lighten-3` : ``') {{$t('common:page.tags')}}
                 v-chip.mr-1.mb-1(
                   label
                   :color='$vuetify.theme.dark ? `teal darken-1` : `teal lighten-5`'
-                  v-for='(tag, idx) in tags'
+                  v-for='(tag, idx) in visibleTags'
                   :href='`/t/` + tag.tag'
                   :key='`tag-` + tag.tag'
                   )
@@ -137,7 +139,7 @@
                 v-chip.mr-1.mb-1(
                   label
                   :color='$vuetify.theme.dark ? `teal darken-1` : `teal lighten-5`'
-                  :href='`/t/` + tags.map(t => t.tag).join(`/`)'
+                  :href='`/t/` + visibleTags.map(t => t.tag).join(`/`)'
                   :aria-label='$t(`common:page.tagsMatching`)'
                   )
                   v-icon(:color='$vuetify.theme.dark ? `teal lighten-3` : `teal`', size='20') mdi-tag-multiple
@@ -345,6 +347,7 @@
             .contents(ref='container')
               slot(name='contents')
             page-progress-selector(
+              v-if='!progressExcluded'
               variant='block'
               :page-id='pageId'
               :locale='locale'
@@ -384,6 +387,7 @@ import { StatusIndicator } from 'vue-status-indicator'
 import Tabset from './tabset.vue'
 import NavSidebar from './nav-sidebar.vue'
 import PageProgressSelector from '../../../components/common/page-progress-selector.vue'
+import { isProgressExcluded, NO_PROGRESS_TAG } from '../../../modules/progress'
 import Prism from 'prismjs'
 import mermaid from 'mermaid'
 import { get, sync } from 'vuex-pathify'
@@ -549,6 +553,14 @@ export default {
     }
   },
   computed: {
+    // -> Pages tagged `no-progress` (home, index pages...) get no progress tracker
+    progressExcluded () {
+      return isProgressExcluded(this.tags)
+    },
+    // -> The progress opt-out tag is a setting, not a topic: hide it from readers
+    visibleTags () {
+      return this.tags.filter(t => t.tag !== NO_PROGRESS_TAG)
+    },
     isAuthenticated: get('user/authenticated'),
     commentsCount: get('page/commentsCount'),
     commentsPerms: get('page/effectivePermissions@comments'),

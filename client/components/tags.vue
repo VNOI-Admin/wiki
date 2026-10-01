@@ -156,6 +156,7 @@ import VueRouter from 'vue-router'
 import _ from 'lodash'
 
 import tagsQuery from 'gql/common/common-pages-query-tags.gql'
+import { NO_PROGRESS_TAG } from '../modules/progress'
 import pagesQuery from 'gql/common/common-pages-query-list.gql'
 
 /* global siteLangs */
@@ -301,7 +302,8 @@ export default {
     tags: {
       query: tagsQuery,
       fetchPolicy: 'cache-and-network',
-      update: (data) => _.cloneDeep(data.pages.tags),
+      // -> The progress opt-out tag is a setting, not a topic: don't list it
+      update: (data) => _.cloneDeep(data.pages.tags).filter(t => t.tag !== NO_PROGRESS_TAG),
       watchLoading (isLoading) {
         this.$store.commit(`loading${isLoading ? 'Start' : 'Stop'}`, 'tags-refresh')
       }

@@ -4,6 +4,28 @@ import Emitter from './emitter'
 import { makeAliasKey, parsePagePath } from './page-path'
 
 /**
+ * @param {string} roadmapId
+ * @param {string} nodeId
+ * @returns {string} The records-map key of an external roadmap node
+ */
+export function makeNodeKey (roadmapId, nodeId) {
+  return `node:${roadmapId}/${nodeId}`
+}
+
+/**
+ * @param {ProgressRecord} record
+ * @returns {string|null} The records-map key, or null for an unusable record
+ */
+export function recordKey (record) {
+  if (!record) { return null }
+  if (record.roadmapId && record.nodeId) {
+    return makeNodeKey(record.roadmapId, record.nodeId)
+  }
+  const id = _.toInteger(record.pageId)
+  return id > 0 ? String(id) : null
+}
+
+/**
  * The public API for progress tracking.
  *
  * Holds the single source of truth as a `Vue.observable` state object, so Vue components
@@ -73,6 +95,18 @@ export default class ProgressManager {
   getRecord (pageId) {
     if (!_.isFinite(pageId)) { return null }
     return this.state.records[String(pageId)] || null
+  }
+
+  /**
+   * Status of a roadmap node that links outside the wiki.
+   *
+   * @param {string} roadmapId
+   * @param {string} nodeId
+   * @returns {StatusDefinition} The configured default when the node is untracked
+   */
+  getStatusByNode (roadmapId, nodeId) {
+    const record = this.state.records[makeNodeKey(roadmapId, nodeId)]
+    return record ? this.registry.resolve(record.statusId) : this.registry.getDefault()
   }
 
   /**
@@ -238,17 +272,64 @@ export default class ProgressManager {
   }
 
   /**
-   * Replace all data (import). Overwrites rather than merges, by design.
+   * Set the status of a roadmap node that links outside the wiki.
+   *
+   * Pages are tracked by page id wherever they appear; this is only for external links,
+   * which have no page to attach progress to.
+   *
+   * @param {string} roadmapId
+   * @param {string} nodeId
+   * @param {string} statusId
+   * @param {Object} [meta] title/url, denormalized for readable exports
+   */
+  setNodeStatus (roadmapId, nodeId, statusId, meta = {}) {
+    if (!roadmapId || !nodeId) { return }
+    const key = makeNodeKey(roadmapId, nodeId)
+
+    if (this.registry.isDefault(statusId)) {
+      if (this.state.records[key]) {
+        Vue.delete(this.state.records, key)
+        this.persist({ type: 'change', reason: 'status', roadmapId, nodeId })
+      }
+      return
+    }
+
+    Vue.set(this.state.records, key, {
+      roadmapId: String(roadmapId),
+      nodeId: String(nodeId),
+      statusId,
+      title: String(meta.title || ''),
+      url: String(meta.url || ''),
+      updatedAt: Date.now()
+    })
+    this.persist({ type: 'change', reason: 'status', roadmapId, nodeId })
+  }
+
+  /**
+   * Build the record map and alias index from a record list.
    *
    * @param {ProgressRecord[]} records
+   * @returns {{records: Object, aliases: Object}}
    */
-  replaceAll (records) {
+  buildState (records) {
     const nextRecords = {}
     const nextAliases = {}
 
     records.forEach(record => {
+      if (!record || !record.statusId) { return }
+      if (record.roadmapId && record.nodeId) {
+        nextRecords[makeNodeKey(record.roadmapId, record.nodeId)] = {
+          roadmapId: String(record.roadmapId),
+          nodeId: String(record.nodeId),
+          statusId: String(record.statusId),
+          title: String(record.title || ''),
+          url: String(record.url || ''),
+          updatedAt: _.toInteger(record.updatedAt) || Date.now()
+        }
+        return
+      }
       const id = _.toInteger(record.pageId)
-      if (!_.isFinite(id) || id < 1 || !record.statusId) { return }
+      if (!_.isFinite(id) || id < 1) { return }
       nextRecords[String(id)] = {
         pageId: id,
         statusId: String(record.statusId),
@@ -257,16 +338,41 @@ export default class ProgressManager {
         title: String(record.title || ''),
         updatedAt: _.toInteger(record.updatedAt) || Date.now()
       }
-      // -> Rebuild the alias index from the export, so link markers work immediately
-      //    for pages this browser has never visited.
+      // -> Rebuild the alias index from the record list, so link markers work
+      //    immediately for pages this browser has never visited.
       if (record.locale && record.path) {
         nextAliases[makeAliasKey(record.locale, record.path)] = id
       }
     })
 
-    this.state.records = nextRecords
-    this.state.aliases = nextAliases
+    return { records: nextRecords, aliases: nextAliases }
+  }
+
+  /**
+   * Replace all data (import). Overwrites rather than merges, by design.
+   *
+   * @param {ProgressRecord[]} records
+   */
+  replaceAll (records) {
+    const next = this.buildState(records)
+    this.state.records = next.records
+    this.state.aliases = next.aliases
     this.persist({ type: 'change', reason: 'import' })
+  }
+
+  /**
+   * Adopt records loaded from the reader's account.
+   *
+   * Like replaceAll, but emits `reason: 'account'` so the account sync knows this
+   * change came from the server and must not be pushed back.
+   *
+   * @param {ProgressRecord[]} records
+   */
+  adopt (records) {
+    const next = this.buildState(records)
+    this.state.records = next.records
+    this.state.aliases = next.aliases
+    this.persist({ type: 'change', reason: 'account' })
   }
 
   /** Delete all progress data. */

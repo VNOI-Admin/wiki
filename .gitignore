@@ -47,4 +47,5 @@ test-results/
 
 # Localization Resources
 /server/locales/**/*.yml
+!/server/locales/vi.yml
 vnoi_wiki/

@@ -5,9 +5,11 @@
         v-icon.mr-3(color='white') mdi-database-cog-outline
         span {{ $t('common:progress.dialog.title', 'Progress Data') }}
       v-card-text
-        .body-2.grey--text(:class='$vuetify.theme.dark ? `text--lighten-1` : `text--darken-2`')
-          | {{ $t('common:progress.dialog.intro', 'Your reading progress is stored in this browser only. It is never sent to the server and is not shared between devices. Export it to move it elsewhere, or to keep a backup.') }}
-        v-alert.mt-4.mb-0(v-if='!isPersistent', color='orange', outlined, dense, icon='mdi-alert-outline')
+        .body-2.grey--text(v-if='!isAccountBacked', :class='$vuetify.theme.dark ? `text--lighten-1` : `text--darken-2`')
+          | {{ $t('common:progress.dialog.intro', 'Log in to auto-sync your progress.') }}
+        v-alert.mt-4.mb-0(v-if='hasSyncError', color='orange', outlined, dense, icon='mdi-cloud-alert')
+          .caption {{ $t('common:progress.dialog.syncError', 'Could not sync your progress. It will retry automatically.') }}
+        v-alert.mt-4.mb-0(v-if='!isAccountBacked && !isPersistent', color='orange', outlined, dense, icon='mdi-alert-outline')
           .caption {{ $t('common:progress.dialog.storageBlocked', 'This browser is blocking local storage, so changes will be lost when you close the tab.') }}
 
         v-divider.mt-4
@@ -54,7 +56,7 @@
         .d-flex.align-center.mt-4
           div
             .subtitle-2 {{ $t('common:progress.dialog.clearTitle', 'Clear all') }}
-            .caption.grey--text {{ $t('common:progress.dialog.clearHint', 'Delete every tracked page from this browser.') }}
+            .caption.grey--text {{ $t('common:progress.dialog.clearHint', 'Delete all tracked progress.') }}
           v-spacer
           v-btn.text-none(@click='clearAll', :disabled='count < 1', outlined, small, color='red')
             v-icon(left, small) mdi-delete
@@ -78,10 +80,11 @@ const importErrorDefaults = {
 }
 
 /**
- * Import / export / clear dialog for locally stored progress data.
+ * Import / export / clear dialog for progress data.
  *
  * Reachable from the progress card rather than the user profile, because the feature is
- * for anonymous readers and the profile page requires authentication.
+ * also for anonymous readers and the profile page requires authentication. For
+ * logged-in readers the same actions apply to their account (via AccountSync).
  */
 export default {
   props: {
@@ -106,6 +109,12 @@ export default {
     },
     isPersistent () {
       return this.$progress.isPersistent
+    },
+    isAccountBacked () {
+      return this.$progress.isAccountBacked === true
+    },
+    hasSyncError () {
+      return this.isAccountBacked && this.$progress.sync && this.$progress.sync.status.state === 'error'
     },
     confirmReplaceText () {
       return this.$t('common:progress.dialog.confirmReplace', {
