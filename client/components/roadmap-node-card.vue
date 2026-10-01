@@ -5,6 +5,8 @@
     :target='isExternal ? "_blank" : undefined'
     :rel='isExternal ? "noopener noreferrer" : undefined'
     :class='{"is-placeholder": !href}'
+    @click='onOpen'
+    @auxclick='onOpen'
   )
     .node-difficulty
       v-rating(
@@ -67,6 +69,8 @@
 </template>
 
 <script>
+import { touchRoadmap } from '../modules/roadmap-context'
+
 export default {
   props: {
     node: { type: Object, required: true },
@@ -103,6 +107,10 @@ export default {
     }
   },
   methods: {
+    onOpen () {
+      // -> Another tab may have used a different roadmap since this one loaded
+      if (this.node.articlePath) { touchRoadmap(this.roadmapId) }
+    },
     setStatus (statusId) {
       if (this.pageId) {
         this.$progress.setStatus(this.pageId, statusId, {
