@@ -106,6 +106,7 @@ type AuthenticationActiveStrategy {
   displayName: String!
   order: Int!
   isEnabled: Boolean!
+  icon: String
   config: [KeyValuePair] @auth(requires: ["manage:system"])
   selfRegistration: Boolean!
   domainWhitelist: [String]! @auth(requires: ["manage:system"])

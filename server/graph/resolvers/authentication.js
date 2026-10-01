@@ -283,5 +283,13 @@ module.exports = {
         throw err
       })
     }
+  },
+  AuthenticationActiveStrategy: {
+    icon (ap) {
+      const entry = (ap.config || []).find(c => c.key === 'iconUrl')
+      if (!entry) return null
+      const iconUrl = JSON.parse(entry.value).value
+      return iconUrl ? `<img src="${iconUrl}" style="width:24px;height:24px;object-fit:contain;">` : null
+    }
   }
 }

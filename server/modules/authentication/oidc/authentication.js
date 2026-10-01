@@ -47,6 +47,25 @@ module.exports = {
               }
             }
           }
+          if (conf.mapPermissions) {
+            const permissions = _.get(profile, '_json.' + conf.permissionsClaim)
+            const permMap = JSON.parse(conf.permissionsGroupMap || '{}')
+            if (permissions && _.isArray(permissions) && Object.keys(permMap).length > 0) {
+              const mappedGroupNames = new Set(Object.values(permMap))
+              const currentGroups = (await user.$relatedQuery('groups').select('groups.id')).map(g => g.id)
+              const allGroups = Object.values(WIKI.auth.groups)
+              const expectedGroups = allGroups
+                .filter(g => mappedGroupNames.has(g.name) && permissions.some(p => permMap[p] === g.name))
+                .map(g => g.id)
+              const managedGroupIds = allGroups.filter(g => mappedGroupNames.has(g.name)).map(g => g.id)
+              for (const groupId of _.difference(expectedGroups, currentGroups)) {
+                await user.$relatedQuery('groups').relate(groupId)
+              }
+              for (const groupId of _.difference(_.intersection(currentGroups, managedGroupIds), expectedGroups)) {
+                await user.$relatedQuery('groups').unrelate().where('groupId', groupId)
+              }
+            }
+          }
           cb(null, user)
         } catch (err) {
           cb(err, null)

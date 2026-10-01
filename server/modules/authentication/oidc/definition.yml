@@ -80,8 +80,32 @@ props:
     title: Logout URL
     hint: (optional) Logout URL on the OAuth2 provider where the user will be redirected to complete the logout process.
     order: 12
+  iconUrl:
+    type: String
+    title: Icon URL
+    hint: (optional) URL to an image shown on the login page instead of the default icon
+    order: 13
   acrValues:
     type: String
     title: ACR Values
     hint: (optional) Authentication Context Class Reference
-    order: 13
+    order: 14
+  mapPermissions:
+    type: Boolean
+    title: Map Groups from Permissions
+    hint: Map groups based on permissions claim values using the permissions-to-group mapping below
+    default: false
+    order: 14
+  permissionsClaim:
+    type: String
+    title: Permissions Claim
+    hint: Field containing the permissions array
+    default: permissions
+    maxWidth: 500
+    order: 15
+  permissionsGroupMap:
+    type: String
+    title: Permissions to Group Map
+    hint: 'JSON mapping of permission name to wiki group name, e.g. {"admin": "Administrators", "editor": "Editors"}'
+    default: '{}'
+    order: 16
