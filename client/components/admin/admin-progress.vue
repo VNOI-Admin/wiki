@@ -24,7 +24,7 @@
                     color='primary'
                     v-model='config.isEnabled'
                     persistent-hint
-                    :hint='$t(`admin:progress.isEnabledHint`, `Show a progress selector on every page. Progress is stored in each reader’s browser only — never on the server.`)'
+                    :hint='$t(`admin:progress.isEnabledHint`, `Show a progress selector on every page.`)'
                     )
                   v-divider.mt-3
                   v-switch.mt-3(
@@ -38,7 +38,7 @@
                     )
                 v-card-text.pt-0
                   v-alert(color='blue-grey', outlined, dense, icon='mdi-information-outline')
-                    .caption {{ $t('admin:progress.info', 'Progress data never leaves the reader’s browser, so disabling this feature hides it without deleting anything. Readers export and import their own data from the progress card on any page.') }}
+                    .caption {{ $t('admin:progress.info', 'Disabling this feature only hides it; no progress data is deleted. Readers can export and import their data from the progress card on any page.') }}
 
             v-flex(lg7 xs12)
               v-card.animated.fadeInUp.wait-p2s

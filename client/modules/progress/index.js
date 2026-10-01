@@ -1,4 +1,5 @@
 import _ from 'lodash'
+import i18next from 'i18next'
 import ProgressStorage, { STORAGE_KEY } from './progress-storage'
 import ProgressManager from './progress-manager'
 import StatusRegistry from './status-registry'
@@ -56,6 +57,36 @@ function createDisabledManager (registry) {
     on: () => noop,
     emit: noop
   }
+}
+
+const LOGIN_HINT_KEY = 'wiki-progress:loginHintShown'
+
+/**
+ * When a guest changes a status, suggest logging in to sync across devices.
+ * Shown once per browser session, so it doesn't nag on every click.
+ *
+ * @param {Object} progress
+ * @param {Object} store Vuex store
+ */
+function remindGuestToLogin (progress, store) {
+  const unsubscribe = progress.on(evt => {
+    if (evt.type !== 'change' || evt.reason !== 'status') { return }
+    try {
+      if (window.sessionStorage.getItem(LOGIN_HINT_KEY)) {
+        unsubscribe()
+        return
+      }
+      window.sessionStorage.setItem(LOGIN_HINT_KEY, '1')
+    } catch (err) {
+      // -> sessionStorage blocked: still show it, but only once for this page
+    }
+    unsubscribe()
+    store.commit('showNotification', {
+      message: i18next.t('common:progress.loginToSync', 'Log in to sync your progress across devices.'),
+      style: 'primary',
+      icon: 'account-sync'
+    })
+  })
 }
 
 /**
@@ -125,6 +156,10 @@ export default {
       return progress.on(evt => {
         if (evt.type === 'change') { run() }
       })
+    }
+
+    if (store && progress.isEnabled && !progress.isAccountBacked) {
+      remindGuestToLogin(progress, store)
     }
 
     Vue.$progress = progress

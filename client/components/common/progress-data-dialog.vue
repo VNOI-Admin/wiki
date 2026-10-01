@@ -5,13 +5,10 @@
         v-icon.mr-3(color='white') mdi-database-cog-outline
         span {{ $t('common:progress.dialog.title', 'Progress Data') }}
       v-card-text
-        .body-2.grey--text(:class='$vuetify.theme.dark ? `text--lighten-1` : `text--darken-2`')
-          template(v-if='isAccountBacked')
-            | {{ $t('common:progress.dialog.introAccount', 'Your reading progress is saved to your account and synced across your devices. Export it to keep a backup.') }}
-          template(v-else)
-            | {{ $t('common:progress.dialog.intro', 'Your reading progress is stored in this browser only. It is never sent to the server and is not shared between devices. Export it to move it elsewhere, or to keep a backup.') }}
+        .body-2.grey--text(v-if='!isAccountBacked', :class='$vuetify.theme.dark ? `text--lighten-1` : `text--darken-2`')
+          | {{ $t('common:progress.dialog.intro', 'Log in to auto-sync your progress.') }}
         v-alert.mt-4.mb-0(v-if='hasSyncError', color='orange', outlined, dense, icon='mdi-cloud-alert')
-          .caption {{ $t('common:progress.dialog.syncError', 'Could not reach the server. Your changes are kept in this browser and will be saved to your account when the connection is back.') }}
+          .caption {{ $t('common:progress.dialog.syncError', 'Could not sync your progress. It will retry automatically.') }}
         v-alert.mt-4.mb-0(v-if='!isAccountBacked && !isPersistent', color='orange', outlined, dense, icon='mdi-alert-outline')
           .caption {{ $t('common:progress.dialog.storageBlocked', 'This browser is blocking local storage, so changes will be lost when you close the tab.') }}
 
@@ -59,8 +56,7 @@
         .d-flex.align-center.mt-4
           div
             .subtitle-2 {{ $t('common:progress.dialog.clearTitle', 'Clear all') }}
-            .caption.grey--text(v-if='isAccountBacked') {{ $t('common:progress.dialog.clearHintAccount', 'Delete every tracked page from your account.') }}
-            .caption.grey--text(v-else) {{ $t('common:progress.dialog.clearHint', 'Delete every tracked page from this browser.') }}
+            .caption.grey--text {{ $t('common:progress.dialog.clearHint', 'Delete all tracked progress.') }}
           v-spacer
           v-btn.text-none(@click='clearAll', :disabled='count < 1', outlined, small, color='red')
             v-icon(left, small) mdi-delete

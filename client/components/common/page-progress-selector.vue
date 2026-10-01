@@ -11,8 +11,7 @@
         ) {{ headingText }}
       .page-progress-prompt(v-if='variant === `block`')
         .subtitle-2 {{ headingText }}
-        .caption.grey--text(v-if='isAccountBacked') {{ $t('common:progress.savedToAccount', 'Saved to your account.') }}
-        .caption.grey--text(v-else) {{ $t('common:progress.savedLocally', 'Saved in this browser only.') }}
+        .caption.grey--text(v-if='!isAccountBacked') {{ $t('common:progress.savedLocally', 'Log in to auto-sync your progress.') }}
 
       v-menu(offset-y, bottom, min-width='220', :left='variant !== `card`')
         template(v-slot:activator='{ on: menu }')
