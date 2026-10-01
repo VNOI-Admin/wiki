@@ -173,3 +173,13 @@ describe('progress-manager/roadmap nodes', () => {
     expect(merged.find(r => r.nodeId).statusId).toEqual('completed')
   })
 })
+
+describe('index/isProgressExcluded', () => {
+  const { isProgressExcluded } = require('../modules/progress')
+
+  it('excludes pages tagged no-progress', () => {
+    expect(isProgressExcluded([{ tag: 'dp', title: 'DP' }, { tag: 'no-progress', title: 'no-progress' }])).toBe(true)
+    expect(isProgressExcluded([{ tag: 'dp', title: 'DP' }])).toBe(false)
+    expect(isProgressExcluded([])).toBe(false)
+  })
+})

@@ -84,8 +84,8 @@
               outlined
               v-model='newTag'
               :hint='$t(`editor:props.tagsHint`)'
-              :items='newTagSuggestions'
-              :loading='$apollo.queries.newTagSuggestions.loading'
+              :items='tagItems'
+              :loading='$apollo.queries.allTags.loading'
               persistent-hint
               hide-no-data
               :search-input.sync='newTagSearch'
@@ -248,6 +248,7 @@
 import _ from 'lodash'
 import { sync, get } from 'vuex-pathify'
 import gql from 'graphql-tag'
+import { NO_PROGRESS_TAG } from '../../modules/progress'
 
 import CodeMirror from 'codemirror'
 import 'codemirror/lib/codemirror.css'
@@ -271,7 +272,7 @@ export default {
       pageSelectorShown: false,
       namespaces: siteLangs.length ? siteLangs.map(ns => ns.code) : [siteConfig.lang],
       newTag: '',
-      newTagSuggestions: [],
+      allTags: [],
       newTagSearch: '',
       currentTab: 0,
       cm: null,
@@ -301,6 +302,12 @@ export default {
     scriptCss: sync('page/scriptCss'),
     hasScriptPermission: get('page/effectivePermissions@pages.script'),
     hasStylePermission: get('page/effectivePermissions@pages.style'),
+    tagItems () {
+      // -> Always offer the progress opt-out tag, so editors don't have to know its name
+      const extra = this.$progress.isEnabled ? [NO_PROGRESS_TAG] : []
+      // -> Every existing tag, so the list shows on click; the combobox filters as you type
+      return _.difference(_.uniq([...extra, ...this.allTags]), this.tags)
+    },
     pageSelectorMode () {
       return (this.mode === 'create') ? 'create' : 'move'
     }
@@ -395,25 +402,21 @@ export default {
     }
   },
   apollo: {
-    newTagSuggestions: {
+    allTags: {
       query: gql`
-        query ($query: String!) {
+        query {
           pages {
-            searchTags (query: $query)
+            tags {
+              tag
+            }
           }
         }
       `,
-      variables () {
-        return {
-          query: this.newTagSearch
-        }
-      },
-      fetchPolicy: 'cache-first',
-      update: (data) => _.get(data, 'pages.searchTags', []),
+      fetchPolicy: 'cache-and-network',
+      update: (data) => _.map(_.get(data, 'pages.tags', []), 'tag'),
       skip () {
-        return !this.value || _.isEmpty(this.newTagSearch)
-      },
-      throttle: 500
+        return !this.value
+      }
     }
   }
 }

@@ -62,6 +62,19 @@ function createDisabledManager (registry) {
 const LOGIN_HINT_KEY = 'wiki-progress:loginHintShown'
 
 /**
+ * Pages tagged with this get no progress tracker (e.g. the home page, index pages).
+ */
+export const NO_PROGRESS_TAG = 'no-progress'
+
+/**
+ * @param {Array<{tag: string}>} tags The page's tags
+ * @returns {boolean} Whether the page opted out of progress tracking
+ */
+export function isProgressExcluded (tags) {
+  return _.some(tags, t => _.get(t, 'tag', t) === NO_PROGRESS_TAG)
+}
+
+/**
  * When a guest changes a status, suggest logging in to sync across devices.
  * Shown once per browser session, so it doesn't nag on every click.
  *
