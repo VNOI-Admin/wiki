@@ -32,7 +32,7 @@ module.exports = {
     path: path.join(process.cwd(), 'assets'),
     publicPath: '/_assets/',
     filename: 'js/[name].js',
-    chunkFilename: 'js/[name].js',
+    chunkFilename: 'js/[name].js?[hash]',
     globalObject: 'this',
     pathinfo: true,
     crossOriginLoading: 'use-credentials'
@@ -199,21 +199,21 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: 'dev/templates/master.pug',
       filename: '../server/views/master.pug',
-      hash: false,
+      hash: true,
       inject: false,
       excludeChunks: ['setup', 'legacy']
     }),
     new HtmlWebpackPlugin({
       template: 'dev/templates/legacy.pug',
       filename: '../server/views/legacy/master.pug',
-      hash: false,
+      hash: true,
       inject: false,
       excludeChunks: ['setup', 'app']
     }),
     new HtmlWebpackPlugin({
       template: 'dev/templates/setup.pug',
       filename: '../server/views/setup.pug',
-      hash: false,
+      hash: true,
       inject: false,
       excludeChunks: ['app', 'legacy']
     }),
