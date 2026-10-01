@@ -1,0 +1,12 @@
+mutation ($id: String!) {
+  roadmap {
+    delete(id: $id) {
+      responseResult {
+        succeeded
+        errorCode
+        slug
+        message
+      }
+    }
+  }
+}

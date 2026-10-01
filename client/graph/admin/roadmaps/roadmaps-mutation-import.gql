@@ -1,0 +1,35 @@
+mutation ($yaml: String!) {
+  roadmap {
+    importYaml(yaml: $yaml) {
+      responseResult {
+        succeeded
+        errorCode
+        slug
+        message
+      }
+      roadmap {
+        id
+        title
+        description
+        isEnabled
+        sortOrder
+        sections {
+          id
+          title
+          sortOrder
+          nodes {
+            id
+            title
+            description
+            difficulty
+            articlePath
+            externalUrl
+            sortOrder
+          }
+        }
+        createdAt
+        updatedAt
+      }
+    }
+  }
+}

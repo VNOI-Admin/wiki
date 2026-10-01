@@ -1,0 +1,27 @@
+query ($id: String!) {
+  roadmap {
+    single(id: $id) {
+      id
+      title
+      description
+      isEnabled
+      sortOrder
+      sections {
+        id
+        title
+        sortOrder
+        nodes {
+          id
+          title
+          description
+          difficulty
+          articlePath
+          externalUrl
+          sortOrder
+        }
+      }
+      createdAt
+      updatedAt
+    }
+  }
+}
