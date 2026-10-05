@@ -56,7 +56,7 @@
         pill
       )
         v-icon(left, x-small) mdi-pencil-off-outline
-        | Placeholder
+        | Chưa có bài
       v-chip(
         v-else
         small

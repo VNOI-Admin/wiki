@@ -6,8 +6,8 @@
         v-row(justify='center')
           v-col(cols='12', lg='9', xl='7')
             .roadmaps-header.mb-6
-              h1.headline Learning Roadmaps
-              p.body-2.grey--text Structured learning paths to guide your study of algorithms and data structures.
+              h1.headline Lộ trình học
+              p.body-2.grey--text Các lộ trình học có cấu trúc giúp bạn học thuật toán và cấu trúc dữ liệu.
             v-row
               v-col(
                 v-for='roadmap in parsedRoadmaps'
@@ -29,10 +29,10 @@
                     .body-2.grey--text.mb-3(style='-webkit-line-clamp:3; display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden;') {{ roadmap.description }}
                     v-chip(x-small, outlined, color='primary')
                       v-icon(left, x-small) mdi-book-open-outline
-                      | {{ roadmap.nodeCount }} modules
+                      | {{ roadmap.nodeCount }} bài
             .text-center.py-12(v-if='parsedRoadmaps.length === 0')
               v-icon(x-large, color='grey lighten-1') mdi-map-marker-path
-              div.mt-2.grey--text No roadmaps available yet.
+              div.mt-2.grey--text Chưa có lộ trình học nào.
     nav-footer
 </template>
 

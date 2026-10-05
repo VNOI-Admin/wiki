@@ -22,7 +22,7 @@
       )
     .pa-4.text-center.grey--text(v-else)
       v-icon(color='grey lighten-1') mdi-text-box-outline
-      div.mt-1 No modules in this section yet.
+      div.mt-1 Chưa có bài học nào trong phần này.
 </template>
 
 <script>
@@ -40,10 +40,8 @@ export default {
       return this.section.nodes.length
     },
     sectionCompleted () {
-      return this.section.nodes.filter(n => {
-        const s = this.nodeStatus(n)
-        return s.id === 'completed'
-      }).length
+      const defaultId = this.$progress.registry.getDefault().id
+      return this.section.nodes.filter(n => this.nodeStatus(n).id !== defaultId).length
     }
   }
 }

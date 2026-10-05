@@ -18,7 +18,7 @@
             )
             .text-center.py-8(v-if='parsedRoadmap.sections.length === 0')
               v-icon(x-large, color='grey lighten-1') mdi-map-marker-path
-              div.mt-2.grey--text No sections yet.
+              div.mt-2.grey--text Chưa có phần học nào.
     nav-footer
 </template>
 
@@ -53,20 +53,23 @@ export default {
       return (node) => getNodeStatus(this.$progress, this.parsedRoadmap.id, node)
     },
     roadmapStats () {
-      const c = { completed: 0, reading: 0, skipped: 0, notStarted: 0, total: 0 }
+      const counts = {}
+      let total = 0
       for (const section of this.parsedRoadmap.sections) {
         for (const node of section.nodes) {
-          c.total++
+          total++
           const s = this.nodeStatus(node)
-          // ponytail: hardcoded status IDs; generalise when admins need custom status→roadmap mapping
-          if (s.id === 'completed') c.completed++
-          else if (s.id === 'reading') c.reading++
-          else if (s.id === 'skipped') c.skipped++
-          else c.notStarted++
+          counts[s.id] = (counts[s.id] || 0) + 1
         }
       }
-      c.percent = c.total ? Math.round(100 * c.completed / c.total) : 0
-      return c
+      const statuses = this.$progress.registry.list()
+      const defaultId = this.$progress.registry.getDefault().id
+      const nonDefault = total - (counts[defaultId] || 0)
+      return {
+        statuses: statuses.map(s => ({ ...s, count: counts[s.id] || 0 })),
+        total,
+        percent: total ? Math.round(100 * nonDefault / total) : 0
+      }
     }
   },
   created () {
