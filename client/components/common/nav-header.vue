@@ -21,71 +21,65 @@
       //- With header links, give the search column's width to the links
       v-flex(xs5, :md4='!hasHeaderLinks', :md5='hasHeaderLinks')
         v-toolbar.nav-header-inner(color='black', dark, flat, :class='$vuetify.rtl ? `pr-3` : `pl-3`')
-          v-avatar(tile, size='34', @click='goHome')
-            v-img.org-logo(:src='logoUrl')
-          //- v-menu(open-on-hover, offset-y, bottom, left, min-width='250', transition='slide-y-transition')
-          //-   template(v-slot:activator='{ on }')
-          //-     v-app-bar-nav-icon.btn-animate-app(v-on='on', :class='$vuetify.rtl ? `mx-0` : ``')
-          //-       v-icon mdi-menu
-          //-   v-list(nav, :light='!$vuetify.theme.dark', :dark='$vuetify.theme.dark', :class='$vuetify.theme.dark ? `grey darken-4` : ``')
-          //-     v-list-item.pl-4(href='/')
-          //-       v-list-item-avatar(size='24'): v-icon(color='blue') mdi-home
-          //-       v-list-item-title.body-2 {{$t('common:header.home')}}
-          //-     v-list-item.pl-4(@click='')
-          //-       v-list-item-avatar(size='24'): v-icon(color='grey lighten-2') mdi-file-tree
-          //-       v-list-item-content
-          //-         v-list-item-title.body-2.grey--text.text--ligten-2 {{$t('common:header.siteMap')}}
-          //-         v-list-item-subtitle.overline.grey--text.text--lighten-2 Coming soon
-          //-     v-list-item.pl-4(href='/t')
-          //-       v-list-item-avatar(size='24'): v-icon(color='teal') mdi-tag-multiple
-          //-       v-list-item-title.body-2 {{$t('common:header.browseTags')}}
-          //-     v-list-item.pl-4(@click='assets')
-          //-       v-list-item-avatar(size='24'): v-icon(color='grey lighten-2') mdi-folder-multiple-image
-          //-       v-list-item-content
-          //-         v-list-item-title.body-2.grey--text.text--ligten-2 {{$t('common:header.imagesFiles')}}
-          //-         v-list-item-subtitle.overline.grey--text.text--lighten-2 Coming soon
-          v-toolbar-title(:class='{ "mx-3": $vuetify.breakpoint.mdAndUp, "mx-1": $vuetify.breakpoint.smAndDown }')
-            span.subheading {{title}}
-          //- HEADER LINKS (collapse into a menu when they don't fit)
-          .nav-header-links(v-if='hasHeaderLinks', ref='linksBox')
-            .nav-header-links-measure(aria-hidden='true')
-              v-btn.text-none(
-                v-for='(link, idx) of headerLinks'
-                :key='`headerlink-measure-` + idx'
-                ref='linkMeasure'
-                text
-                tile
-                height='64'
-                tabindex='-1'
-                )
-                span.body-2 {{link.name}}
-            v-btn.text-none(
-              v-for='(link, idx) of visibleLinks'
-              :key='`headerlink-` + idx'
-              :href='link.url'
-              text
-              tile
-              height='64'
-              )
-              span.body-2 {{link.name}}
-            v-menu(v-if='overflowLinks.length > 0', offset-y, bottom, transition='slide-y-transition', left)
-              template(v-slot:activator='{ on: menu, attrs }')
-                v-btn(
-                  icon
-                  v-bind='attrs'
-                  v-on='menu'
-                  tile
-                  height='64'
-                  :aria-label='$t(`common:header.links`, `Links`)'
-                  )
-                  v-icon(color='grey') {{ visibleLinks.length > 0 ? `mdi-chevron-down` : `mdi-link-variant` }}
+          //- Small screen: hamburger menu for links (no logo/title)
+          template(v-if='$vuetify.breakpoint.smAndDown')
+            v-menu(v-if='hasHeaderLinks', offset-y, bottom, transition='slide-y-transition')
+              template(v-slot:activator='{ on, attrs }')
+                v-btn(icon, v-bind='attrs', v-on='on', :aria-label='$t(`common:header.links`, `Links`)')
+                  v-icon(color='grey') mdi-menu
               v-list(nav, :light='!$vuetify.theme.dark', :dark='$vuetify.theme.dark', :class='$vuetify.theme.dark ? `grey darken-4` : ``')
                 v-list-item.pl-4(
-                  v-for='(link, idx) of overflowLinks'
-                  :key='`headerlink-menu-` + idx'
+                  v-for='(link, idx) of headerLinks'
+                  :key='`headerlink-sm-` + idx'
                   :href='link.url'
                   )
                   v-list-item-title.body-2 {{link.name}}
+          //- Large screen: logo + title + inline links with overflow menu
+          template(v-else)
+            v-avatar(tile, size='34', @click='goHome')
+              v-img.org-logo(:src='logoUrl')
+            v-toolbar-title.mx-3
+              span.subheading {{title}}
+            //- HEADER LINKS (collapse into a menu when they don't fit)
+            .nav-header-links(v-if='hasHeaderLinks', ref='linksBox')
+              .nav-header-links-measure(aria-hidden='true')
+                v-btn.text-none(
+                  v-for='(link, idx) of headerLinks'
+                  :key='`headerlink-measure-` + idx'
+                  ref='linkMeasure'
+                  text
+                  tile
+                  height='64'
+                  tabindex='-1'
+                  )
+                  span.body-2 {{link.name}}
+              v-btn.text-none(
+                v-for='(link, idx) of visibleLinks'
+                :key='`headerlink-` + idx'
+                :href='link.url'
+                text
+                tile
+                height='64'
+                )
+                span.body-2 {{link.name}}
+              v-menu(v-if='overflowLinks.length > 0', offset-y, bottom, transition='slide-y-transition', left)
+                template(v-slot:activator='{ on: menu, attrs }')
+                  v-btn(
+                    icon
+                    v-bind='attrs'
+                    v-on='menu'
+                    tile
+                    height='64'
+                    :aria-label='$t(`common:header.links`, `Links`)'
+                    )
+                    v-icon(color='grey') {{ visibleLinks.length > 0 ? `mdi-chevron-down` : `mdi-link-variant` }}
+                v-list(nav, :light='!$vuetify.theme.dark', :dark='$vuetify.theme.dark', :class='$vuetify.theme.dark ? `grey darken-4` : ``')
+                  v-list-item.pl-4(
+                    v-for='(link, idx) of overflowLinks'
+                    :key='`headerlink-menu-` + idx'
+                    :href='link.url'
+                    )
+                    v-list-item-title.body-2 {{link.name}}
       v-flex(:md4='!hasHeaderLinks', :md3='hasHeaderLinks', v-if='$vuetify.breakpoint.mdAndUp')
         v-toolbar.nav-header-inner(color='black', dark, flat)
           slot(name='mid')
