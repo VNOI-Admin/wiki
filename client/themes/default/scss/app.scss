@@ -1221,6 +1221,11 @@
   }
 }
 
+// flex item min-width: auto lets wide images bust out of the viewport; 0 lets img { max-width: 100% } actually work
+.page-col-content {
+  min-width: 0;
+}
+
 // ---------------
 // RTL FIXES
 // Vuetify GH Issue: https://github.com/vuetifyjs/vuetify/issues/6317
