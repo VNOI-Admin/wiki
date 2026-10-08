@@ -1,7 +1,7 @@
 <template lang="pug">
-  .nav-roadmap
+  .nav-roadmap(:class='{ "is-full-page": fullPage }')
     .nav-roadmap-header.pa-3
-      .d-flex
+      .d-flex(v-if='!fullPage')
         v-btn(
           depressed
           :color='btnColor'
@@ -47,7 +47,9 @@
             v-list-item-title {{ r.title }}
             v-list-item-action.my-0(v-if='r.id === roadmap.id')
               v-icon(small, color='primary') mdi-check
+      .nav-roadmap-title(v-else-if='fullPage') {{ roadmap.title }}
       a.nav-roadmap-title(v-else, :href='`/roadmap/` + roadmap.id') {{ roadmap.title }}
+      p.nav-roadmap-description(v-if='fullPage && roadmap.description') {{ roadmap.description }}
       .nav-roadmap-stats
         v-progress-linear(
           :value='stats.percent'
@@ -80,8 +82,65 @@
           @auxclick='onOpen(node)'
           )
           v-icon.nav-roadmap-node-icon(small, :color='nodeStatus(node).color', :title='nodeStatus(node).label') {{ nodeStatus(node).icon }}
-          span.nav-roadmap-node-title {{ node.title }}
-          v-icon.nav-roadmap-node-external(v-if='isExternal(node)', x-small) mdi-open-in-new
+          .nav-roadmap-node-body
+            span.nav-roadmap-node-title {{ node.title }}
+            .nav-roadmap-node-meta(v-if='fullPage')
+              v-rating(
+                v-if='node.difficulty'
+                :value='node.difficulty'
+                half-increments
+                readonly
+                dense
+                x-small
+                color='amber darken-1'
+                background-color='grey lighten-1'
+                :length='5'
+              )
+              span.nav-roadmap-node-desc(v-if='node.description') {{ node.description }}
+          .nav-roadmap-node-actions(v-if='fullPage')
+            v-menu(v-if='nodeHref(node) && nodeCanSetStatus(node)', offset-y, left)
+              template(v-slot:activator='{ on }')
+                v-chip(
+                  v-on='on'
+                  @click.native.prevent
+                  small
+                  :color='nodeStatus(node).color'
+                  dark
+                  pill
+                )
+                  v-icon(left, x-small) {{ nodeStatus(node).icon }}
+                  | {{ nodeStatus(node).label }}
+                  v-icon(right, x-small) mdi-menu-down
+              v-list(dense)
+                v-list-item(
+                  v-for='s in allStatuses'
+                  :key='s.id'
+                  @click='nodeSetStatus(node, s.id)'
+                )
+                  v-list-item-avatar(size='20')
+                    v-icon(small, :color='s.color') {{ s.icon }}
+                  v-list-item-title {{ s.label }}
+                  v-list-item-action.my-0(v-if='s.id === nodeStatus(node).id')
+                    v-icon(small, color='primary') mdi-check
+            v-chip(
+              v-else-if='!nodeHref(node)'
+              small
+              color='grey lighten-1'
+              text-color='grey darken-1'
+              pill
+            )
+              v-icon(left, x-small) mdi-pencil-off-outline
+              | Chưa có bài
+            v-chip(
+              v-else
+              small
+              :color='nodeStatus(node).color'
+              dark
+              pill
+            )
+              v-icon(left, x-small) {{ nodeStatus(node).icon }}
+              | {{ nodeStatus(node).label }}
+          v-icon.nav-roadmap-node-external(v-if='isExternal(node) && !fullPage', x-small) mdi-open-in-new
 </template>
 
 <script>
@@ -112,12 +171,18 @@ export default {
     canShowMenu: {
       type: Boolean,
       default: true
+    },
+    fullPage: {
+      type: Boolean,
+      default: false
     }
   },
   data () {
-    return {
-      collapsed: {}
+    const collapsed = {}
+    if (this.fullPage) {
+      for (const s of this.roadmap.sections) collapsed[s.id] = true
     }
+    return { collapsed }
   },
   computed: {
     btnColor () {
@@ -148,6 +213,9 @@ export default {
         completed: this.stats.completed,
         total: this.stats.total
       })
+    },
+    allStatuses () {
+      return this.$progress.registry.list()
     }
   },
   watch: {
@@ -172,6 +240,35 @@ export default {
     },
     sectionCompleted (section) {
       return section.nodes.filter(n => this.nodeStatus(n).id === 'completed').length
+    },
+    nodeArticleLocation (node) {
+      if (!node.articlePath) return null
+      const slash = node.articlePath.indexOf('/')
+      if (slash < 0) return null
+      return { locale: node.articlePath.slice(0, slash), path: node.articlePath.slice(slash + 1) }
+    },
+    nodePageId (node) {
+      const loc = this.nodeArticleLocation(node)
+      if (!loc) return null
+      return node.pageId || this.$progress.getPageIdByPath(loc.locale, loc.path)
+    },
+    nodeCanSetStatus (node) {
+      if (!this.$progress.isEnabled) return false
+      return !!this.nodePageId(node) || (this.isExternal(node) && !!this.roadmap.id)
+    },
+    nodeSetStatus (node, statusId) {
+      const pageId = this.nodePageId(node)
+      if (pageId) {
+        this.$progress.setStatus(pageId, statusId, {
+          ...this.nodeArticleLocation(node),
+          title: node.pageTitle || node.title
+        })
+      } else if (this.isExternal(node) && this.roadmap.id) {
+        this.$progress.setNodeStatus(this.roadmap.id, node.id, statusId, {
+          title: node.title,
+          url: node.externalUrl
+        })
+      }
     },
     toggleSection (id) {
       this.$set(this.collapsed, id, !this.collapsed[id])
@@ -344,14 +441,74 @@ export default {
     margin: 2px 12px 0 0;
   }
 
-  &-node-title {
+  &-node-body {
     flex: 1 1 auto;
     min-width: 0;
+  }
+
+  &-node-title {
+    display: block;
+  }
+
+  &-node-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+    flex-wrap: wrap;
+  }
+
+  &-node-desc {
+    font-size: 0.8rem;
+    color: var(--nav-roadmap-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  &-node-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    padding-top: 2px;
+    margin-left: 8px;
   }
 
   &-node-external {
     margin: 4px 0 0 4px;
     color: inherit !important;
+  }
+
+  &-description {
+    font-size: 0.9rem;
+    color: var(--nav-roadmap-muted);
+    margin: 6px 4px 0;
+    text-align: center;
+  }
+
+  &.is-full-page {
+    .nav-roadmap-title {
+      font-size: 1.4rem;
+    }
+
+    .nav-roadmap-section-header {
+      font-size: 1rem;
+      padding: 14px 20px;
+    }
+
+    .nav-roadmap-node {
+      padding: 10px 20px 10px 24px;
+      font-size: 0.95rem;
+      line-height: 22px;
+
+      &::before { left: 31px; }
+      &::after { left: 31px; top: 32px; }
+    }
+
+    .nav-roadmap-node-icon {
+      margin: 3px 14px 0 0;
+    }
   }
 }
 </style>
