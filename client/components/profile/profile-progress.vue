@@ -15,8 +15,7 @@
         )
         b {{ byStatus(s.id).length }}
         span
-          span.vn-pdot(v-if='hasDot(s)', :class='`s-` + s.id')
-          v-icon(v-else, small, :color='s.color') {{ s.icon }}
+          status-mark(:status='s')
           | {{ s.label }}
     ul.vn-pfp__list#vn-pfp-list(v-if='listStatus')
       li(v-for='r of byStatus(listStatus)', :key='r.pageId')
@@ -32,10 +31,11 @@
 <script>
 import _ from 'lodash'
 import ProgressDataDialog from '../common/progress-data-dialog.vue'
+import StatusMark from '../common/status-mark.vue'
 import { recordHref } from '../../modules/progress/page-path'
 
 export default {
-  components: { ProgressDataDialog },
+  components: { ProgressDataDialog, StatusMark },
   data () {
     return {
       listStatus: null,
@@ -61,9 +61,6 @@ export default {
   methods: {
     byStatus (statusId) {
       return this.grouped[statusId] || []
-    },
-    hasDot (status) {
-      return ['none', 'reading', 'completed', 'skipped'].includes(status.id)
     }
   }
 }

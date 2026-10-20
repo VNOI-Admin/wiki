@@ -210,6 +210,8 @@
 <script>
 import { get, sync } from 'vuex-pathify'
 import _ from 'lodash'
+import { initialsOf } from '../../modules/initials'
+import { setTheme } from '../../modules/theme'
 
 import movePageMutation from 'gql/common/common-pages-mutation-move.gql'
 
@@ -286,14 +288,9 @@ export default {
           url: (this.pictureUrl === 'internal') ? `/_userav/${this.$store.get('user/id')}` : this.pictureUrl
         }
       } else {
-        const nameParts = this.name.toUpperCase().split(' ')
-        let initials = _.head(nameParts).charAt(0)
-        if (nameParts.length > 1) {
-          initials += _.last(nameParts).charAt(0)
-        }
         return {
           kind: 'initials',
-          initials
+          initials: initialsOf(this.name)
         }
       }
     },
@@ -507,10 +504,7 @@ export default {
       window.location.assign('/')
     },
     toggleTheme () {
-      this.$vuetify.theme.dark = !this.$vuetify.theme.dark
-
-      const newTheme = this.$vuetify.theme.dark ? 'dark' : 'light'
-      localStorage.setItem('theme', newTheme)
+      setTheme(this.$vuetify, this.$vuetify.theme.dark ? 'light' : 'dark')
     }
   }
 }
@@ -627,12 +621,6 @@ export default {
     color: var(--ink) !important;
     background: var(--sunken);
   }
-}
-
-.is-ext::after {
-  content: ' ↗';
-  font-size: 0.8em;
-  color: var(--muted);
 }
 
 .vn-searchbtn {

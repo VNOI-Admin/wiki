@@ -1,4 +1,4 @@
-import { DONE_STATUS, READING_STATUS } from '../roadmap-context'
+import { CLOSED_STATUSES, DONE_STATUS, READING_STATUS } from '../roadmap-context'
 
 /**
  * Auto progress for one article visit.
@@ -20,8 +20,6 @@ const DONE_MAX = 90
 // -> The end of the text counts as reached when it is this close above the screen bottom
 const END_SLACK = 40
 const TICK = 2
-// -> Auto progress never lowers this status
-const SKIPPED_STATUS = 'skipped'
 
 /**
  * @param {number} words Words in the article
@@ -49,8 +47,10 @@ export function startAutoProgress ({ progress, pageId, meta, content, onDone }) 
 
   const min = doneAfter((content.textContent || '').split(/\s+/).filter(Boolean).length)
   let active = 0
-  let manual = false
   let own = false
+  let timer = null
+  let queued = false
+  let off = () => {}
 
   const set = statusId => {
     own = true
@@ -58,35 +58,49 @@ export function startAutoProgress ({ progress, pageId, meta, content, onDone }) 
     own = false
   }
 
+  // -> Nothing is left to do for this visit
+  const stop = () => {
+    clearInterval(timer)
+    window.removeEventListener('scroll', onScroll)
+    off()
+  }
+
   const check = () => {
-    if (manual) { return }
     const status = progress.getStatusByPageId(pageId).id
-    if (status === DONE_STATUS || status === SKIPPED_STATUS) { return }
+    // -> Never lower "done" or "skipped"
+    if (CLOSED_STATUSES.includes(status)) { return stop() }
     const box = content.getBoundingClientRect()
     if (box.bottom <= window.innerHeight + END_SLACK && active >= min) {
       set(DONE_STATUS)
+      stop()
       if (onDone) { onDone() }
     } else if (progress.registry.isDefault(status) && (active >= READING_AFTER || box.top < 0)) {
       set(READING_STATUS)
     }
   }
 
-  const timer = setInterval(() => {
+  // -> One layout read per frame
+  const onScroll = () => {
+    if (queued) { return }
+    queued = true
+    window.requestAnimationFrame(() => {
+      queued = false
+      check()
+    })
+  }
+
+  timer = setInterval(() => {
     if (!document.hidden) { active += TICK }
     check()
   }, TICK * 1000)
-  window.addEventListener('scroll', check, { passive: true })
+  window.addEventListener('scroll', onScroll, { passive: true })
 
   // -> A status change for this page that auto progress did not make is the reader's choice
-  const off = progress.on(evt => {
+  off = progress.on(evt => {
     if (!own && evt.type === 'change' && evt.reason === 'status' && Number(evt.pageId) === Number(pageId)) {
-      manual = true
+      stop()
     }
   })
 
-  return () => {
-    clearInterval(timer)
-    window.removeEventListener('scroll', check)
-    off()
-  }
+  return stop
 }

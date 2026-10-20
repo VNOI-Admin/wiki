@@ -73,16 +73,10 @@ import gql from 'graphql-tag'
 import { get } from 'vuex-pathify'
 import validate from 'validate.js'
 import _ from 'lodash'
+import { initialsOf } from '../modules/initials'
 
 // -> A second click on "Xóa" within this time deletes the comment
 const ARM_MS = 4000
-
-// -> "Nguyễn Văn An" -> "NA"
-function initialsOf (name) {
-  const parts = _.compact(String(name || '').toUpperCase().split(' '))
-  if (parts.length < 1) { return '?' }
-  return parts.length > 1 ? parts[0].charAt(0) + _.last(parts).charAt(0) : parts[0].charAt(0)
-}
 
 export default {
   data () {

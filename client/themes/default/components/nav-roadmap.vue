@@ -63,17 +63,18 @@
           @click='onOpen(node)'
           @auxclick='onOpen(node)'
           )
-          span.vn-pdot.nav-roadmap-node-icon(v-if='hasDot(nodeStatus(node))', :class='`s-` + nodeStatus(node).id', :title='nodeStatus(node).label')
-          v-icon.nav-roadmap-node-icon(v-else, small, :color='nodeStatus(node).color', :title='nodeStatus(node).label') {{ nodeStatus(node).icon }}
+          status-mark.nav-roadmap-node-icon(:status='nodeStatus(node)', :title='nodeStatus(node).label')
           span.nav-roadmap-node-title {{ node.title }}
           v-icon.nav-roadmap-node-external(v-if='isExternal(node)', x-small) mdi-open-in-new
 </template>
 
 <script>
 import _ from 'lodash'
+import StatusMark from '../../../components/common/status-mark.vue'
 import { getNodeStatus, isExternalNode, nodeHref, nodeStats, touchRoadmap } from '../../../modules/roadmap-context'
 
 export default {
+  components: { StatusMark },
   props: {
     roadmap: {
       type: Object,
@@ -121,7 +122,7 @@ export default {
     },
     statsLabel () {
       return this.$t('common:roadmap.completed', {
-        defaultValue: '{{completed}} / {{total}} completed',
+        defaultValue: 'Đã hoàn thành {{completed}} / {{total}}',
         completed: this.stats.completed,
         total: this.stats.total
       })
@@ -144,10 +145,6 @@ export default {
     }
   },
   methods: {
-    // -> The four built-in statuses draw as dots; an admin-added status keeps its icon
-    hasDot (status) {
-      return ['none', 'reading', 'completed', 'skipped'].includes(status.id)
-    },
     isExternal (node) {
       return isExternalNode(node)
     },
@@ -192,15 +189,6 @@ export default {
 .nav-roadmap {
   font-size: 0.875rem;
   color: var(--ink);
-
-  button {
-    font: inherit;
-    color: inherit;
-    background: none;
-    border: 0;
-    cursor: pointer;
-    text-align: inherit;
-  }
 
   &-header {
     position: sticky;

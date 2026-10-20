@@ -64,12 +64,10 @@
 import _ from 'lodash'
 import VnStars from '../../../components/common/vn-stars.vue'
 import { recordHref } from '../../../modules/progress/page-path'
-import { DONE_STATUS, READING_STATUS, getNodeStatus, nodeHref, nodeStats, pickRoadmap, touchRoadmap } from '../../../modules/roadmap-context'
+import { CLOSED_STATUSES, READING_STATUS, getNodeStatus, nodeHref, nodeStats, pickRoadmap, touchRoadmap } from '../../../modules/roadmap-context'
 
 // -> Search shortcuts for common topics
 const POPULAR = ['Quy hoạch động', 'DFS', 'Segment Tree', 'Fenwick', 'Dijkstra']
-// -> Statuses that end the reading: the next article skips them
-const CLOSED_STATUSES = [DONE_STATUS, 'skipped']
 
 export default {
   components: { VnStars },
@@ -123,7 +121,7 @@ export default {
       }))
     },
     doneLabel () {
-      return this.$t('common:roadmap.completed', { defaultValue: '{{completed}} / {{total}}', completed: this.stats.completed, total: this.stats.total })
+      return this.$t('common:roadmap.completed', { defaultValue: 'Đã hoàn thành {{completed}} / {{total}}', completed: this.stats.completed, total: this.stats.total })
     }
   },
   methods: {
@@ -152,20 +150,6 @@ export default {
 <style lang="scss">
 .vn-home {
   color: var(--ink);
-
-  button {
-    font: inherit;
-    color: inherit;
-    background: none;
-    border: 0;
-    cursor: pointer;
-    text-align: inherit;
-  }
-
-  .vn-chip {
-    border: 1px solid var(--line);
-    background: var(--surface);
-  }
 }
 
 .vn-home .vn-label {
@@ -209,7 +193,7 @@ export default {
   height: 0.72em;
   margin-left: 0.18em;
   vertical-align: -0.04em;
-  fill: #c1272d;
+  fill: var(--mark-red);
 }
 
 .vn-home .vn-bigsearch {

@@ -285,10 +285,6 @@ export default {
 </script>
 
 <style lang='scss'>
-.vn-tool {
-  background: var(--bg);
-}
-
 .vn-tagpick {
   display: flex;
   flex-wrap: wrap;
@@ -338,11 +334,6 @@ export default {
   max-width: var(--wrap);
   margin: 0 auto;
   padding-inline: 20px;
-
-  .v-card.radius-7 {
-    border: 1px solid var(--line);
-    box-shadow: none !important;
-  }
 }
 .tags-search {
   .v-input__control {

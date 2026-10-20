@@ -40,6 +40,43 @@
   }
 }
 
+// -> A small heading above a list: "Mục lục", "Đang đọc"
+.vn-label {
+  margin-bottom: 8px;
+  font: 600 0.75rem/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+// -> A link that leaves the wiki
+.is-ext::after {
+  content: ' ↗';
+  font-size: 0.8em;
+  color: var(--muted);
+}
+
+// -> Tool pages (source, history, folder, tags): the site background, and site borders on cards
+.vn-tool {
+  background: var(--bg);
+
+  .v-card.radius-7 {
+    border: 1px solid var(--line);
+    box-shadow: none !important;
+  }
+}
+
+// -> Plain buttons in these views look like their text. :where() gives the rule no
+//    specificity, so .vn-btn, .vn-chip and Vuetify buttons keep their own frame.
+:where(.vn-cat, .vn-home, .nav-roadmap, .vn-rmp) button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: inherit;
+}
+
 .vn-chip {
   display: inline-flex;
   align-items: center;

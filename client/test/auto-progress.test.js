@@ -36,6 +36,8 @@ describe('auto-progress', () => {
   let progress, stop
   beforeEach(() => {
     jest.useFakeTimers()
+    // -> The scroll check runs on the next frame
+    window.requestAnimationFrame = cb => setTimeout(cb, 16)
     window.localStorage.clear()
     window.innerHeight = 800
     progress = makeManager()
@@ -71,6 +73,7 @@ describe('auto-progress', () => {
     stop = startAutoProgress({ progress, pageId: 7, meta: META, content: makeContent(500, box) })
     box.top = -20
     window.dispatchEvent(new Event('scroll'))
+    jest.advanceTimersByTime(16)
     expect(status(progress)).toBe('reading')
   })
 
@@ -78,6 +81,7 @@ describe('auto-progress', () => {
     const box = { top: -20, bottom: 3000 }
     stop = startAutoProgress({ progress, pageId: 7, meta: META, content: makeContent(500, box) })
     window.dispatchEvent(new Event('scroll'))
+    jest.advanceTimersByTime(16)
     expect(status(progress)).toBe('reading')
     // -> The reader sets it back by hand
     progress.setStatus(7, 'none', META)

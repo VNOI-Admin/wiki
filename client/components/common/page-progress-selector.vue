@@ -8,8 +8,7 @@
           :class='`s-` + currentStatus.id'
           :aria-label='$t(`common:progress.statusAria`, { defaultValue: `Progress: {{status}}`, status: currentStatus.label })'
           )
-          span.vn-pdot(v-if='hasDot(currentStatus)', :class='`s-` + currentStatus.id')
-          v-icon(v-else, small, :color='currentStatus.color') {{ currentStatus.icon }}
+          status-mark(:status='currentStatus')
           b {{ currentStatus.label }}
       .vn-menu__list(role='menu')
         button.vn-menu__item(
@@ -20,8 +19,7 @@
           :aria-checked='status.id === currentStatus.id ? `true` : `false`'
           @click='setStatus(status.id)'
           )
-          span.vn-pdot(v-if='hasDot(status)', :class='`s-` + status.id')
-          v-icon(v-else, small, :color='status.color') {{ status.icon }}
+          status-mark(:status='status')
           span {{ status.label }}
         hr
         .vn-menu__note(v-if='!isAccountBacked') {{ $t('common:progress.savedLocally', 'Log in to auto-sync your progress.') }}
@@ -35,6 +33,7 @@
 
 <script>
 import ProgressDataDialog from './progress-data-dialog.vue'
+import StatusMark from './status-mark.vue'
 
 /**
  * Per-article progress selector.
@@ -49,7 +48,8 @@ import ProgressDataDialog from './progress-data-dialog.vue'
  */
 export default {
   components: {
-    ProgressDataDialog
+    ProgressDataDialog,
+    StatusMark
   },
   props: {
     pageId: {
@@ -100,10 +100,6 @@ export default {
     }
   },
   methods: {
-    // -> The four built-in statuses draw as dots; an admin-added status keeps its icon
-    hasDot (status) {
-      return ['none', 'reading', 'completed', 'skipped'].includes(status.id)
-    },
     setStatus (statusId) {
       this.$progress.setStatus(this.pageId, statusId, {
         locale: this.locale,

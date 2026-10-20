@@ -353,8 +353,10 @@ import validate from 'validate.js'
 
 import PasswordStrength from '../common/password-strength.vue'
 import ProfileProgress from './profile-progress.vue'
+import { initialsOf } from '../../modules/initials'
+import { setTheme } from '../../modules/theme'
 
-/* global WIKI, siteConfig */
+/* global WIKI */
 
 export default {
   i18nOptions: {
@@ -647,7 +649,7 @@ export default {
   },
   computed: {
     initials () {
-      return _.take(String(this.user.name || '').trim().split(/\s+/).filter(Boolean), 2).map(w => Array.from(w)[0].toUpperCase()).join('') || '?'
+      return initialsOf(this.user.name)
     },
     dateFormats () {
       return [
@@ -712,12 +714,7 @@ export default {
   methods: {
     // -> Only a change in the select applies the theme. The profile load does not, so it cannot undo a header toggle.
     applyAppearance (value) {
-      WIKI.$vuetify.theme.dark = value === '' ? siteConfig.darkMode : (value === 'dark')
-      if (value === '') {
-        localStorage.removeItem('theme')
-      } else {
-        localStorage.setItem('theme', value)
-      }
+      setTheme(this.$vuetify, value)
     },
     /**
      * Focus an input after delay

@@ -238,8 +238,6 @@ let bootstrap = () => {
     darkModeEnabled = (userAppearance === 'dark')
   }
 
-  document.documentElement.dataset.theme = darkModeEnabled ? 'dark' : 'light'
-
   window.WIKI = new Vue({
     el: '#root',
     components: {},

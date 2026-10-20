@@ -50,15 +50,9 @@ export function touchRoadmap (roadmapId) {
  */
 export function getNodeStatus (progress, roadmapId, node) {
   if (node.articlePath) {
-    // -> The server resolves pageId; fall back to the alias index for pages
+    // -> The server resolves pageId; nodePageId falls back to the alias index for pages
     //    created after the roadmap was rendered
-    let pageId = node.pageId || null
-    if (!pageId) {
-      const slash = node.articlePath.indexOf('/')
-      if (slash > 0) {
-        pageId = progress.getPageIdByPath(node.articlePath.slice(0, slash), node.articlePath.slice(slash + 1))
-      }
-    }
+    const pageId = node.pageId || nodePageId(progress, node)
     return pageId ? progress.getStatusByPageId(pageId) : progress.registry.getDefault()
   }
   if (node.externalUrl) {
@@ -84,6 +78,10 @@ export function pickRoadmap (roadmaps) {
 export const DONE_STATUS = 'completed'
 // -> Status id of a page the reader started. Admins can rename it, not remove it.
 export const READING_STATUS = 'reading'
+// -> Status id of a page the reader chose not to read
+export const SKIPPED_STATUS = 'skipped'
+// -> Statuses that end the reading: "next article" and auto progress pass over them
+export const CLOSED_STATUSES = [DONE_STATUS, SKIPPED_STATUS]
 
 /**
  * @param {Object} node

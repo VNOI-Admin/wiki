@@ -560,19 +560,10 @@ export default {
 </script>
 
 <style lang='scss'>
-.vn-tool {
-  background: var(--bg);
-}
-
 // -> The page width of the site, and site borders around the cards
 .vn-hist {
   max-width: var(--wrap);
   margin: 0 auto;
-
-  .v-card.radius-7 {
-    border: 1px solid var(--line);
-    box-shadow: none !important;
-  }
 }
 
 .vn-hist__more {

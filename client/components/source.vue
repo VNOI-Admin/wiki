@@ -79,10 +79,6 @@ export default {
 </script>
 
 <style lang='scss'>
-.vn-tool {
-  background: var(--bg);
-}
-
 .vn-source {
   margin: 0;
   padding: 16px 20px;

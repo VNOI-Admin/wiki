@@ -33,8 +33,7 @@
               :aria-pressed='listStatus === s.id ? `true` : `false`'
               @click='listStatus = listStatus === s.id ? null : s.id'
               )
-              span.vn-pdot(v-if='hasDot(s)', :class='`s-` + s.id')
-              v-icon(v-else, small, :color='s.color') {{ s.icon }}
+              status-mark(:status='s')
               span {{ s.label }}
               b {{ byStatus(s.id).length }}
           a.vn-rmp__next(
@@ -52,8 +51,7 @@
         //- ARTICLES OF ONE STATUS (opened from a chip)
         ul.vn-rmp__list#vn-rmp-list(v-if='listStatus')
           li.vn-rmp__row(v-for='it of byStatus(listStatus)', :key='it.node.id')
-            span.vn-pdot(v-if='hasDot(statusOf(it.node))', :class='`s-` + statusOf(it.node).id')
-            v-icon(v-else, small, :color='statusOf(it.node).color') {{ statusOf(it.node).icon }}
+            status-mark(:status='statusOf(it.node)')
             .vn-rmp__rowt
               a(:href='nodeHref(it.node)', :target='isExternal(it.node) ? `_blank` : null', @click='onOpen(it.node)') {{ it.node.title }}
               span {{ it.section.title }}
@@ -71,8 +69,7 @@
                   :aria-checked='s.id === statusOf(it.node).id ? `true` : `false`'
                   @click='setStatus(it.node, s.id)'
                   )
-                  span.vn-pdot(v-if='hasDot(s)', :class='`s-` + s.id')
-                  v-icon(v-else, small, :color='s.color') {{ s.icon }}
+                  status-mark(:status='s')
                   span {{ s.label }}
           li.vn-rmp__none(v-if='byStatus(listStatus).length < 1') {{ $t('common:roadmap.listEmpty', 'Chưa có bài nào.') }}
 
@@ -104,8 +101,7 @@
                   :title='isDone(node) ? $t(`common:roadmap.unmarkDone`, `Bỏ đánh dấu hoàn thành`) : $t(`common:roadmap.markDone`, `Đánh dấu hoàn thành`)'
                   @click='toggleDone(node)'
                   )
-                  span.vn-pdot(v-if='hasDot(statusOf(node))', :class='`s-` + statusOf(node).id')
-                  v-icon(v-else, small, :color='statusOf(node).color') {{ statusOf(node).icon }}
+                  status-mark(:status='statusOf(node)')
                 span.vn-item__tick(v-else)
                   span.vn-pdot(:class='nodeHref(node) ? `s-` + statusOf(node).id : `is-soon`')
                 .vn-item__body
@@ -137,8 +133,10 @@
 <script>
 import _ from 'lodash'
 import ProgressDataDialog from './common/progress-data-dialog.vue'
+import StatusMark from './common/status-mark.vue'
 import VnStars from './common/vn-stars.vue'
 import {
+  CLOSED_STATUSES,
   DONE_STATUS,
   canSetNodeStatus,
   getNodeStatus,
@@ -151,11 +149,9 @@ import {
 
 // -> The reader's choice to hide finished sections and articles, for every roadmap
 const HIDE_DONE_KEY = 'vnRoadmapHideDone'
-// -> Statuses that end the reading: the next article skips them
-const CLOSED_STATUSES = [DONE_STATUS, 'skipped']
 
 export default {
-  components: { ProgressDataDialog, VnStars },
+  components: { ProgressDataDialog, StatusMark, VnStars },
   props: {
     roadmap: {
       type: String,
@@ -231,9 +227,6 @@ export default {
     if (first) { this.$set(this.open, first.id, true) }
   },
   methods: {
-    hasDot (status) {
-      return ['none', 'reading', 'completed', 'skipped'].includes(status.id)
-    },
     isExternal (node) {
       return isExternalNode(node)
     },
@@ -295,30 +288,6 @@ export default {
 .vn-rmp {
   padding-block: 40px 56px;
   color: var(--ink);
-
-  button {
-    font: inherit;
-    color: inherit;
-    background: none;
-    border: 0;
-    cursor: pointer;
-    text-align: inherit;
-  }
-
-  // -> The reset above drops the chip frame; put it back
-  .vn-chip {
-    border: 1px solid var(--line);
-    background: var(--surface);
-
-    &:hover,
-    &[aria-pressed="true"] {
-      border-color: var(--accent);
-    }
-
-    &[aria-pressed="true"] {
-      background: var(--accent-soft);
-    }
-  }
 }
 
 .vn-rmp__head {
@@ -634,11 +603,6 @@ button.vn-item__tick:hover .vn-pdot {
   font-size: 0.9375rem;
   line-height: 1.4;
   text-decoration: none !important;
-
-  &.is-ext::after {
-    content: " ↗";
-    color: var(--muted);
-  }
 
   .is-done &,
   .is-soon & {

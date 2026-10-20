@@ -74,8 +74,7 @@
               )
               span.vn-cbox
               span {{ s.label }}
-              span.vn-pdot(v-if='hasDot(s)', :class='`s-` + s.id')
-              v-icon(v-else, small, :color='s.color') {{ s.icon }}
+              status-mark(:status='s')
 
         .vn-facet
           h2#vn-f-topic {{ $t('common:catalog.topic', 'Chủ đề') }}
@@ -116,8 +115,7 @@
                 vn-stars(v-if='it.stars', :value='it.stars')
                 span(v-else)
                 template(v-if='progressOn && statusOf(it).id !== defaultStatusId')
-                  span.vn-pdot(v-if='hasDot(statusOf(it))', :class='`s-` + statusOf(it).id', :title='statusOf(it).label', :aria-label='statusOf(it).label')
-                  v-icon(v-else, small, :color='statusOf(it).color', :title='statusOf(it).label') {{ statusOf(it).icon }}
+                  status-mark(:status='statusOf(it)', :title='statusOf(it).label', :aria-label='statusOf(it).label')
         .vn-cat__empty(v-if='groups.length < 1')
           span {{ $t('common:catalog.noMatch', 'Không có bài nào khớp.') }}
           button.vn-chip(v-if='q', type='button', @click='searchWiki') {{ searchWikiLabel }}
@@ -125,6 +123,7 @@
 
 <script>
 import _ from 'lodash'
+import StatusMark from '../../../components/common/status-mark.vue'
 import VnStars from '../../../components/common/vn-stars.vue'
 
 // -> Short names for the five levels. The full meaning comes from the page's legend table.
@@ -136,7 +135,7 @@ function fold (text) {
 }
 
 export default {
-  components: { VnStars },
+  components: { StatusMark, VnStars },
   props: {
     catalog: {
       type: Object,
@@ -247,9 +246,6 @@ export default {
     onLegendKey (e) {
       if (e.key === 'Escape') { this.legendOpen = false }
     },
-    hasDot (status) {
-      return ['none', 'reading', 'completed', 'skipped'].includes(status.id)
-    },
     levelName (n) {
       return this.$t(`common:catalog.level${n}`, LEVEL_NAMES[n - 1])
     },
@@ -295,20 +291,6 @@ export default {
 .vn-cat {
   padding-block: 40px 56px;
   color: var(--ink);
-
-  button {
-    font: inherit;
-    color: inherit;
-    background: none;
-    border: 0;
-    cursor: pointer;
-    text-align: inherit;
-  }
-
-  .vn-chip {
-    border: 1px solid var(--line);
-    background: var(--surface);
-  }
 }
 
 .vn-cat__head {

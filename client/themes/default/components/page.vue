@@ -1,5 +1,19 @@
 <template lang="pug">
   v-app(:dark='$vuetify.theme.dark', :class='$vuetify.rtl ? `is-rtl` : `is-ltr`')
+    //- Page tools: in the TOC column on wide screens, at the article end on narrow screens
+    mixin pageTools
+      a.vn-linkbtn(v-if='hasReadHistoryPermission', :href='`/h/` + locale + `/` + path')
+        v-icon(small) mdi-history
+        span {{$t('common:header.history')}}
+      v-menu(offset-y, top, min-width='260', content-class='vn-menu')
+        template(v-slot:activator='{ on }')
+          button.vn-linkbtn(type='button', v-on='on')
+            v-icon(small) mdi-share-variant
+            span {{$t('common:page.share')}}
+        social-sharing(:url='pageUrl', :title='title', :description='description')
+      button.vn-linkbtn(type='button', @click='print')
+        v-icon(small) mdi-printer
+        span {{$t('common:page.printFormat')}}
     nav-header(v-if='!printView')
     //- How far the reader is in the article text
     .vn-readprog(v-if='autoProgressOn && !printView', aria-hidden='true')
@@ -37,7 +51,7 @@
           nav.vn-crumbs(v-if='path !== `home` && !homeDecoded', :aria-label='$t(`common:page.breadcrumb`, `Đường dẫn`)')
             template(v-for='(crumb, idx) of breadcrumbs')
               span(v-if='idx > 0', aria-hidden='true') /
-              a(:href='crumb.path', :key='crumb.path') {{ idx === 0 ? $t(`common:header.home`, `Trang chủ`) : crumb.name }}
+              a(:href='crumb.path', :key='crumb.path') {{ crumb.name }}
           .vn-unpub(v-if='!isPublished')
             v-icon(small) mdi-minus-circle
             span {{$t('common:page.unpublishedWarning')}}
@@ -45,7 +59,7 @@
           p.vn-desc(v-if='description && !homeDecoded') {{description}}
           .vn-meta(v-if='!homeDecoded')
             page-progress-selector(
-              v-if='!progressExcluded'
+              v-if='!progressExcluded && !printView'
               variant='inline'
               :page-id='pageId'
               :locale='locale'
@@ -82,6 +96,9 @@
               )
               v-icon(small) mdi-tag-multiple-outline
 
+          .vn-endtools(v-if='!printView && !homeDecoded')
+            +pageTools
+
           nav.vn-nextprev(v-if='prevNode || nextNode', :aria-label='$t(`common:page.prevNext`, `Bài trước và bài sau`)')
             a(v-if='prevNode', :href='prevNode.href', rel='prev')
               span.vn-nextprev__k ← {{$t('common:page.prev', 'Bài trước')}}
@@ -109,21 +126,10 @@
               @click.prevent='goToAnchor(item.anchor)'
               ) {{item.title}}
           .vn-toc__tools
-            a.vn-linkbtn(v-if='hasReadHistoryPermission', :href='`/h/` + locale + `/` + path')
-              v-icon(small) mdi-history
-              span {{$t('common:header.history')}}
-            v-menu(offset-y, top, min-width='260', content-class='vn-menu')
-              template(v-slot:activator='{ on }')
-                button.vn-linkbtn(type='button', v-on='on')
-                  v-icon(small) mdi-share-variant
-                  span {{$t('common:page.share')}}
-              social-sharing(:url='pageUrl', :title='title', :description='description')
-            button.vn-linkbtn(type='button', @click='print')
-              v-icon(small) mdi-printer
-              span {{$t('common:page.printFormat')}}
+            +pageTools
 
       //- Narrow screens: the rail and the TOC open as sheets from a bottom bar
-      .vn-readbar(v-if='!printView && ((hasToc && tocOn) || railAvailable)', :class='{ "has-rail": railAvailable, "rail-hidden": railHidden }')
+      .vn-readbar(v-if='readbarOn', :class='{ "has-rail": railAvailable, "rail-hidden": railHidden }')
         button.is-toc(v-if='hasToc && tocOn', type='button', @click='tocSheet = true')
           v-icon(small) mdi-format-list-bulleted
           span {{$t('common:page.toc')}}
@@ -206,7 +212,7 @@
       button.vn-totop(
         v-if='upBtnShown && !printView'
         type='button'
-        :class='{ "has-fab": hasAnyPagePermissions && editShortcutsObj.editFab }'
+        :class='{ "has-fab": hasAnyPagePermissions && editShortcutsObj.editFab, "has-bar": readbarOn }'
         @click='$vuetify.goTo(0, scrollOpts)'
         :aria-label='$t(`common:actions.returnToTop`)'
         :title='$t(`common:actions.returnToTop`)'
@@ -239,6 +245,8 @@ Vue.component('Tabset', Tabset)
 
 // -> 'hidden' when the reader closed the rail; it stays closed on the next pages
 const RAIL_PREF_KEY = 'vnRailHidden'
+// -> At this width and below, the rail and the TOC open as sheets (the 900px media rule)
+const NARROW_MAX = 900
 
 Prism.plugins.autoloader.languages_path = '/_assets/js/prism/'
 Prism.plugins.NormalizeWhitespace.setDefaults({
@@ -405,11 +413,14 @@ export default {
     progressExcluded () {
       return isProgressExcluded(this.tags)
     },
-    // -> Articles only: Home and the catalogue are not something to read through
     // -> A default keeps the label right while the browser still caches old translations
     commentsLabel () {
       return this.$t('common:comments.count', { count: this.commentsCount, defaultValue: '{{count}} bình luận' })
     },
+    readbarOn () {
+      return !this.printView && ((this.hasToc && this.tocOn) || this.railAvailable)
+    },
+    // -> Articles only: Home and the catalogue are not something to read through
     autoProgressOn () {
       return this.$progress.isEnabled && this.pageId > 0 && !this.progressExcluded && !this.homeDecoded && !this.catalogDecoded
     },
@@ -417,20 +428,11 @@ export default {
     visibleTags () {
       return this.tags.filter(t => t.tag !== NO_PROGRESS_TAG)
     },
-    isAuthenticated: get('user/authenticated'),
     commentsPerms: get('page/effectivePermissions@comments'),
     commentsCount: get('page/commentsCount'),
     editShortcutsObj: get('page/editShortcuts'),
-    rating: {
-      get () {
-        return 3.5
-      },
-      set (val) {
-
-      }
-    },
     breadcrumbs() {
-      return [{ path: '/', name: 'Home' }].concat(_.reduce(this.path.split('/'), (result, value, key) => {
+      return [{ path: '/', name: this.$t('common:header.home', 'Trang chủ') }].concat(_.reduce(this.path.split('/'), (result, value, key) => {
         result.push({
           path: _.get(_.last(result), 'path', `/${this.locale}`) + `/${value}`,
           name: value
@@ -661,12 +663,19 @@ export default {
             message: `${this.$t('common:progress.title', 'Tiến độ')}: ${this.$progress.registry.resolve(DONE_STATUS).label}`
           })
         })
+        // -> One layout read per frame
+        let queued = false
         this.onReadProg = () => {
-          const bar = this.$refs.readProg
-          if (!bar) { return }
-          const box = this.$refs.container.getBoundingClientRect()
-          const share = -box.top / Math.max(1, box.height - window.innerHeight)
-          bar.style.transform = `scaleX(${Math.min(1, Math.max(0, share))})`
+          if (queued) { return }
+          queued = true
+          window.requestAnimationFrame(() => {
+            queued = false
+            const bar = this.$refs.readProg
+            if (!bar) { return }
+            const box = this.$refs.container.getBoundingClientRect()
+            const share = -box.top / Math.max(1, box.height - window.innerHeight)
+            bar.style.transform = `scaleX(${Math.min(1, Math.max(0, share))})`
+          })
         }
         window.addEventListener('scroll', this.onReadProg, { passive: true })
         window.addEventListener('resize', this.onReadProg, { passive: true })
@@ -718,7 +727,7 @@ export default {
     },
     // -> The bottom button reopens a hidden rail on wide screens, else it opens the sheet
     onRailButton () {
-      if (this.railHidden && window.innerWidth > 900) {
+      if (this.railHidden && window.innerWidth > NARROW_MAX) {
         this.setRailHidden(false)
       } else {
         this.railSheet = true
@@ -763,9 +772,6 @@ export default {
       }
       window.addEventListener('scroll', this.onScrollSpy, { passive: true })
       pick()
-    },
-    goHome () {
-      window.location.assign('/')
     },
     print () {
       if (this.printView) {
@@ -989,20 +995,12 @@ export default {
     transform: scaleX(0);
     transform-origin: left;
   }
-
-  @media print {
-    display: none;
-  }
 }
 
 .vn-printbar {
   max-width: 56rem;
   margin: 16px auto 0;
   padding-inline: 20px;
-
-  @media print {
-    display: none;
-  }
 }
 
 .vn-totop {
@@ -1036,10 +1034,6 @@ export default {
   // -> Above the bottom bar, which shows at these widths
   @media (max-width: 1220px) {
     bottom: calc(76px + env(safe-area-inset-bottom, 0px));
-  }
-
-  @media print {
-    display: none;
   }
 }
 
@@ -1117,14 +1111,6 @@ export default {
 // TABLE OF CONTENTS
 // ---------------------------------
 
-.vn-label {
-  margin-bottom: 8px;
-  font: 600 0.75rem/1 var(--font-mono);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
 .vn-toc {
   display: grid;
   gap: 4px;
@@ -1161,6 +1147,14 @@ export default {
   display: grid;
   justify-items: start;
   gap: 8px;
+}
+
+// -> Shown only where the TOC column is hidden (see the media rules below)
+.vn-endtools {
+  display: none;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-top: 24px;
 }
 
 // ---------------------------------
@@ -1212,6 +1206,10 @@ export default {
       display: none;
     }
 
+    .vn-endtools {
+      display: flex;
+    }
+
     ~ .vn-readbar {
       display: flex;
 
@@ -1223,12 +1221,25 @@ export default {
 }
 
 @media (max-width: 900px) {
+  // -> The edit button and the back-to-top button stay above the bottom bar
+  .vn-readbar ~ .v-tooltip .v-speed-dial--fixed {
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .vn-totop.has-fab.has-bar {
+    bottom: calc(152px + env(safe-area-inset-bottom, 0px));
+  }
+
   .vn-doc, .vn-doc.has-rail {
     grid-template-columns: minmax(0, 1fr);
     padding-bottom: 96px;
 
     > .vn-rail, > .vn-toc {
       display: none;
+    }
+
+    .vn-endtools {
+      display: flex;
     }
   }
 
