@@ -167,6 +167,32 @@
     padding-block: 2px;
   }
 
+  // -> KaTeX keeps a hidden MathML copy at position: absolute. Without a positioned
+  //    formula, the copy escapes the scroll box of a table or display formula and widens the page
+  .katex {
+    position: relative;
+  }
+
+  // -> fit-wide.js marks a formula or a table that is wider than the column
+  .katex.is-wide {
+    display: inline-block;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    vertical-align: middle;
+  }
+
+  table.is-wide {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  // -> A list paragraph is inline-block (upstream rule): cap it, so a wide formula in a list cannot widen it
+  li > p {
+    max-width: 100%;
+  }
+
   // ---------------------------------
   // CODE BLOCKS: a bar with the language and a copy button, then the code
   // ---------------------------------

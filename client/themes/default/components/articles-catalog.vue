@@ -21,10 +21,11 @@
         .vn-facet
           .vn-facet__head
             h2#vn-f-diff {{ $t('common:catalog.difficulty', 'Độ khó') }}
+            //- Hover and focus open the legend, a tap toggles it, Esc closes it
             v-menu(
               v-if='hasLegend'
+              v-model='legendOpen'
               open-on-hover
-              open-on-focus
               right
               offset-x
               nudge-right='6'
@@ -33,7 +34,15 @@
               content-class='vn-menu'
               )
               template(v-slot:activator='{ on, attrs }')
-                button.vn-facet__info(type='button', v-bind='attrs', v-on='on', :aria-label='$t(`common:catalog.legend`, `Ý nghĩa các mức độ khó`)')
+                button.vn-facet__info(
+                  type='button'
+                  v-bind='attrs'
+                  v-on='on'
+                  @focus='legendOpen = true'
+                  @blur='legendOpen = false'
+                  @pointerdown='onLegendPointer'
+                  @click='onLegendClick'
+                  :aria-label='$t(`common:catalog.legend`, `Ý nghĩa các mức độ khó`)')
                   v-icon(small) mdi-information-outline
               dl.vn-legend
                 div(v-for='row of legendRows', :key='row.level')
@@ -145,7 +154,9 @@ export default {
       q: query.get('q') || '',
       topic: query.get('topic') || null,
       stars: list('d').map(Number).filter(n => n >= 1 && n <= 5),
-      prog: list('p')
+      prog: list('p'),
+      legendOpen: false,
+      legendTap: null
     }
   },
   computed: {
@@ -217,9 +228,25 @@ export default {
     q: 'syncUrl',
     topic: 'syncUrl',
     stars: 'syncUrl',
-    prog: 'syncUrl'
+    prog: 'syncUrl',
+    // -> Esc closes the legend also when the hover opened it and focus is elsewhere
+    legendOpen (open) {
+      window[open ? 'addEventListener' : 'removeEventListener']('keydown', this.onLegendKey)
+    }
+  },
+  beforeDestroy () {
+    window.removeEventListener('keydown', this.onLegendKey)
   },
   methods: {
+    onLegendPointer (e) {
+      this.legendTap = e.pointerType === 'touch' ? !this.legendOpen : null
+    },
+    onLegendClick () {
+      if (this.legendTap !== null) { this.legendOpen = this.legendTap }
+    },
+    onLegendKey (e) {
+      if (e.key === 'Escape') { this.legendOpen = false }
+    },
     hasDot (status) {
       return ['none', 'reading', 'completed', 'skipped'].includes(status.id)
     },

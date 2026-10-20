@@ -135,6 +135,13 @@ export default {
   },
   mounted () {
     this.$nextTick(this.scrollToCurrent)
+    // -> At mount the rail can have no final height yet (styles, fonts), so try again once the page loads
+    if (document.readyState !== 'complete') {
+      window.addEventListener('load', () => this.scrollToCurrent(), { once: true })
+    }
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => this.scrollToCurrent())
+    }
   },
   methods: {
     // -> The four built-in statuses draw as dots; an admin-added status keeps its icon

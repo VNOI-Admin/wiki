@@ -118,14 +118,15 @@
 
       //- Narrow screens: the rail and the TOC open as sheets from a bottom bar
       .vn-readbar(v-if='!printView && ((hasToc && tocOn) || railAvailable)', :class='{ "has-rail": railAvailable, "rail-hidden": railHidden }')
-        button.is-toc(v-if='hasToc && tocOn', type='button', @click='tocSheet = true')
+        button.is-toc(v-if='hasToc && tocOn', ref='tocBtn', type='button', @click='tocSheet = true')
           v-icon(small) mdi-format-list-bulleted
           span {{$t('common:page.toc')}}
-        button.is-rail(v-if='railAvailable', type='button', @click='onRailButton')
+        button.is-rail(v-if='railAvailable', ref='railBtn', type='button', @click='onRailButton')
           v-icon(small) mdi-map-marker-path
           span {{ currentRoadmap ? currentRoadmap.title : $t('common:page.siteNav', 'Điều hướng') }}
 
-      v-bottom-sheet(v-model='tocSheet', content-class='vn-sheet', scrollable)
+      //- eager: Vuetify moves lazy content on the first open, and that move drops the focus (Esc then does nothing)
+      v-bottom-sheet(v-model='tocSheet', content-class='vn-sheet', scrollable, eager)
         .vn-sheet__panel
           .vn-sheet__head
             b {{$t('common:page.toc')}}
@@ -139,9 +140,10 @@
               :class='{ "is-sub": item.sub, "is-active": item.anchor === activeAnchor }'
               @click.prevent='tocSheet = false; goToAnchor(item.anchor)'
               ) {{item.title}}
-      v-bottom-sheet(v-if='railAvailable', v-model='railSheet', content-class='vn-sheet', scrollable)
+      v-bottom-sheet(v-if='railAvailable', v-model='railSheet', content-class='vn-sheet', scrollable, eager)
         .vn-sheet__panel
           nav-roadmap(
+            ref='sheetRoadmap'
             v-if='currentRoadmap && !railMenu'
             :roadmap='currentRoadmap'
             :roadmaps='roadmapsDecoded'
@@ -219,6 +221,7 @@ import HomeDashboard from './home-dashboard.vue'
 import PageProgressSelector from '../../../components/common/page-progress-selector.vue'
 import { isProgressExcluded, NO_PROGRESS_TAG } from '../../../modules/progress'
 import { pickRoadmap, touchRoadmap } from '../../../modules/roadmap-context'
+import { fitWide } from '../../../modules/fit-wide'
 import Prism from 'prismjs'
 import mermaid from 'mermaid'
 import { get, sync } from 'vuex-pathify'
@@ -556,6 +559,19 @@ export default {
       title: this.title
     })
   },
+  watch: {
+    // -> The sheet mounts its content at the first open, before it has a height:
+    //    scroll to the current page each time the sheet shows
+    railSheet (open) {
+      if (!open) { return this.refocus('railBtn') }
+      setTimeout(() => {
+        if (this.$refs.sheetRoadmap) { this.$refs.sheetRoadmap.scrollToCurrent() }
+      }, 0)
+    },
+    tocSheet (open) {
+      if (!open) { this.refocus('tocBtn') }
+    }
+  },
   mounted () {
     // -> The catalogue shows no page contents
     if (this.catalogDecoded) {
@@ -617,6 +633,9 @@ export default {
 
       this.watchHeadings()
 
+      // -> A formula or table wider than the column scrolls inside itself, not the page
+      this.fitTeardown = fitWide(this.$refs.container)
+
       // -> The back-to-top button shows after a third of a screen
       this.onScrollTop = () => {
         this.upBtnShown = window.pageYOffset > window.innerHeight / 3
@@ -630,6 +649,7 @@ export default {
   },
   beforeDestroy () {
     if (this.progressTeardown) { this.progressTeardown() }
+    if (this.fitTeardown) { this.fitTeardown() }
     if (this.onScrollSpy) { window.removeEventListener('scroll', this.onScrollSpy) }
     if (this.onScrollTop) { window.removeEventListener('scroll', this.onScrollTop) }
   },
@@ -662,9 +682,21 @@ export default {
         this.railSheet = true
       }
     },
+    // -> Focus goes back to the bottom bar button when its sheet closes
+    refocus (ref) {
+      this.$nextTick(() => {
+        if (this.$refs[ref]) { this.$refs[ref].focus({ preventScroll: true }) }
+      })
+    },
     goToAnchor (anchor) {
+      // -> The clicked entry stays active until the reader scrolls: a short section can
+      //    end with its next heading above the line that the scroll spy uses
+      this.spyHold = true
       this.activeAnchor = anchor
-      this.$vuetify.goTo(decodeURIComponent(anchor), this.scrollOpts)
+      const release = () => { this.spyHold = false }
+      Promise.resolve(this.$vuetify.goTo(decodeURIComponent(anchor), this.scrollOpts)).catch(() => {}).then(() => {
+        ['wheel', 'touchstart', 'keydown', 'mousedown'].forEach(ev => window.addEventListener(ev, release, { once: true, passive: true }))
+      })
       window.history.replaceState(null, '', anchor)
     },
     /**
@@ -677,6 +709,7 @@ export default {
         .filter(Boolean)
       if (heads.length < 1) { return }
       const pick = () => {
+        if (this.spyHold) { return }
         const limit = window.innerHeight / 3
         let current = heads[0]
         for (const h of heads) {
