@@ -11,6 +11,15 @@ describe('helpers/search-snippet', () => {
     expect(stripMarkdown(md)).toBe('Bài toán Cho một đồ thị có n đỉnh và m cạnh a b')
   })
 
+  it('keeps comparisons and C++ types', () => {
+    expect(stripMarkdown('Nếu $a < b$ thì dùng vector<int> và $a_i > a_j$')).toBe('Nếu $a < b$ thì dùng vector<int> và $a_i > a_j$')
+    expect(stripMarkdown('a <span class="x">b</span>')).toBe('a b')
+  })
+
+  it('counts characters, not UTF-16 units', () => {
+    expect(makeSnippet('Ngắn 😀😀', 1)).toBe('Ngắn 😀😀')
+  })
+
   it('removes footnote marks', () => {
     expect(stripMarkdown('Segment tree [^[1]^](/algo/st) và BIT[^2].')).toBe('Segment tree và BIT.')
   })

@@ -63,6 +63,7 @@
 <script>
 import _ from 'lodash'
 import VnStars from '../../../components/common/vn-stars.vue'
+import { recordHref } from '../../../modules/progress/page-path'
 import { DONE_STATUS, READING_STATUS, getNodeStatus, nodeHref, nodeStats, pickRoadmap, touchRoadmap } from '../../../modules/roadmap-context'
 
 // -> Search shortcuts for common topics
@@ -92,10 +93,10 @@ export default {
     reading () {
       this.records // eslint-disable-line no-unused-expressions
       if (!this.$progress.isEnabled) { return [] }
-      // -> Records come from browser storage or an imported file: build only site paths
       return this.$progress.listRecords()
-        .filter(r => r.statusId === READING_STATUS && r.pageId && r.locale && r.path)
-        .map(r => ({ ...r, href: encodeURI(`/${r.locale}/${r.path}`.replace(/\/{2,}/g, '/')) }))
+        .filter(r => r.statusId === READING_STATUS && r.pageId)
+        .map(r => ({ ...r, href: recordHref(r) }))
+        .filter(r => r.href)
     },
     items () {
       if (!this.roadmap) { return [] }

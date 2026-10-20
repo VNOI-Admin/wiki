@@ -32,6 +32,7 @@
 <script>
 import _ from 'lodash'
 import ProgressDataDialog from '../common/progress-data-dialog.vue'
+import { recordHref } from '../../modules/progress/page-path'
 
 export default {
   components: { ProgressDataDialog },
@@ -47,12 +48,11 @@ export default {
       const defaultId = this.$progress.registry.getDefault().id
       return this.$progress.registry.list().filter(s => s.id !== defaultId)
     },
-    // -> Records come from browser storage or an imported file: build only site paths
     records () {
       this.$progress.state.records // eslint-disable-line no-unused-expressions
       return this.$progress.listRecords()
-        .filter(r => r.pageId && r.locale && r.path)
-        .map(r => ({ ...r, href: encodeURI(`/${r.locale}/${r.path}`.replace(/\/{2,}/g, '/')) }))
+        .map(r => ({ ...r, href: recordHref(r) }))
+        .filter(r => r.pageId && r.href)
     },
     grouped () {
       return _.groupBy(this.records, 'statusId')

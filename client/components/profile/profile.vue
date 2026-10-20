@@ -646,7 +646,7 @@ export default {
   },
   computed: {
     initials () {
-      return _.take(String(this.user.name || '').trim().split(/\s+/).filter(Boolean), 2).map(w => w[0].toUpperCase()).join('') || '?'
+      return _.take(String(this.user.name || '').trim().split(/\s+/).filter(Boolean), 2).map(w => Array.from(w)[0].toUpperCase()).join('') || '?'
     },
     dateFormats () {
       return [

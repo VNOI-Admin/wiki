@@ -45,11 +45,6 @@ router.afterEach((to, from) => {
 
 export default {
   i18nOptions: { namespaces: 'profile' },
-  data() {
-    return {
-      profileDrawerShown: true
-    }
-  },
   router,
   created() {
     this.$store.commit('page/SET_MODE', 'profile')

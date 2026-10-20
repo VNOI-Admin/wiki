@@ -29,7 +29,9 @@ function pickTerm (q) {
 function stripMarkdown (md) {
   return String(md || '')
     .replace(/<!--[\s\S]*?(-->|$)/g, ' ')
-    .replace(/<[^>]*>?/g, ' ')
+    // -> Real tags only: TeX comparisons ($a < b$) and C++ types (vector<int>) stay
+    .replace(/<\/[a-zA-Z][^<>]*>/g, ' ')
+    .replace(/(^|[^\w])<[a-zA-Z][^<>]*>/g, '$1 ')
     // -> Footnote marks: [^[1]^](link), ^[1]^ and [^1]
     .replace(/\[\^\[[^\]]*\]\^\](\([^)]*\)?)?/g, '')
     .replace(/\^\[[^\]]*\]\^|\[\^[^\]]*\]/g, '')
@@ -55,15 +57,17 @@ function makeSnippet (raw, start = 1) {
   if (!raw) { return '' }
   let text = String(raw)
   const cutHead = start > 1
-  const cutTail = text.length >= SIZE
+  // -> SQL counts characters, JavaScript counts UTF-16 units
+  const cutTail = Array.from(text).length >= SIZE
   // -> Drop the partial words at the cut edges
   if (cutHead) { text = text.replace(/^\S*\s+/, '') }
   if (cutTail) { text = text.replace(/\s+\S*$/, '') }
   text = stripMarkdown(text)
   if (!text) { return '' }
   let tail = cutTail
-  if (text.length > MAX) {
-    text = text.slice(0, MAX).replace(/\s+\S*$/, '')
+  const chars = Array.from(text)
+  if (chars.length > MAX) {
+    text = chars.slice(0, MAX).join('').replace(/\s+\S*$/, '')
     tail = true
   }
   return `${cutHead ? '… ' : ''}${text}${tail ? ' …' : ''}`

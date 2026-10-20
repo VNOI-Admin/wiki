@@ -59,25 +59,20 @@ module.exports = {
         term: q.trim().split(/\s+/).filter(Boolean).map(t => `+${t}*`).join(' ')
       }
 
-      // -> Excerpt: a window of the page source around the first match of the longest word
-      const term = snippetHelper.pickTerm(q)
       let qry = `
-        SELECT pv.id, pv.path, pv.locale, pv.title, pv.description,
-          MATCH(pv.title, pv.description, pv.content) AGAINST (? ${against.expr}) AS relevance,
-          GREATEST(1, LOCATE(?, p.content) - ${snippetHelper.LEAD}) AS snippetStart,
-          SUBSTRING(p.content, GREATEST(1, LOCATE(?, p.content) - ${snippetHelper.LEAD}), ${snippetHelper.SIZE}) AS snippetRaw
-        FROM pagesvector pv
-        LEFT JOIN pages p ON p.path = pv.path AND p.localeCode = pv.locale
-        WHERE (MATCH(pv.title, pv.description, pv.content) AGAINST (? ${against.expr}) OR pv.path LIKE ?)
+        SELECT id, path, locale, title, description,
+          MATCH(title, description, content) AGAINST (? ${against.expr}) AS relevance
+        FROM pagesvector
+        WHERE (MATCH(title, description, content) AGAINST (? ${against.expr}) OR path LIKE ?)
       `
-      let qryParams = [against.term, term, term, against.term, `%${q.toLowerCase()}%`]
+      let qryParams = [against.term, against.term, `%${q.toLowerCase()}%`]
 
       if (opts.locale) {
-        qry = `${qry} AND pv.locale = ?`
+        qry = `${qry} AND locale = ?`
         qryParams.push(opts.locale)
       }
       if (opts.path) {
-        qry = `${qry} AND pv.path LIKE ?`
+        qry = `${qry} AND path LIKE ?`
         qryParams.push(`%${opts.path}`)
       }
       const [results] = await WIKI.models.knex.raw(`
@@ -85,17 +80,43 @@ module.exports = {
         ORDER BY relevance DESC
         LIMIT ${WIKI.config.search.maxHits}
       `, qryParams)
+      const snippets = await this.snippets(results, snippetHelper.pickTerm(q))
       return {
-        results: results.map(({ snippetStart, snippetRaw, ...r }) => ({
-          ...r,
-          snippet: snippetHelper.makeSnippet(snippetRaw, snippetStart)
-        })),
+        results: results.map(r => ({ ...r, snippet: snippets[`${r.locale}/${r.path}`] || '' })),
         suggestions: [],
         totalHits: results.length
       }
     } catch (err) {
       WIKI.logger.warn('Search Engine Error:')
       WIKI.logger.warn(err)
+    }
+  },
+  /**
+   * Excerpts: a window of the page source around the first match of a word.
+   * A second query reads the source of the returned pages only.
+   *
+   * @param {Object[]} results Search results (locale, path)
+   * @param {String} term Word to find
+   * @returns {Promise<Object>} Excerpt per `locale/path`
+   */
+  async snippets(results, term) {
+    if (results.length < 1) { return {} }
+    try {
+      const rows = await WIKI.models.knex('pages')
+        .select('path', 'localeCode', WIKI.models.knex.raw(
+          `GREATEST(1, LOCATE(?, content) - ${snippetHelper.LEAD}) AS snippetStart, SUBSTRING(content, GREATEST(1, LOCATE(?, content) - ${snippetHelper.LEAD}), ${snippetHelper.SIZE}) AS snippetRaw`,
+          [term, term]
+        ))
+        .whereIn(['path', 'localeCode'], results.map(r => [r.path, r.locale]))
+      const out = {}
+      for (const row of rows) {
+        out[`${row.localeCode}/${row.path}`] = snippetHelper.makeSnippet(row.snippetRaw, row.snippetStart)
+      }
+      return out
+    } catch (err) {
+      // -> Results without excerpts are better than no results
+      WIKI.logger.warn(`(SEARCH/MARIADB) Excerpts failed: ${err.message}`)
+      return {}
     }
   },
   /**

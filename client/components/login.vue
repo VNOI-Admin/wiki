@@ -298,7 +298,8 @@ export default {
      * LOGIN
      */
     viaLabel (stg) {
-      return this.$t('common:login.via', { defaultValue: 'Đăng nhập bằng {{name}}', name: stg.displayName })
+      // -> Vue escapes the text; i18next must not escape it a second time
+      return this.$t('common:login.via', { defaultValue: 'Đăng nhập bằng {{name}}', name: stg.displayName, interpolation: { escapeValue: false } })
     },
     async login () {
       this.errorShown = false
