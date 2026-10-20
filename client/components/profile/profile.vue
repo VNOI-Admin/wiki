@@ -292,6 +292,7 @@
                       ref='iptAppearance'
                       :items='appearances'
                       v-model='user.appearance'
+                      @change='applyAppearance'
                       :label='$t(`profile:appearance`)'
                       solo
                       flat
@@ -689,13 +690,6 @@ export default {
     }
   },
   watch: {
-    'user.appearance': (newValue, oldValue) => {
-      if (newValue === '') {
-        WIKI.$vuetify.theme.dark = siteConfig.darkMode
-      } else {
-        WIKI.$vuetify.theme.dark = (newValue === 'dark')
-      }
-    },
     'user.dateFormat': (newValue, oldValue) => {
       if (newValue === '') {
         WIKI.$moment.updateLocale(WIKI.$moment.locale(), null)
@@ -716,6 +710,15 @@ export default {
     }
   },
   methods: {
+    // -> Only a change in the select applies the theme. The profile load does not, so it cannot undo a header toggle.
+    applyAppearance (value) {
+      WIKI.$vuetify.theme.dark = value === '' ? siteConfig.darkMode : (value === 'dark')
+      if (value === '') {
+        localStorage.removeItem('theme')
+      } else {
+        localStorage.setItem('theme', value)
+      }
+    },
     /**
      * Focus an input after delay
      */

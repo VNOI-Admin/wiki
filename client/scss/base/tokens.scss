@@ -95,6 +95,13 @@ html, body {
   outline-offset: 2px;
 }
 
+// -> Set for two frames when the theme changes (client-app.js)
+html.is-theme-switch *,
+html.is-theme-switch *::before,
+html.is-theme-switch *::after {
+  transition: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

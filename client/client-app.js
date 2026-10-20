@@ -201,10 +201,11 @@ let bootstrap = () => {
   const localTheme = localStorage.getItem('theme')
   const userAppearance = store.get('user/appearance') || ''
 
-  if (userAppearance.length > 0) {
-    darkModeEnabled = (userAppearance === 'dark')
-  } else if (localTheme) {
+  // -> The last choice in this browser (header toggle or profile select) wins over the profile value
+  if (localTheme) {
     darkModeEnabled = (localTheme === 'dark')
+  } else if (userAppearance.length > 0) {
+    darkModeEnabled = (userAppearance === 'dark')
   }
 
   document.documentElement.dataset.theme = darkModeEnabled ? 'dark' : 'light'
@@ -224,8 +225,12 @@ let bootstrap = () => {
     }),
     mounted () {
       // -> CSS tokens follow the Vuetify dark flag, whoever changes it (header toggle, profile)
+      // -> No transitions during the switch: every color changes in the same frame
+      const root = document.documentElement
       this.$watch(() => this.$vuetify.theme.dark, dark => {
-        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+        root.classList.add('is-theme-switch')
+        root.dataset.theme = dark ? 'dark' : 'light'
+        window.requestAnimationFrame(() => window.requestAnimationFrame(() => root.classList.remove('is-theme-switch')))
       }, { immediate: true })
       this.$moment.locale(siteConfig.lang)
       if ((store.get('user/dateFormat') || '').length > 0) {
