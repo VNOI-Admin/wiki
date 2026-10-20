@@ -1,183 +1,119 @@
 <template lang="pug">
   v-app
-    .login(:style='`background-image: url(` + bgUrl + `);`')
-      .login-sd
-        .d-flex.mb-5
-          .login-logo
-            v-avatar(tile, size='34')
-              v-img(:src='logoUrl')
-          .login-title
-            .text-h6.grey--text.text--darken-4 {{ siteTitle }}
-        v-alert.mb-0(
+    .vn-login(:style='bgStyle')
+      main.vn-login__box
+        a.vn-login__logo(href='/', :aria-label='siteTitle')
+          img(:src='logoUrl', alt='', width='40', height='44')
+        h1 {{ screenTitle }}
+        v-alert.vn-login__err(
           v-model='errorShown'
           transition='slide-y-reverse-transition'
           color='red darken-2'
-          tile
-          dark
           dense
+          text
           icon='mdi-alert'
-          )
-          .body-2 {{errorMessage}}
+          ) {{errorMessage}}
         //-------------------------------------------------
         //- PROVIDERS LIST
         //-------------------------------------------------
-        template(v-if='screen === `login` && strategies.length > 1')
-          .login-subtitle
-            .text-subtitle-1 {{$t('auth:selectAuthProvider')}}
-          .login-list
-            v-list.elevation-1.radius-7(nav, light)
-              v-list-item-group(v-model='selectedStrategyKey')
-                v-list-item(
-                  v-for='(stg, idx) of filteredStrategies'
-                  :key='stg.key'
-                  :value='stg.key'
-                  :color='stg.strategy.color'
-                  )
-                  v-avatar.mr-3(tile, size='24', v-html='stg.icon || stg.strategy.icon')
-                  span.text-none {{stg.displayName}}
+        .vn-login__list(v-if='screen === `login` && strategies.length > 1')
+          button.vn-btn.is-wide(
+            v-for='(stg, idx) of filteredStrategies'
+            :key='stg.key'
+            type='button'
+            :class='{ "is-ghost": idx > 0 || stg.strategy.useForm }'
+            :aria-pressed='stg.key === selectedStrategyKey ? `true` : `false`'
+            @click='selectedStrategyKey = stg.key'
+            )
+            span.vn-login__icon(v-html='stg.icon || stg.strategy.icon', aria-hidden='true')
+            span {{ viaLabel(stg) }}
         //-------------------------------------------------
         //- LOGIN FORM
         //-------------------------------------------------
-        template(v-if='screen === `login` && selectedStrategy.strategy.useForm')
-          .login-subtitle
-            .text-subtitle-1 {{$t('auth:enterCredentials')}}
-          .login-form
-            v-text-field(
-              solo
-              flat
-              prepend-inner-icon='mdi-clipboard-account'
-              background-color='white'
-              color='blue darken-2'
-              hide-details
-              ref='iptEmail'
-              v-model='username'
-              :placeholder='isUsernameEmail ? $t(`auth:fields.email`) : $t(`auth:fields.username`)'
-              :type='isUsernameEmail ? `email` : `text`'
-              :autocomplete='isUsernameEmail ? `email` : `username`'
-              light
-              )
-            v-text-field.mt-2(
-              solo
-              flat
-              prepend-inner-icon='mdi-form-textbox-password'
-              background-color='white'
-              color='blue darken-2'
-              hide-details
-              ref='iptPassword'
-              v-model='password'
-              :append-icon='hidePassword ? "mdi-eye-off" : "mdi-eye"'
-              @click:append='() => (hidePassword = !hidePassword)'
-              :type='hidePassword ? "password" : "text"'
-              :placeholder='$t("auth:fields.password")'
-              autocomplete='current-password'
-              @keyup.enter='login'
-              light
+        form.vn-login__form(v-if='screen === `login` && selectedStrategy.strategy.useForm', @submit.prevent='login')
+          v-text-field(
+            outlined
+            dense
+            prepend-inner-icon='mdi-account-outline'
+            hide-details
+            ref='iptEmail'
+            v-model='username'
+            :label='isUsernameEmail ? $t(`auth:fields.email`) : $t(`auth:fields.username`)'
+            :type='isUsernameEmail ? `email` : `text`'
+            :autocomplete='isUsernameEmail ? `email` : `username`'
             )
-            v-btn.mt-2.text-none(
-              width='100%'
-              large
-              color='blue darken-2'
-              dark
-              @click='login'
-              :loading='isLoading'
-              ) {{ $t('auth:actions.login') }}
-            .text-center.mt-5
-              v-btn.text-none(
-                text
-                rounded
-                color='grey darken-3'
-                @click.stop.prevent='forgotPassword'
-                href='#forgot'
-                ): .caption {{ $t('auth:forgotPasswordLink') }}
-              v-btn.text-none(
-                v-if='selectedStrategyKey === `local` && selectedStrategy.selfRegistration'
-                color='indigo darken-2'
-                text
-                rounded
-                href='/register'
-                ): .caption {{ $t('auth:switchToRegister.link') }}
+          v-text-field(
+            outlined
+            dense
+            prepend-inner-icon='mdi-lock-outline'
+            hide-details
+            ref='iptPassword'
+            v-model='password'
+            :append-icon='hidePassword ? "mdi-eye-off" : "mdi-eye"'
+            @click:append='() => (hidePassword = !hidePassword)'
+            :type='hidePassword ? "password" : "text"'
+            :label='$t("auth:fields.password")'
+            autocomplete='current-password'
+          )
+          button.vn-btn.is-wide(type='submit', :disabled='isLoading')
+            v-progress-circular(v-if='isLoading', indeterminate, size='16', width='2')
+            span {{ $t('auth:actions.login') }}
+          .vn-login__links
+            a(href='#forgot', @click.stop.prevent='forgotPassword') {{ $t('auth:forgotPasswordLink') }}
+            a(
+              v-if='selectedStrategyKey === `local` && selectedStrategy.selfRegistration'
+              href='/register'
+              ) {{ $t('auth:switchToRegister.link') }}
         //-------------------------------------------------
         //- FORGOT PASSWORD FORM
         //-------------------------------------------------
-        template(v-if='screen === `forgot`')
-          .login-subtitle
-            .text-subtitle-1 {{$t('auth:forgotPasswordTitle')}}
-          .login-info {{ $t('auth:forgotPasswordSubtitle') }}
-          .login-form
-            v-text-field(
-              solo
-              flat
-              prepend-inner-icon='mdi-clipboard-account'
-              background-color='white'
-              color='blue darken-2'
-              hide-details
-              ref='iptForgotPwdEmail'
-              v-model='username'
-              :placeholder='$t(`auth:fields.email`)'
-              type='email'
-              autocomplete='email'
-              light
-              )
-            v-btn.mt-2.text-none(
-              width='100%'
-              large
-              color='blue darken-2'
-              dark
-              @click='forgotPasswordSubmit'
-              :loading='isLoading'
-              ) {{ $t('auth:sendResetPassword') }}
-            .text-center.mt-5
-              v-btn.text-none(
-                text
-                rounded
-                color='grey darken-3'
-                @click.stop.prevent='screen = `login`'
-                href='#forgot'
-                ): .caption {{ $t('auth:forgotPasswordCancel') }}
+        form.vn-login__form(v-if='screen === `forgot`', @submit.prevent='forgotPasswordSubmit')
+          p.vn-login__info {{ $t('auth:forgotPasswordSubtitle') }}
+          v-text-field(
+            outlined
+            dense
+            prepend-inner-icon='mdi-email-outline'
+            hide-details
+            ref='iptForgotPwdEmail'
+            v-model='username'
+            :label='$t(`auth:fields.email`)'
+            type='email'
+            autocomplete='email'
+            )
+          button.vn-btn.is-wide(type='submit', :disabled='isLoading')
+            v-progress-circular(v-if='isLoading', indeterminate, size='16', width='2')
+            span {{ $t('auth:sendResetPassword') }}
+          .vn-login__links
+            a(href='#login', @click.stop.prevent='screen = `login`') {{ $t('auth:forgotPasswordCancel') }}
         //-------------------------------------------------
         //- CHANGE PASSWORD FORM
         //-------------------------------------------------
-        template(v-if='screen === `changePwd`')
-          .login-subtitle
-            .text-subtitle-1 {{ $t('auth:changePwd.subtitle') }}
-          .login-form
-            v-text-field.mt-2(
-              type='password'
-              solo
-              flat
-              prepend-inner-icon='mdi-form-textbox-password'
-              background-color='white'
-              color='blue darken-2'
-              hide-details
-              ref='iptNewPassword'
-              v-model='newPassword'
-              :placeholder='$t(`auth:changePwd.newPasswordPlaceholder`)'
-              autocomplete='new-password'
-              light
-              )
-              password-strength(slot='progress', v-model='newPassword')
-            v-text-field.mt-2(
-              type='password'
-              solo
-              flat
-              prepend-inner-icon='mdi-form-textbox-password'
-              background-color='white'
-              color='blue darken-2'
-              hide-details
-              v-model='newPasswordVerify'
-              :placeholder='$t(`auth:changePwd.newPasswordVerifyPlaceholder`)'
-              autocomplete='new-password'
-              @keyup.enter='changePassword'
-              light
+        form.vn-login__form(v-if='screen === `changePwd`', @submit.prevent='changePassword')
+          v-text-field(
+            type='password'
+            outlined
+            dense
+            prepend-inner-icon='mdi-lock-outline'
+            hide-details
+            ref='iptNewPassword'
+            v-model='newPassword'
+            :label='$t(`auth:changePwd.newPasswordPlaceholder`)'
+            autocomplete='new-password'
             )
-            v-btn.mt-2.text-none(
-              width='100%'
-              large
-              color='blue darken-2'
-              dark
-              @click='changePassword'
-              :loading='isLoading'
-              ) {{ $t('auth:changePwd.proceed') }}
+            password-strength(slot='progress', v-model='newPassword')
+          v-text-field(
+            type='password'
+            outlined
+            dense
+            prepend-inner-icon='mdi-lock-outline'
+            hide-details
+            v-model='newPasswordVerify'
+            :label='$t(`auth:changePwd.newPasswordVerifyPlaceholder`)'
+            autocomplete='new-password'
+          )
+          button.vn-btn.is-wide(type='submit', :disabled='isLoading')
+            v-progress-circular(v-if='isLoading', indeterminate, size='16', width='2')
+            span {{ $t('auth:changePwd.proceed') }}
 
     //-------------------------------------------------
     //- TFA FORM
@@ -300,6 +236,15 @@ export default {
   },
   computed: {
     activeModal: sync('editor/activeModal'),
+    // -> Only an admin-set background: the default splash image does not show
+    bgStyle () {
+      return this.bgUrl && !this.bgUrl.includes('/_assets/img/splash/') ? { backgroundImage: `url(${this.bgUrl})` } : null
+    },
+    screenTitle () {
+      if (this.screen === 'forgot') { return this.$t('auth:forgotPasswordTitle') }
+      if (this.screen === 'changePwd') { return this.$t('auth:changePwd.subtitle') }
+      return this.$t('auth:actions.login')
+    },
     siteTitle () {
       return siteConfig.title
     },
@@ -352,6 +297,9 @@ export default {
     /**
      * LOGIN
      */
+    viaLabel (stg) {
+      return this.$t('common:login.via', { defaultValue: 'Đăng nhập bằng {{name}}', name: stg.displayName })
+    },
     async login () {
       this.errorShown = false
       if (this.username.length < 2) {
@@ -692,87 +640,108 @@ export default {
 </script>
 
 <style lang="scss">
-  .login {
-    // background-image: url('/_assets/img/splash/1.jpg');
-    background-color: mc('grey', '900');
+  // -> One centered card, as the login dialog of the design
+  .vn-login {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background-color: var(--bg);
     background-size: cover;
     background-position: center center;
+    color: var(--ink);
+  }
+
+  .vn-login__box {
+    width: min(360px, 100%);
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    padding: 28px 24px 24px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    > * {
+      width: 100%;
+    }
+
+    > .vn-login__logo, > h1 {
+      width: auto;
+    }
+  }
+
+  .vn-login__logo img {
+    display: block;
+    height: 44px;
+    width: auto;
+  }
+
+  .vn-login__err.v-alert {
+    margin: 0;
+    font-size: 0.875rem;
+  }
+
+  .vn-login__list, .vn-login__form {
+    display: grid;
+    gap: 10px;
+  }
+
+  .vn-login .vn-btn.is-wide {
     width: 100%;
-    height: 100%;
+    justify-content: center;
 
-    &-sd {
-      background-color: rgba(255,255,255,.8);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border-left: 1px solid rgba(255,255,255,.85);
-      border-right: 1px solid rgba(255,255,255,.85);
-      width: 450px;
+    &[aria-pressed='true'].is-ghost {
+      border-color: var(--accent);
+    }
+  }
+
+  .vn-login__icon {
+    display: inline-grid;
+    width: 20px;
+    height: 20px;
+
+    svg {
+      width: 100%;
       height: 100%;
-      margin-left: 5vw;
-
-      @at-root .no-backdropfilter & {
-        background-color: rgba(255,255,255,.95);
-      }
-
-      @include until($tablet) {
-        margin-left: 0;
-        width: 100%;
-      }
     }
 
-    &-logo {
-      padding: 12px 0 0 12px;
-      width: 58px;
-      height: 58px;
-      background-color: #222;
-      margin-left: 12px;
-      border-bottom-left-radius: 7px;
-      border-bottom-right-radius: 7px;
+    &:empty {
+      display: none;
     }
+  }
 
-    &-title {
-      height: 58px;
-      padding-left: 12px;
-      display: flex;
-      align-items: center;
-      text-shadow: .5px .5px #FFF;
+  .vn-login__form {
+    margin-top: 4px;
+  }
+
+  .vn-login__info {
+    margin: 0;
+    font-size: 0.875rem;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  .vn-login__links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 18px;
+    font-size: 0.875rem;
+
+    a {
+      color: var(--accent) !important;
     }
+  }
 
-    &-subtitle {
-      padding: 24px 12px 12px 12px;
-      color: #111;
-      font-weight: 500;
-      text-shadow: 1px 1px rgba(255,255,255,.5);
-      background-image: linear-gradient(to bottom, rgba(0,0,0,0), rgba(0,0,0,.15));
-      text-align: center;
-      border-bottom: 1px solid rgba(0,0,0,.3);
-    }
-
-    &-info {
-      border-top: 1px solid rgba(255,255,255,.85);
-      background-color: rgba(255,255,255,.15);
-      border-bottom: 1px solid rgba(0,0,0,.15);
-      padding: 12px;
-      font-size: 13px;
-      text-align: center;
-      color: mc('grey', '900');
-    }
-
-    &-list {
-      border-top: 1px solid rgba(255,255,255,.85);
-      padding: 12px;
-    }
-
-    &-form {
-      padding: 12px;
-      border-top: 1px solid rgba(255,255,255,.85);
-    }
-
-    &-main {
-      flex: 1 0 100vw;
-      height: 100vh;
-    }
-
+  .login {
     &-tfa {
       background-color: #EEE;
       border: 7px solid #FFF;

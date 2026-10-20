@@ -65,6 +65,8 @@ common:
     level3: 'Nâng cao'
     level4: 'Rất khó'
     level5: 'Chuyên sâu'
+  login:
+    via: 'Đăng nhập bằng {{name}}'
   home:
     reading: 'Đang đọc'
     viewRoadmap: 'Xem lộ trình'
