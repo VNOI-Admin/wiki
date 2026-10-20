@@ -141,6 +141,36 @@ Vue.use(localization.VueI18Next)
 Vue.use(helpers)
 Vue.use(progress, { store })
 Vue.use(Vuetify)
+
+// -> Vuetify 2.3 renders a dialog at its first open and then moves it to the app root,
+//    which drops the focus it just gave the dialog: Esc and Tab then miss the dialog.
+//    Give the focus again once the dialog is in place, and give it back to the opener on close.
+Vue.mixin({
+  created () {
+    if (!['v-dialog', 'v-bottom-sheet'].includes(this.$options.name)) { return }
+    let opener = null
+    this.$watch('isActive', open => {
+      if (open) {
+        opener = document.activeElement
+        setTimeout(() => {
+          const content = this.$refs.content
+          if (this.isActive && content && !content.contains(document.activeElement)) {
+            content.focus()
+          }
+        }, 0)
+        return
+      }
+      const back = opener
+      opener = null
+      this.$nextTick(() => {
+        const lost = !document.activeElement || document.activeElement === document.body
+        if (back && back !== document.body && back.isConnected && lost) {
+          back.focus({ preventScroll: true })
+        }
+      })
+    })
+  }
+})
 Vue.use(VueMoment, { moment })
 Vue.use(Vuescroll)
 

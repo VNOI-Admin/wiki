@@ -13,7 +13,6 @@
     .vn-topbar__in(:class='{ "is-wide": isWide }')
       //- Small screens: the header links move into a sheet
       button.vn-iconbtn.vn-topbar__menu(
-        ref='menuBtn'
         type='button'
         @click='menuSheet = true'
         :aria-label='$t(`common:header.links`, `Liên kết`)'
@@ -166,8 +165,8 @@
           v-icon mdi-account-outline
           span {{$t('common:header.login')}}
 
-    //- Small-screen link sheet (eager: see the sheets in page.vue)
-    v-bottom-sheet(v-model='menuSheet', content-class='vn-sheet', eager)
+    //- Small-screen link sheet
+    v-bottom-sheet(v-model='menuSheet', content-class='vn-sheet')
       .vn-sheet__panel
         .vn-sheet__head
           b {{$t('common:header.links', 'Liên kết')}}
@@ -313,14 +312,6 @@ export default {
     hasAnyPagePermissions () {
       return this.hasAdminPermission || this.hasWritePagesPermission || this.hasManagePagesPermission ||
         this.hasDeletePagesPermission || this.hasReadSourcePermission || this.hasReadHistoryPermission
-    }
-  },
-  watch: {
-    // -> Focus goes back to the menu button when the sheet closes
-    menuSheet (open) {
-      if (!open && this.$refs.menuBtn) {
-        this.$nextTick(() => this.$refs.menuBtn.focus())
-      }
     }
   },
   mounted () {
