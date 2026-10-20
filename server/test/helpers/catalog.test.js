@@ -1,4 +1,4 @@
-const { cleanText, normalizeHref, parseCatalog } = require('../../helpers/catalog')
+const { cleanText, homeSummary, normalizeHref, parseCatalog } = require('../../helpers/catalog')
 
 const PAGE = `# Danh sách bài viết
 
@@ -77,5 +77,18 @@ describe('helpers/catalog', () => {
 
   it('survives empty input', () => {
     expect(parseCatalog('')).toEqual({ legend: ['', '', '', '', ''], topics: [], items: [] })
+  })
+
+  it('summarizes topics and the newest pages for Home', () => {
+    const items = catalog.items.map((it, i) => ({ ...it, pageId: i + 1, createdAt: i === 5 ? null : `2024-01-0${i + 1}T00:00:00Z` }))
+    // -> The same page twice counts once
+    items[4] = { ...items[4], pageId: 4 }
+    const home = homeSummary({ ...catalog, items }, 2)
+    expect(home.topics).toEqual([
+      { name: 'Nhập môn', count: 2, spread: [2, 0, 0, 0, 0] },
+      { name: 'Cấu trúc dữ liệu', count: 2, spread: [0, 0, 2, 0, 0] },
+      { name: 'Toán học', count: 1, spread: [1, 0, 0, 0, 0] }
+    ])
+    expect(home.newest.map(n => n.title)).toEqual(['a^b mod c - Lũy thừa nhị phân', 'Persistent Data Structures'])
   })
 })

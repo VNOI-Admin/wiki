@@ -611,12 +611,23 @@ router.get('/*', async (req, res, next) => {
             }
           }
 
+          // -> The home page shows the dashboard above its contents
+          let home = null
+          if (page.path.toLowerCase() === 'home') {
+            try {
+              home = await catalogHelper.getHome(page.localeCode)
+            } catch (err) {
+              WIKI.logger.warn(`Failed to build the home dashboard: ${err.message}`)
+            }
+          }
+
           // -> Render view
           res.render('page', {
             page,
             sidebar,
             roadmaps,
             catalog,
+            home,
             injectCode,
             comments: commentTmpl,
             effectivePermissions,

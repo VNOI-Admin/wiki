@@ -195,8 +195,60 @@ async function getCatalog (page) {
   return catalog
 }
 
+/**
+ * What the Home page shows from the catalogue: the topics of the first part, with a
+ * count per difficulty, and the newest articles by page creation date.
+ *
+ * @param {Object} catalog getCatalog() output
+ * @param {number} newestCount
+ * @returns {{topics: Object[], newest: Object[]}}
+ */
+function homeSummary (catalog, newestCount = 4) {
+  const firstPart = _.get(catalog, 'topics[0].part', '')
+  const topics = []
+  catalog.topics.forEach((t, i) => {
+    if (t.part !== firstPart) { return }
+    const list = catalog.items.filter(it => it.topic === i)
+    topics.push({
+      name: t.name,
+      count: list.length,
+      spread: _.times(5, k => list.filter(it => it.stars === k + 1).length)
+    })
+  })
+  // -> One card per page, even when the list links it twice
+  const newest = _.uniqBy(_.orderBy(catalog.items.filter(it => it.createdAt), [it => new Date(it.createdAt).getTime()], ['desc']), 'pageId')
+    .slice(0, newestCount)
+    .map(it => ({
+      title: it.title,
+      href: it.href,
+      stars: it.stars,
+      pageId: it.pageId,
+      createdAt: it.createdAt,
+      topic: _.get(catalog.topics, [it.topic, 'name'], '')
+    }))
+  return { topics, newest }
+}
+
+/**
+ * Data for the Home dashboard.
+ *
+ * @param {string} locale
+ * @returns {Promise<{topics: Object[], newest: Object[], roadmap: Object|null}>}
+ */
+async function getHome (locale) {
+  const listPage = await WIKI.models.pages.query()
+    .select('id', 'localeCode', 'updatedAt')
+    .where({ path: CATALOG_PATH, localeCode: locale })
+    .first()
+  const summary = listPage ? homeSummary(await getCatalog(listPage)) : { topics: [], newest: [] }
+  const roadmaps = await WIKI.models.roadmaps.getIndex()
+  return { ...summary, roadmap: roadmaps[0] || null }
+}
+
 module.exports = {
   CATALOG_PATH,
+  homeSummary,
+  getHome,
   cleanText,
   normalizeHref,
   parseCatalog,

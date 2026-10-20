@@ -65,6 +65,13 @@ common:
     level3: 'Nâng cao'
     level4: 'Rất khó'
     level5: 'Chuyên sâu'
+  home:
+    reading: 'Đang đọc'
+    viewRoadmap: 'Xem lộ trình'
+    newest: 'Bài mới'
+    topics: 'Chủ đề thuật toán'
+    allArticles: 'Tất cả bài viết'
+    spread: 'Số bài theo độ khó: {{list}}'
   roadmap:
     viewFull: 'Xem toàn bộ lộ trình'
     switch: 'Đổi lộ trình'

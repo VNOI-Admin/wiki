@@ -9,7 +9,9 @@
           span {{$t('common:page.exitPrint', 'Thoát bản in')}}
       //- The article list page shows as a catalogue with filters
       articles-catalog(v-if='catalogDecoded', :catalog='catalogDecoded', :title='title')
-      .vn-doc(v-else, :class='{ "has-rail": railShown && !printView, "has-toc": hasToc && tocOn && !printView }')
+      //- Home: the dashboard, then the page contents
+      home-dashboard(v-if='homeDecoded', :home='homeDecoded')
+      .vn-doc(v-if='!catalogDecoded', :class='{ "is-home": homeDecoded, "has-rail": railShown && !printView, "has-toc": hasToc && tocOn && !printView }')
         //- LEFT RAIL: the roadmap that holds this page, or the admin navigation
         aside.vn-rail(v-if='railShown && !printView', :aria-label='$t(`common:roadmap.title`, `Lộ trình`)')
           nav-roadmap(
@@ -29,16 +31,16 @@
 
         //- ARTICLE
         article.vn-article
-          nav.vn-crumbs(v-if='path !== `home`', :aria-label='$t(`common:page.breadcrumb`, `Đường dẫn`)')
+          nav.vn-crumbs(v-if='path !== `home` && !homeDecoded', :aria-label='$t(`common:page.breadcrumb`, `Đường dẫn`)')
             template(v-for='(crumb, idx) of breadcrumbs')
               span(v-if='idx > 0', aria-hidden='true') /
               a(:href='crumb.path', :key='crumb.path') {{ idx === 0 ? $t(`common:header.home`, `Trang chủ`) : crumb.name }}
           .vn-unpub(v-if='!isPublished')
             v-icon(small) mdi-minus-circle
             span {{$t('common:page.unpublishedWarning')}}
-          h1.vn-title {{title}}
-          p.vn-desc(v-if='description') {{description}}
-          .vn-meta
+          h1.vn-title(v-if='!homeDecoded') {{title}}
+          p.vn-desc(v-if='description && !homeDecoded') {{description}}
+          .vn-meta(v-if='!homeDecoded')
             page-progress-selector(
               v-if='!progressExcluded'
               variant='inline'
@@ -85,12 +87,12 @@
               span.vn-nextprev__k {{$t('common:page.next', 'Bài tiếp')}} →
               b {{nextNode.title}}
 
-          section.vn-comments#discussion(v-if='commentsEnabled && commentsPerms.read && !printView')
+          section.vn-comments#discussion(v-if='commentsEnabled && commentsPerms.read && !printView && !homeDecoded')
             h2 {{$t('common:comments.title')}}
             slot(name='comments')
 
         //- RIGHT COLUMN: table of contents and page tools
-        aside.vn-toc(v-if='!printView', :aria-label='$t(`common:page.toc`)')
+        aside.vn-toc(v-if='!printView && !homeDecoded', :aria-label='$t(`common:page.toc`)')
           template(v-if='hasToc && tocOn')
             .vn-label {{$t('common:page.toc')}}
             a(
@@ -213,6 +215,7 @@ import Tabset from './tabset.vue'
 import NavSidebar from './nav-sidebar.vue'
 import NavRoadmap from './nav-roadmap.vue'
 import ArticlesCatalog from './articles-catalog.vue'
+import HomeDashboard from './home-dashboard.vue'
 import PageProgressSelector from '../../../components/common/page-progress-selector.vue'
 import { isProgressExcluded, NO_PROGRESS_TAG } from '../../../modules/progress'
 import { pickRoadmap, touchRoadmap } from '../../../modules/roadmap-context'
@@ -268,6 +271,7 @@ Prism.plugins.toolbar.registerButton('copy-to-clipboard', (env) => {
 export default {
   components: {
     ArticlesCatalog,
+    HomeDashboard,
     NavSidebar,
     NavRoadmap,
     PageProgressSelector
@@ -336,6 +340,11 @@ export default {
     },
     // -> Set on the article list page only (server/helpers/catalog.js)
     catalog: {
+      type: String,
+      default: ''
+    },
+    // -> Set on the Home page only (server/helpers/catalog.js)
+    home: {
       type: String,
       default: ''
     },
@@ -430,12 +439,20 @@ export default {
         return null
       }
     },
+    homeDecoded () {
+      if (!this.home) { return null }
+      try {
+        return JSON.parse(Buffer.from(this.home, 'base64').toString())
+      } catch (err) {
+        return null
+      }
+    },
     currentRoadmap () {
       return _.find(this.roadmapsDecoded, ['id', this.currentRoadmapId]) || null
     },
     // -> The rail holds the roadmap that contains this page, else the admin navigation
     railAvailable () {
-      if (this.catalogDecoded) { return false }
+      if (this.catalogDecoded || this.homeDecoded) { return false }
       return !!this.currentRoadmap || this.navMode !== 'NONE'
     },
     railShown () {
@@ -456,7 +473,7 @@ export default {
       ])
     },
     hasToc () {
-      return !this.catalogDecoded && this.tocFlat.length > 0
+      return !this.catalogDecoded && !this.homeDecoded && this.tocFlat.length > 0
     },
     // -> Previous and next article in the roadmap order (nodes without an article are skipped)
     roadmapArticles () {
@@ -741,6 +758,15 @@ export default {
 
   &.has-rail {
     grid-template-columns: 15rem minmax(0, var(--read)) 13rem;
+  }
+
+  // -> Home: the page contents start at the left edge of the dashboard
+  &.is-home {
+    grid-template-columns: minmax(0, var(--read));
+    justify-content: start;
+    max-width: var(--wrap);
+    margin-inline: auto;
+    padding-top: 8px;
   }
 }
 

@@ -205,6 +205,16 @@ module.exports = class Roadmap extends Model {
    * Backed by a short-lived cache, so a page view costs no extra query.
    */
   static async getForPage (locale, path) {
+    const index = await Roadmap.getIndex()
+    const articlePath = `${locale}/${path}`
+    return index.filter(r => _.some(r.sections, s => _.some(s.nodes, ['articlePath', articlePath])))
+  }
+
+  /**
+   * Enabled roadmaps in admin order, with only what the reader views render.
+   * Backed by a short-lived cache.
+   */
+  static async getIndex () {
     let index = WIKI.cache.get(SIDEBAR_CACHE_KEY)
     if (!index) {
       const rows = await WIKI.models.roadmaps.query()
@@ -224,8 +234,7 @@ module.exports = class Roadmap extends Model {
       await Roadmap.resolveArticleNodes(index.map(r => r.sections))
       WIKI.cache.set(SIDEBAR_CACHE_KEY, index, 300)
     }
-    const articlePath = `${locale}/${path}`
-    return index.filter(r => _.some(r.sections, s => _.some(s.nodes, ['articlePath', articlePath])))
+    return index
   }
 
   static clearCache () {
