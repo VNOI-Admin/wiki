@@ -167,6 +167,14 @@ module.exports = class Roadmap extends Model {
   }
 
   /**
+   * Nodes with a page or an external link. A node with neither has no article to read yet,
+   * so the reader-facing counts leave it out.
+   */
+  static articleCount (sections) {
+    return _.sumBy(sections || [], s => _.filter(_.get(s, 'nodes', []), n => n.articlePath || n.externalUrl).length)
+  }
+
+  /**
    * Resolve article nodes to page ids in place, so readers can set progress on pages
    * they have never visited (progress is keyed by page id).
    */

@@ -1,37 +1,33 @@
 <template lang="pug">
-  .nav-roadmap(:class='{ "is-full-page": fullPage }')
+  .nav-roadmap
     .nav-roadmap-header
-      template(v-if='!fullPage')
-        .nav-roadmap-head
-          v-menu(v-if='roadmaps.length > 1', offset-y, bottom, content-class='vn-menu')
-            template(v-slot:activator='{ on }')
-              button.nav-roadmap-title.is-switchable(
-                v-on='on'
-                type='button'
-                :title='$t(`common:roadmap.switch`, `Đổi lộ trình`)'
-                )
-                span {{ roadmap.title }}
-                v-icon(small) mdi-chevron-down
-            .vn-menu__list
-              button.vn-menu__item(
-                v-for='r of roadmaps'
-                :key='r.id'
-                type='button'
-                role='menuitemradio'
-                :aria-checked='r.id === roadmap.id ? `true` : `false`'
-                @click='$emit(`select`, r)'
-                ) {{ r.title }}
-          a.nav-roadmap-title(v-else, :href='`/roadmap/` + roadmap.id') {{ roadmap.title }}
-          button.nav-roadmap-hide(
-            v-if='canHide'
-            type='button'
-            @click='$emit(`hide`)'
-            :title='$t(`common:roadmap.hide`, `Ẩn lộ trình`)'
-            :aria-label='$t(`common:roadmap.hide`, `Ẩn lộ trình`)'
-            ) ×
-      template(v-else)
-        .nav-roadmap-title {{ roadmap.title }}
-        p.nav-roadmap-description(v-if='roadmap.description') {{ roadmap.description }}
+      .nav-roadmap-head
+        v-menu(v-if='roadmaps.length > 1', offset-y, bottom, content-class='vn-menu')
+          template(v-slot:activator='{ on }')
+            button.nav-roadmap-title.is-switchable(
+              v-on='on'
+              type='button'
+              :title='$t(`common:roadmap.switch`, `Đổi lộ trình`)'
+              )
+              span {{ roadmap.title }}
+              v-icon(small) mdi-chevron-down
+          .vn-menu__list
+            button.vn-menu__item(
+              v-for='r of roadmaps'
+              :key='r.id'
+              type='button'
+              role='menuitemradio'
+              :aria-checked='r.id === roadmap.id ? `true` : `false`'
+              @click='$emit(`select`, r)'
+              ) {{ r.title }}
+        a.nav-roadmap-title(v-else, :href='`/roadmap/` + roadmap.id') {{ roadmap.title }}
+        button.nav-roadmap-hide(
+          v-if='canHide'
+          type='button'
+          @click='$emit(`hide`)'
+          :title='$t(`common:roadmap.hide`, `Ẩn lộ trình`)'
+          :aria-label='$t(`common:roadmap.hide`, `Ẩn lộ trình`)'
+          ) ×
       .nav-roadmap-stats
         .nav-roadmap-bar(aria-hidden='true')
           i(:style='{ width: stats.percent + `%` }')
@@ -43,7 +39,7 @@
       )
       button.nav-roadmap-section-header(type='button', @click='toggleSection(section.id)')
         span.nav-roadmap-section-title {{ section.title }}
-        span.caption.nav-roadmap-section-count {{ sectionCompleted(section) }}/{{ section.nodes.length }}
+        span.nav-roadmap-section-count {{ sectionStats(section).completed }}/{{ sectionStats(section).total }}
         v-icon(small) {{ collapsed[section.id] ? 'mdi-chevron-right' : 'mdi-chevron-down' }}
       .nav-roadmap-nodes(v-if='!collapsed[section.id]')
         component.nav-roadmap-node(
@@ -59,72 +55,13 @@
           )
           span.vn-pdot.nav-roadmap-node-icon(v-if='hasDot(nodeStatus(node))', :class='`s-` + nodeStatus(node).id', :title='nodeStatus(node).label')
           v-icon.nav-roadmap-node-icon(v-else, small, :color='nodeStatus(node).color', :title='nodeStatus(node).label') {{ nodeStatus(node).icon }}
-          .nav-roadmap-node-body
-            span.nav-roadmap-node-title {{ node.title }}
-            .nav-roadmap-node-meta(v-if='fullPage')
-              v-rating(
-                v-if='node.difficulty'
-                :value='node.difficulty'
-                half-increments
-                readonly
-                dense
-                x-small
-                color='amber darken-1'
-                background-color='grey lighten-1'
-                :length='5'
-              )
-              span.nav-roadmap-node-desc(v-if='node.description') {{ node.description }}
-          .nav-roadmap-node-actions(v-if='fullPage')
-            v-menu(v-if='nodeHref(node) && nodeCanSetStatus(node)', offset-y, left)
-              template(v-slot:activator='{ on }')
-                v-chip(
-                  v-on='on'
-                  @click.native.prevent
-                  small
-                  :color='nodeStatus(node).color'
-                  dark
-                  pill
-                )
-                  v-icon(left, x-small) {{ nodeStatus(node).icon }}
-                  | {{ nodeStatus(node).label }}
-                  v-icon(right, x-small) mdi-menu-down
-              v-list(dense)
-                v-list-item(
-                  v-for='s in allStatuses'
-                  :key='s.id'
-                  @click='nodeSetStatus(node, s.id)'
-                )
-                  v-list-item-avatar(size='20')
-                    v-icon(small, :color='s.color') {{ s.icon }}
-                  v-list-item-title {{ s.label }}
-                  v-list-item-action.my-0(v-if='s.id === nodeStatus(node).id')
-                    v-icon(small, color='primary') mdi-check
-            v-chip(
-              v-else-if='!nodeHref(node)'
-              small
-              color='grey lighten-1'
-              text-color='grey darken-1'
-              pill
-            )
-              v-icon(left, x-small) mdi-pencil-off-outline
-              | Chưa có bài
-            v-chip(
-              v-else
-              small
-              :color='nodeStatus(node).color'
-              dark
-              pill
-            )
-              v-icon(left, x-small) {{ nodeStatus(node).icon }}
-              | {{ nodeStatus(node).label }}
-          v-icon.nav-roadmap-node-external(v-if='isExternal(node) && !fullPage', x-small) mdi-open-in-new
+          span.nav-roadmap-node-title {{ node.title }}
+          v-icon.nav-roadmap-node-external(v-if='isExternal(node)', x-small) mdi-open-in-new
 </template>
 
 <script>
 import _ from 'lodash'
-import { getNodeStatus, touchRoadmap } from '../../../modules/roadmap-context'
-
-/* global siteLangs */
+import { getNodeStatus, isExternalNode, nodeHref, nodeStats, touchRoadmap } from '../../../modules/roadmap-context'
 
 export default {
   props: {
@@ -145,14 +82,6 @@ export default {
       type: String,
       default: ''
     },
-    canShowMenu: {
-      type: Boolean,
-      default: true
-    },
-    fullPage: {
-      type: Boolean,
-      default: false
-    },
     // -> Shows the × that hides the rail (not in the bottom sheet)
     canHide: {
       type: Boolean,
@@ -160,16 +89,9 @@ export default {
     }
   },
   data () {
-    const collapsed = {}
-    if (this.fullPage) {
-      for (const s of this.roadmap.sections) collapsed[s.id] = true
-    }
-    return { collapsed }
+    return { collapsed: {} }
   },
   computed: {
-    btnColor () {
-      return this.$vuetify.theme.dark ? 'grey darken-4' : 'grey lighten-2'
-    },
     currentArticlePath () {
       return `${this.locale}/${this.path}`
     },
@@ -180,14 +102,7 @@ export default {
       return node => getNodeStatus(this.$progress, this.roadmap.id, node)
     },
     stats () {
-      const nodes = _.flatMap(this.roadmap.sections, 'nodes')
-      // ponytail: hardcoded status ID, same as the roadmap page
-      const completed = nodes.filter(n => this.nodeStatus(n).id === 'completed').length
-      return {
-        completed,
-        total: nodes.length,
-        percent: nodes.length ? Math.round(100 * completed / nodes.length) : 0
-      }
+      return this.sectionStats({ nodes: _.flatMap(this.roadmap.sections, 'nodes') })
     },
     statsLabel () {
       return this.$t('common:roadmap.completed', {
@@ -195,9 +110,6 @@ export default {
         completed: this.stats.completed,
         total: this.stats.total
       })
-    },
-    allStatuses () {
-      return this.$progress.registry.list()
     }
   },
   watch: {
@@ -215,46 +127,18 @@ export default {
       return ['none', 'reading', 'completed', 'skipped'].includes(status.id)
     },
     isExternal (node) {
-      return !node.articlePath && !!node.externalUrl
+      return isExternalNode(node)
     },
     isCurrent (node) {
       return node.articlePath === this.currentArticlePath
     },
     nodeHref (node) {
-      if (node.articlePath) { return '/' + node.articlePath }
-      return node.externalUrl || null
+      return nodeHref(node)
     },
-    sectionCompleted (section) {
-      return section.nodes.filter(n => this.nodeStatus(n).id === 'completed').length
-    },
-    nodeArticleLocation (node) {
-      if (!node.articlePath) return null
-      const slash = node.articlePath.indexOf('/')
-      if (slash < 0) return null
-      return { locale: node.articlePath.slice(0, slash), path: node.articlePath.slice(slash + 1) }
-    },
-    nodePageId (node) {
-      const loc = this.nodeArticleLocation(node)
-      if (!loc) return null
-      return node.pageId || this.$progress.getPageIdByPath(loc.locale, loc.path)
-    },
-    nodeCanSetStatus (node) {
-      if (!this.$progress.isEnabled) return false
-      return !!this.nodePageId(node) || (this.isExternal(node) && !!this.roadmap.id)
-    },
-    nodeSetStatus (node, statusId) {
-      const pageId = this.nodePageId(node)
-      if (pageId) {
-        this.$progress.setStatus(pageId, statusId, {
-          ...this.nodeArticleLocation(node),
-          title: node.pageTitle || node.title
-        })
-      } else if (this.isExternal(node) && this.roadmap.id) {
-        this.$progress.setNodeStatus(this.roadmap.id, node.id, statusId, {
-          title: node.title,
-          url: node.externalUrl
-        })
-      }
+    sectionStats (section) {
+      // -> Touch observable state so status changes re-render the counts
+      const _records = this.$progress.state.records // eslint-disable-line no-unused-vars
+      return nodeStats(this.$progress, this.roadmap.id, section.nodes)
     },
     toggleSection (id) {
       this.$set(this.collapsed, id, !this.collapsed[id])
@@ -277,9 +161,6 @@ export default {
       if (!panel || panel === document.body) { return }
       const offset = el.getBoundingClientRect().top - panel.getBoundingClientRect().top
       panel.scrollTop += offset - panel.clientHeight / 3
-    },
-    goHome () {
-      window.location.assign(siteLangs.length > 0 ? `/${this.locale}/home` : '/')
     }
   }
 }
@@ -449,60 +330,9 @@ export default {
     margin-top: 3px;
   }
 
-  &-node-body {
-    min-width: 0;
-  }
-
-  &-node-title {
-    display: block;
-  }
-
-  &-node-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 2px;
-    flex-wrap: wrap;
-  }
-
-  &-node-desc {
-    font-size: 0.8rem;
-    color: var(--muted);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  &-node-actions {
-    display: flex;
-    align-items: flex-start;
-  }
-
   &-node-external {
     margin-top: 3px;
     color: var(--muted) !important;
-  }
-
-  &.is-full-page {
-    .nav-roadmap-header {
-      position: static;
-      background: none;
-    }
-
-    .nav-roadmap-title {
-      font-size: 1.4rem;
-    }
-
-    .nav-roadmap-section-header {
-      font-size: 1rem;
-      padding: 14px 4px;
-    }
-
-    .nav-roadmap-node {
-      padding: 10px 12px;
-      font-size: 0.95rem;
-    }
   }
 }
 </style>

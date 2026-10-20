@@ -618,26 +618,4 @@ export default {
   display: flex;
   gap: 8px;
 }
-
-.vn-btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 16px;
-  border: 1px solid var(--accent);
-  border-radius: 8px;
-  background: var(--accent);
-  color: var(--on-accent) !important;
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-decoration: none !important;
-
-  &:hover {
-    filter: brightness(1.08);
-  }
-
-  &.is-ghost {
-    background: transparent;
-    color: var(--accent) !important;
-  }
-}
 </style>

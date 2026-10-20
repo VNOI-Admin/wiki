@@ -1,0 +1,93 @@
+// ---------------------------------
+// VNOI SHARED CONTROLS
+// ---------------------------------
+// Buttons and chips that more than one view uses. They take colors from tokens.scss.
+
+.vn-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--on-accent) !important;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none !important;
+  cursor: pointer;
+
+  &:hover {
+    filter: brightness(1.08);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+    filter: none;
+  }
+
+  &.is-ghost {
+    border-color: var(--line);
+    background: var(--surface);
+    color: var(--ink) !important;
+
+    &:hover {
+      border-color: var(--accent);
+      filter: none;
+    }
+  }
+}
+
+.vn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink) !important;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none !important;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--accent);
+  }
+
+  &[aria-pressed="true"] {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent) !important;
+  }
+
+  b {
+    font: 600 0.8125rem var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// -> Difficulty: five stars, half steps allowed
+.vn-stars {
+  display: inline-flex;
+  gap: 1px;
+  font-size: 0.8125rem;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--star-off);
+
+  .is-on {
+    color: var(--star);
+  }
+
+  .is-half {
+    background: linear-gradient(90deg, var(--star) 50%, var(--star-off) 50%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}

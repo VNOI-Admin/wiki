@@ -427,7 +427,7 @@ router.get('/roadmaps', async (req, res, next) => {
     id: r.id,
     title: r.title,
     description: r.description,
-    nodeCount: WIKI.models.roadmaps.nodeCount(r.sections)
+    articleCount: WIKI.models.roadmaps.articleCount(r.sections)
   }))
   _.set(res.locals, 'pageMeta.title', 'Learning Roadmaps')
   res.render('roadmaps', {
