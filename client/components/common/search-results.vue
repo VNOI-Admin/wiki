@@ -43,7 +43,11 @@
               span.vn-hit__t {{item.title}}
               span.vn-hit__mark(v-if='statusFor(item)', :title='statusFor(item).label')
                 v-icon(:color='statusFor(item).color', small) {{ statusFor(item).icon }}
-              span.vn-hit__s(v-if='item.description') {{item.description}}
+              span.vn-hit__x(v-if='item.snippet')
+                template(v-for='(part, pi) of markParts(item.snippet)')
+                  mark(v-if='part.hit', :key='pi') {{ part.text }}
+                  template(v-else) {{ part.text }}
+              span.vn-hit__s(v-else-if='item.description') {{item.description}}
               span.vn-hit__p /{{item.path}}
             button.vn-search__more(v-if='results.length < response.results.length', type='button', @click='shown += perPage') {{$t('common:header.searchMore', 'Xem thêm')}}
           template(v-if='suggestions.length > 0')
@@ -65,6 +69,19 @@ import _ from 'lodash'
 import { sync } from 'vuex-pathify'
 
 import searchPagesQuery from 'gql/common/common-pages-query-search.gql'
+
+/**
+ * Lowercase, and remove the Vietnamese marks of each character.
+ * Each character stays one character, so a match position in the result is the same in the input.
+ */
+function foldText (text) {
+  return Array.from(String(text || ''), c => {
+    const f = c.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    if (f === 'đ') { return 'd' }
+    // -> One UTF-16 unit per character, so indexOf positions match the Array.from positions
+    return f.length === 1 ? f : '\ufffd'
+  }).join('')
+}
 
 export default {
   data() {
@@ -93,6 +110,10 @@ export default {
     },
     suggestions() {
       return this.response.suggestions ? this.response.suggestions : []
+    },
+    // -> Query words without Vietnamese marks, for the excerpt marks
+    markTerms() {
+      return _.uniq(String(this.search || '').split(/\s+/).map(foldText).filter(t => t.length > 1))
     }
   },
   watch: {
@@ -119,6 +140,32 @@ export default {
     }
   },
   methods: {
+    /**
+     * Split an excerpt into parts, so the query words show in a mark element.
+     * The excerpt is text only: the template renders each part as text, never as HTML.
+     */
+    markParts (text) {
+      const chars = Array.from(text)
+      const folded = foldText(text)
+      const hit = new Array(chars.length).fill(false)
+      for (const term of this.markTerms) {
+        let at = folded.indexOf(term)
+        while (at >= 0) {
+          for (let i = at; i < at + term.length; i++) { hit[i] = true }
+          at = folded.indexOf(term, at + term.length)
+        }
+      }
+      const parts = []
+      chars.forEach((c, i) => {
+        const last = parts[parts.length - 1]
+        if (last && last.hit === hit[i]) {
+          last.text += c
+        } else {
+          parts.push({ text: c, hit: hit[i] })
+        }
+      })
+      return parts
+    },
     // -> Tab and Shift+Tab stay inside the dialog
     trapFocus (ev) {
       const items = Array.from(this.$refs.box.querySelectorAll('input, button, a[href]'))
@@ -351,6 +398,24 @@ export default {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.vn-hit__x {
+  grid-column: 1;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--muted);
+
+  // -> The selected row has the soft accent background, so a mark has no background
+  mark {
+    background: none;
+    color: var(--ink);
+    font-weight: 600;
+  }
 }
 
 .vn-hit__p {

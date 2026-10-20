@@ -1,6 +1,7 @@
 const stream = require('stream')
 const Promise = require('bluebird')
 const pipeline = Promise.promisify(stream.pipeline)
+const snippetHelper = require('../../../helpers/search-snippet')
 
 /* global WIKI */
 
@@ -58,20 +59,25 @@ module.exports = {
         term: q.trim().split(/\s+/).filter(Boolean).map(t => `+${t}*`).join(' ')
       }
 
+      // -> Excerpt: a window of the page source around the first match of the longest word
+      const term = snippetHelper.pickTerm(q)
       let qry = `
-        SELECT id, path, locale, title, description,
-          MATCH(title, description, content) AGAINST (? ${against.expr}) AS relevance
-        FROM pagesvector
-        WHERE (MATCH(title, description, content) AGAINST (? ${against.expr}) OR path LIKE ?)
+        SELECT pv.id, pv.path, pv.locale, pv.title, pv.description,
+          MATCH(pv.title, pv.description, pv.content) AGAINST (? ${against.expr}) AS relevance,
+          GREATEST(1, LOCATE(?, p.content) - ${snippetHelper.LEAD}) AS snippetStart,
+          SUBSTRING(p.content, GREATEST(1, LOCATE(?, p.content) - ${snippetHelper.LEAD}), ${snippetHelper.SIZE}) AS snippetRaw
+        FROM pagesvector pv
+        LEFT JOIN pages p ON p.path = pv.path AND p.localeCode = pv.locale
+        WHERE (MATCH(pv.title, pv.description, pv.content) AGAINST (? ${against.expr}) OR pv.path LIKE ?)
       `
-      let qryParams = [against.term, against.term, `%${q.toLowerCase()}%`]
+      let qryParams = [against.term, term, term, against.term, `%${q.toLowerCase()}%`]
 
       if (opts.locale) {
-        qry = `${qry} AND locale = ?`
+        qry = `${qry} AND pv.locale = ?`
         qryParams.push(opts.locale)
       }
       if (opts.path) {
-        qry = `${qry} AND path LIKE ?`
+        qry = `${qry} AND pv.path LIKE ?`
         qryParams.push(`%${opts.path}`)
       }
       const [results] = await WIKI.models.knex.raw(`
@@ -80,7 +86,10 @@ module.exports = {
         LIMIT ${WIKI.config.search.maxHits}
       `, qryParams)
       return {
-        results,
+        results: results.map(({ snippetStart, snippetRaw, ...r }) => ({
+          ...r,
+          snippet: snippetHelper.makeSnippet(snippetRaw, snippetStart)
+        })),
         suggestions: [],
         totalHits: results.length
       }
