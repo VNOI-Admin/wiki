@@ -23,6 +23,8 @@ const _ = require('lodash')
 const CATALOG_PATH = 'articles'
 const STAR = '⭐'
 const CACHE_MAX = 10
+// -> A listed page can be created or unpublished without an edit of the catalogue page
+const CACHE_TTL = 10 * 60 * 1000
 
 const cache = new Map()
 
@@ -166,7 +168,9 @@ function parseCatalog (markdown) {
  */
 async function getCatalog (page) {
   const key = `${page.id}:${page.updatedAt}`
-  if (cache.has(key)) { return cache.get(key) }
+  const hit = cache.get(key)
+  if (hit && Date.now() - hit.at < CACHE_TTL) { return hit.catalog }
+  cache.delete(key)
 
   // -> The page cache keeps no source, so read it on a cache miss
   let content = page.content
@@ -191,7 +195,7 @@ async function getCatalog (page) {
   }
 
   if (cache.size >= CACHE_MAX) { cache.delete(cache.keys().next().value) }
-  cache.set(key, catalog)
+  cache.set(key, { at: Date.now(), catalog })
   return catalog
 }
 
@@ -233,7 +237,8 @@ function homeSummary (catalog, newestCount = 4) {
  * Data for the Home dashboard.
  *
  * @param {string} locale
- * @returns {Promise<{topics: Object[], newest: Object[], roadmap: Object|null}>}
+ * @returns {Promise<{topics: Object[], newest: Object[], roadmaps: Object[]}>}
+ *   roadmaps: those with an article in this locale; the client picks one
  */
 async function getHome (locale) {
   const listPage = await WIKI.models.pages.query()
@@ -241,8 +246,9 @@ async function getHome (locale) {
     .where({ path: CATALOG_PATH, localeCode: locale })
     .first()
   const summary = listPage ? homeSummary(await getCatalog(listPage)) : { topics: [], newest: [] }
-  const roadmaps = await WIKI.models.roadmaps.getIndex()
-  return { ...summary, roadmap: roadmaps[0] || null }
+  const roadmaps = (await WIKI.models.roadmaps.getIndex())
+    .filter(r => _.some(r.sections, s => _.some(s.nodes, n => _.startsWith(n.articlePath, `${locale}/`))))
+  return { ...summary, roadmaps }
 }
 
 module.exports = {

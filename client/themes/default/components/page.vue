@@ -92,7 +92,7 @@
             slot(name='comments')
 
         //- RIGHT COLUMN: table of contents and page tools
-        aside.vn-toc(v-if='!printView && !homeDecoded', :aria-label='$t(`common:page.toc`)')
+        aside.vn-toc(v-if='!printView', :aria-label='$t(`common:page.toc`)')
           template(v-if='hasToc && tocOn')
             .vn-label {{$t('common:page.toc')}}
             a(
@@ -761,8 +761,9 @@ export default {
   }
 
   // -> Home: the page contents start at the left edge of the dashboard
+  // -> The right column keeps the page tools (history, share, print)
   &.is-home {
-    grid-template-columns: minmax(0, var(--read));
+    grid-template-columns: minmax(0, var(--read)) 13rem;
     justify-content: start;
     max-width: var(--wrap);
     margin-inline: auto;

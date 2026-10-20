@@ -82,6 +82,8 @@ export function pickRoadmap (roadmaps) {
 
 // -> Status id that counts as done. Admins can rename it, not remove it.
 export const DONE_STATUS = 'completed'
+// -> Status id of a page the reader started. Admins can rename it, not remove it.
+export const READING_STATUS = 'reading'
 
 /**
  * @param {Object} node

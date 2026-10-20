@@ -15,7 +15,7 @@
         .vn-reading(v-if='reading.length > 0')
           span.vn-label {{ $t('common:home.reading', 'Đang đọc') }}
           .vn-reading__list
-            a(v-for='r of reading', :key='r.pageId', :href='`/${r.locale}/${r.path}`')
+            a(v-for='r of reading', :key='r.pageId', :href='r.href')
               span.vn-pdot.s-reading
               span.vn-reading__t {{ r.title || r.path }}
 
@@ -38,7 +38,7 @@
       .vn-hsec__head
         h2 {{ $t('common:home.newest', 'Bài mới') }}
       .vn-hlist
-        a.vn-hrow(v-for='a of home.newest', :key='a.href', :href='a.href')
+        a.vn-hrow(v-for='a of home.newest', :key='a.pageId', :href='a.href')
           span.vn-hrow__t {{ a.title }}
           span.vn-hrow__d {{ a.createdAt | moment('L') }}
           span.vn-hrow__s
@@ -51,7 +51,7 @@
         h2 {{ $t('common:home.topics', 'Chủ đề thuật toán') }}
         a(href='/articles') {{ $t('common:home.allArticles', 'Tất cả bài viết') }} →
       .vn-topics
-        a.vn-topic(v-for='t of home.topics', :key='t.name', :href='`/articles?topic=` + encodeURIComponent(`t:` + t.name)')
+        a.vn-topic(v-for='(t, ti) of home.topics', :key='ti', :href='`/articles?topic=` + encodeURIComponent(`t:` + t.name)')
           span.vn-topic__t {{ t.name }}
           span.vn-topic__c {{ countLabel(t.count) }}
           span.vn-topic__spread(role='img', :aria-label='spreadLabel(t.spread)')
@@ -63,7 +63,7 @@
 <script>
 import _ from 'lodash'
 import VnStars from '../../../components/common/vn-stars.vue'
-import { DONE_STATUS, getNodeStatus, nodeHref, nodeStats, touchRoadmap } from '../../../modules/roadmap-context'
+import { DONE_STATUS, READING_STATUS, getNodeStatus, nodeHref, nodeStats, pickRoadmap, touchRoadmap } from '../../../modules/roadmap-context'
 
 // -> Search shortcuts for common topics
 const POPULAR = ['Quy hoạch động', 'DFS', 'Segment Tree', 'Fenwick', 'Dijkstra']
@@ -83,7 +83,7 @@ export default {
   },
   computed: {
     roadmap () {
-      return this.home.roadmap
+      return pickRoadmap(this.home.roadmaps)
     },
     // -> Read in each status computation, so a status change re-renders the card
     records () {
@@ -92,7 +92,10 @@ export default {
     reading () {
       this.records // eslint-disable-line no-unused-expressions
       if (!this.$progress.isEnabled) { return [] }
-      return this.$progress.listRecords().filter(r => r.statusId === 'reading' && r.pageId)
+      // -> Records come from browser storage or an imported file: build only site paths
+      return this.$progress.listRecords()
+        .filter(r => r.statusId === READING_STATUS && r.pageId && r.locale && r.path)
+        .map(r => ({ ...r, href: encodeURI(`/${r.locale}/${r.path}`.replace(/\/{2,}/g, '/')) }))
     },
     items () {
       if (!this.roadmap) { return [] }
@@ -134,7 +137,8 @@ export default {
       return this.$t('common:roadmap.articleCount', { defaultValue: '{{count}} bài', count })
     },
     spreadLabel (spread) {
-      return this.$t('common:home.spread', { defaultValue: 'Số bài theo độ khó: {{list}}', list: spread.join(', ') })
+      const list = spread.map((n, k) => `${k + 1}★: ${n}`).join(', ')
+      return this.$t('common:home.spread', { defaultValue: 'Số bài theo độ khó: {{list}}', list })
     },
     barHeight (topic, value) {
       const max = Math.max(1, ...topic.spread)
@@ -163,7 +167,7 @@ export default {
   }
 }
 
-.vn-label {
+.vn-home .vn-label {
   font: 600 0.75rem var(--font-mono);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -275,7 +279,6 @@ export default {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
-  overflow: hidden;
 
   a {
     display: grid;
