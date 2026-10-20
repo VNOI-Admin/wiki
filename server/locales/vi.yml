@@ -151,3 +151,6 @@ admin:
     errorNoDefault: 'Hãy chọn một trạng thái làm mặc định.'
     removedWarning: 'Đã xoá {{ids}}. Người đọc từng dùng vẫn giữ dữ liệu cho tới khi các trạng thái này được thêm lại.'
     emptyId: '(trống)'
+tags:
+  # -> The tag chips sit above the results now, not in a left drawer
+  selectOneMoreTagsHint: 'Chọn một hoặc nhiều thẻ.'
