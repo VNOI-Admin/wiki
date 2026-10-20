@@ -18,6 +18,9 @@ common:
     returnNormalView: 'Về bài viết'
   comments:
     loginToComment: 'Đăng nhập để bình luận'
+    count: '{{count}} bình luận'
+    deleteSure: 'Xóa thật?'
+    readOnly: 'Bạn chỉ có quyền xem bình luận.'
   progress:
     title: 'Tiến độ'
     blockHeading: 'Đánh dấu tiến độ của bạn ở trang này'

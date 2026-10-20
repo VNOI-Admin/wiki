@@ -1,5 +1,5 @@
 <template lang="pug">
-  .vn-cmts(v-intersect.once='onIntersect')
+  .vn-cmts
     //- LIST
     p.vn-cmts__note(v-if='isLoading && !hasLoadedOnce') {{$t('common:comments.loading')}}
     .vn-cmts__list(v-else-if='comments && comments.length > 0')
@@ -13,14 +13,19 @@
           b {{cm.authorName}}
           span(:title='cm.createdAt') {{cm.createdAt | moment('from') }}
           span(v-if='cm.createdAt !== cm.updatedAt', :title='cm.updatedAt') · {{$t('common:comments.modified', { reldate: $options.filters.moment(cm.updatedAt, 'from') })}}
-          span.vn-cmt__acts(v-if='permissions.manage && !isBusy && commentEditId === 0')
+          span.vn-cmt__acts(v-if='canChange(cm) && !isBusy && commentEditId === 0')
             button(type='button', @click='editComment(cm)') {{$t('common:actions.edit')}}
-            button(type='button', @click='deleteCommentConfirm(cm)') {{$t('common:actions.delete')}}
+            button(
+              type='button'
+              :class='{ "is-armed": armedId === cm.id }'
+              @click='deleteCommentConfirm(cm)'
+              ) {{armedId === cm.id ? $t('common:comments.deleteSure', 'Xóa thật?') : $t('common:actions.delete')}}
         .vn-cmt__body(v-if='commentEditId !== cm.id', v-html='cm.render')
         .vn-cform.is-edit(v-else)
           textarea(
             v-model='commentEditContent'
             rows='3'
+            @keydown.enter='onSubmitKey($event, updateComment)'
             :aria-label='$t(`common:comments.fieldContent`)'
             )
           .vn-cform__foot
@@ -37,6 +42,7 @@
         v-model='newcomment'
         rows='3'
         maxlength='4000'
+        @keydown.enter='onSubmitKey($event, postComment)'
         :placeholder='$t(`common:comments.newPlaceholder`)'
         :aria-label='$t(`common:comments.fieldContent`)'
         )
@@ -58,17 +64,8 @@
         span {{$t('common:comments.markdownFormat')}}
         button.vn-btn(type='submit') {{$t('common:comments.postComment')}}
     a.vn-btn.is-ghost.vn-cmts__login(v-else-if='!isAuthenticated', href='/login') {{$t('common:comments.loginToComment', 'Đăng nhập để bình luận')}}
+    p.vn-cmts__note(v-else) {{$t('common:comments.readOnly', 'Bạn chỉ có quyền xem bình luận.')}}
 
-    v-dialog(v-model='deleteCommentDialogShown', max-width='500')
-      v-card
-        .dialog-header.is-red {{$t('common:comments.deleteConfirmTitle')}}
-        v-card-text.pt-5
-          span {{$t('common:comments.deleteWarn')}}
-          .caption: strong {{$t('common:comments.deletePermanentWarn')}}
-        v-card-chin
-          v-spacer
-          v-btn(text, @click='deleteCommentDialogShown = false') {{$t('common:actions.cancel')}}
-          v-btn(color='red', dark, @click='deleteComment') {{$t('common:actions.delete')}}
 </template>
 
 <script>
@@ -76,6 +73,9 @@ import gql from 'graphql-tag'
 import { get } from 'vuex-pathify'
 import validate from 'validate.js'
 import _ from 'lodash'
+
+// -> A second click on "Xóa" within this time deletes the comment
+const ARM_MS = 4000
 
 // -> "Nguyễn Văn An" -> "NA"
 function initialsOf (name) {
@@ -96,7 +96,8 @@ export default {
       commentToDelete: {},
       commentEditId: 0,
       commentEditContent: null,
-      deleteCommentDialogShown: false,
+      armedId: 0,
+      armTimer: null,
       isBusy: false,
       scrollOpts: {
         duration: 1500,
@@ -110,14 +111,33 @@ export default {
     permissions: get('page/effectivePermissions@comments'),
     isAuthenticated: get('user/authenticated'),
     userDisplayName: get('user/name'),
+    userId: get('user/id'),
     myInitials () {
       return initialsOf(this.isAuthenticated ? this.userDisplayName : this.guestName)
     }
   },
+  watch: {
+    // -> The article meta row and the section heading show the count
+    comments (list) {
+      this.$store.set('page/commentsCount', list.length)
+    }
+  },
+  mounted () {
+    this.fetch(true)
+  },
+  beforeDestroy () {
+    clearTimeout(this.armTimer)
+  },
   methods: {
-    onIntersect (entries, observer, isIntersecting) {
-      if (isIntersecting) {
-        this.fetch(true)
+    // -> Moderators change every comment; a signed-in author changes their own
+    canChange (cm) {
+      return this.permissions.manage || (this.isAuthenticated && this.permissions.write && cm.authorId === this.userId)
+    },
+    // -> Ctrl+Enter or Cmd+Enter submits
+    onSubmitKey (evt, submit) {
+      if (evt.ctrlKey || evt.metaKey) {
+        evt.preventDefault()
+        submit()
       }
     },
     async fetch (silent = false) {
@@ -130,6 +150,7 @@ export default {
                 list(locale: $locale, path: $path) {
                   id
                   render
+                  authorId
                   authorName
                   createdAt
                   updatedAt
@@ -380,8 +401,15 @@ export default {
      * Show Delete Comment Confirmation Dialog
      */
     deleteCommentConfirm (cm) {
-      this.commentToDelete = cm
-      this.deleteCommentDialogShown = true
+      clearTimeout(this.armTimer)
+      if (this.armedId === cm.id) {
+        this.armedId = 0
+        this.commentToDelete = cm
+        this.deleteComment()
+        return
+      }
+      this.armedId = cm.id
+      this.armTimer = setTimeout(() => { this.armedId = 0 }, ARM_MS)
     },
     /**
      * Delete Comment
@@ -389,7 +417,6 @@ export default {
     async deleteComment () {
       this.$store.commit(`loadingStart`, 'comments-delete')
       this.isBusy = true
-      this.deleteCommentDialogShown = false
 
       try {
         const resp = await this.$apollo.mutate({
@@ -511,6 +538,10 @@ export default {
     &:hover {
       color: var(--accent);
     }
+  }
+
+  button.is-armed {
+    color: var(--mark-red);
   }
 }
 

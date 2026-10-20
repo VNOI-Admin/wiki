@@ -54,7 +54,8 @@
               )
             button.vn-linkbtn(v-if='commentsEnabled && commentsPerms.read && !printView', type='button', @click='goToComments()')
               v-icon(small) mdi-comment-text-outline
-              span {{$t('common:comments.title')}}
+              span(v-if='commentsCount > 0') {{commentsLabel}}
+              span(v-else) {{$t('common:comments.title')}}
             span.vn-meta__by(v-if='authorName')
               | {{ authorName }} · {{ updatedAt | moment('L') }}
             a.vn-linkbtn(v-if='hasWritePagesPermission && editShortcutsObj.editMenuBar && editShortcutsObj.editMenuBtn', href='#', @click.prevent='pageEdit')
@@ -92,6 +93,7 @@
 
           section.vn-comments#discussion(v-if='commentsEnabled && commentsPerms.read && !printView && !homeDecoded')
             h2 {{$t('common:comments.title')}}
+              span.vn-comments__n(v-if='commentsCount > 0') {{commentsCount}}
             slot(name='comments')
 
         //- RIGHT COLUMN: table of contents and page tools
@@ -404,6 +406,10 @@ export default {
       return isProgressExcluded(this.tags)
     },
     // -> Articles only: Home and the catalogue are not something to read through
+    // -> A default keeps the label right while the browser still caches old translations
+    commentsLabel () {
+      return this.$t('common:comments.count', { count: this.commentsCount, defaultValue: '{{count}} bình luận' })
+    },
     autoProgressOn () {
       return this.$progress.isEnabled && this.pageId > 0 && !this.progressExcluded && !this.homeDecoded && !this.catalogDecoded
     },
@@ -413,6 +419,7 @@ export default {
     },
     isAuthenticated: get('user/authenticated'),
     commentsPerms: get('page/effectivePermissions@comments'),
+    commentsCount: get('page/commentsCount'),
     editShortcutsObj: get('page/editShortcuts'),
     rating: {
       get () {

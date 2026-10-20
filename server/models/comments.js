@@ -125,6 +125,29 @@ module.exports = class Comment extends Model {
   }
 
   /**
+   * Check if a user can edit or delete a comment
+   *
+   * A moderator (manage:comments) can change every comment. An author with
+   * write:comments can change only their own comments. Guests share one account,
+   * so a guest cannot change a comment.
+   */
+  static async canChange ({ id, page, user }) {
+    const where = {
+      path: page.path,
+      locale: page.localeCode,
+      tags: page.tags
+    }
+    if (WIKI.auth.checkAccess(user, ['manage:comments'], where)) {
+      return true
+    }
+    if (!user || user.id === 2 || !WIKI.auth.checkAccess(user, ['write:comments'], where)) {
+      return false
+    }
+    const cm = await WIKI.data.commentProvider.getCommentById(id)
+    return Boolean(cm) && cm.authorId === user.id
+  }
+
+  /**
    * Update an Existing Comment
    */
   static async updateComment ({ id, content, user, ip }) {
@@ -135,11 +158,7 @@ module.exports = class Comment extends Model {
     }
     const page = await WIKI.models.pages.getPageFromDb(pageId)
     if (page) {
-      if (!WIKI.auth.checkAccess(user, ['manage:comments'], {
-        path: page.path,
-        locale: page.localeCode,
-        tags: page.tags
-      })) {
+      if (!(await WIKI.models.comments.canChange({ id, page, user }))) {
         throw new WIKI.Error.CommentManageForbidden()
       }
     } else {
@@ -169,11 +188,7 @@ module.exports = class Comment extends Model {
     }
     const page = await WIKI.models.pages.getPageFromDb(pageId)
     if (page) {
-      if (!WIKI.auth.checkAccess(user, ['manage:comments'], {
-        path: page.path,
-        locale: page.localeCode,
-        tags: page.tags
-      })) {
+      if (!(await WIKI.models.comments.canChange({ id, page, user }))) {
         throw new WIKI.Error.CommentManageForbidden()
       }
     } else {
