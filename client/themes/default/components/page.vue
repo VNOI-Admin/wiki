@@ -1,6 +1,9 @@
 <template lang="pug">
   v-app(:dark='$vuetify.theme.dark', :class='$vuetify.rtl ? `is-rtl` : `is-ltr`')
     nav-header(v-if='!printView')
+    //- How far the reader is in the article text
+    .vn-readprog(v-if='autoProgressOn && !printView', aria-hidden='true')
+      i(ref='readProg')
     v-main(ref='content')
       //- Print view: a way back to the page (the bar does not print)
       .vn-printbar(v-if='printView')
@@ -220,8 +223,9 @@ import ArticlesCatalog from './articles-catalog.vue'
 import HomeDashboard from './home-dashboard.vue'
 import PageProgressSelector from '../../../components/common/page-progress-selector.vue'
 import { isProgressExcluded, NO_PROGRESS_TAG } from '../../../modules/progress'
-import { pickRoadmap, touchRoadmap } from '../../../modules/roadmap-context'
+import { DONE_STATUS, pickRoadmap, touchRoadmap } from '../../../modules/roadmap-context'
 import { fitWide } from '../../../modules/fit-wide'
+import { startAutoProgress } from '../../../modules/progress/auto-progress'
 import Prism from 'prismjs'
 import mermaid from 'mermaid'
 import { get, sync } from 'vuex-pathify'
@@ -398,6 +402,10 @@ export default {
     // -> Pages tagged `no-progress` (home, index pages...) get no progress tracker
     progressExcluded () {
       return isProgressExcluded(this.tags)
+    },
+    // -> Articles only: Home and the catalogue are not something to read through
+    autoProgressOn () {
+      return this.$progress.isEnabled && this.pageId > 0 && !this.progressExcluded && !this.homeDecoded && !this.catalogDecoded
     },
     // -> The progress opt-out tag is a setting, not a topic: hide it from readers
     visibleTags () {
@@ -633,6 +641,31 @@ export default {
       // -> A formula or table wider than the column scrolls inside itself, not the page
       this.fitTeardown = fitWide(this.$refs.container)
 
+      // -> "Đang đọc" after a short look, "Hoàn thành" at the end of the text
+      if (this.autoProgressOn) {
+        this.autoTeardown = startAutoProgress({
+          progress: this.$progress,
+          pageId: this.pageId,
+          meta: { locale: this.locale, path: this.path, title: this.title },
+          content: this.$refs.container,
+          onDone: () => this.$store.commit('showNotification', {
+            style: 'success',
+            icon: 'check',
+            message: `${this.$t('common:progress.title', 'Tiến độ')}: ${this.$progress.registry.resolve(DONE_STATUS).label}`
+          })
+        })
+        this.onReadProg = () => {
+          const bar = this.$refs.readProg
+          if (!bar) { return }
+          const box = this.$refs.container.getBoundingClientRect()
+          const share = -box.top / Math.max(1, box.height - window.innerHeight)
+          bar.style.transform = `scaleX(${Math.min(1, Math.max(0, share))})`
+        }
+        window.addEventListener('scroll', this.onReadProg, { passive: true })
+        window.addEventListener('resize', this.onReadProg, { passive: true })
+        this.onReadProg()
+      }
+
       // -> The back-to-top button shows after a third of a screen
       this.onScrollTop = () => {
         this.upBtnShown = window.pageYOffset > window.innerHeight / 3
@@ -647,6 +680,11 @@ export default {
   beforeDestroy () {
     if (this.progressTeardown) { this.progressTeardown() }
     if (this.fitTeardown) { this.fitTeardown() }
+    if (this.autoTeardown) { this.autoTeardown() }
+    if (this.onReadProg) {
+      window.removeEventListener('scroll', this.onReadProg)
+      window.removeEventListener('resize', this.onReadProg)
+    }
     if (this.onScrollSpy) { window.removeEventListener('scroll', this.onScrollSpy) }
     if (this.onScrollTop) { window.removeEventListener('scroll', this.onScrollTop) }
   },
@@ -925,6 +963,28 @@ export default {
 
   &:hover {
     background: var(--sunken);
+  }
+}
+
+.vn-readprog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 7;
+  height: 3px;
+  pointer-events: none;
+
+  i {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  @media print {
+    display: none;
   }
 }
 
