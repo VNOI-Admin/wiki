@@ -266,7 +266,7 @@ export default {
   },
   watch: {
     filteredStrategies (newValue, oldValue) {
-      if (_.head(newValue).strategy.useForm) {
+      if (_.get(_.head(newValue), 'strategy.useForm')) {
         this.selectedStrategyKey = _.head(newValue).key
       }
     },

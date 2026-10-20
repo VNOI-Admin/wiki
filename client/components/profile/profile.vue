@@ -1,16 +1,17 @@
 <template lang='pug'>
-  v-container(fluid, grid-list-lg)
+  v-container.vn-pf(fluid, grid-list-lg)
     v-layout(row wrap)
       v-flex(xs12)
-        .profile-header
-          img.animated.fadeInUp(src='/_assets/svg/icon-profile.svg', alt='Users', style='width: 80px;')
-          .profile-header-title
-            .headline.primary--text.animated.fadeInLeft {{$t('profile:title')}}
-            .subheading.grey--text.animated.fadeInLeft {{$t('profile:subtitle')}}
-          v-spacer
-          v-btn.animated.fadeInDown(color='success', depressed, @click='saveProfile', :loading='saveLoading', large)
-            v-icon(left) mdi-check
+        .vn-pf__head
+          .vn-pf__av(aria-hidden='true') {{ initials }}
+          .vn-pf__who
+            h1 {{ user.name }}
+            span(v-if='user.email') {{ user.email }}
+          button.vn-btn(type='button', @click='saveProfile', :disabled='saveLoading')
+            v-progress-circular(v-if='saveLoading', indeterminate, size='16', width='2')
+            v-icon(v-else, small) mdi-check
             span {{$t('common:actions.save')}}
+        profile-progress
           //- v-btn.animated.fadeInDown(outlined, color='primary', disabled).mr-0
           //-   v-icon(left) mdi-earth
           //-   span {{$t('profile:viewPublicProfile')}}
@@ -350,6 +351,7 @@ import Cookies from 'js-cookie'
 import validate from 'validate.js'
 
 import PasswordStrength from '../common/password-strength.vue'
+import ProfileProgress from './profile-progress.vue'
 
 /* global WIKI, siteConfig */
 
@@ -358,7 +360,8 @@ export default {
     namespaces: ['profile', 'auth']
   },
   components: {
-    PasswordStrength
+    PasswordStrength,
+    ProfileProgress
   },
   data() {
     return {
@@ -642,6 +645,9 @@ export default {
     }
   },
   computed: {
+    initials () {
+      return _.take(String(this.user.name || '').trim().split(/\s+/).filter(Boolean), 2).map(w => w[0].toUpperCase()).join('') || '?'
+    },
     dateFormats () {
       return [
         { text: this.$t('profile:localeDefault'), value: '' },
@@ -919,5 +925,83 @@ export default {
 </script>
 
 <style lang='scss'>
+.vn-pf {
+  max-width: var(--wrap);
+  margin-inline: auto;
+  padding-block: 32px 56px;
+  color: var(--ink);
+}
 
+.vn-pf__head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+
+  > .vn-btn {
+    margin-left: auto;
+  }
+}
+
+.vn-pf__av {
+  width: 64px;
+  height: 64px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 1.375rem;
+  font-weight: 700;
+}
+
+.vn-pf__who {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+
+  h1 {
+    margin: 0;
+    font-size: clamp(1.5rem, 3.4vw, 2.1rem);
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--muted);
+  }
+}
+
+// -> The account cards take the site look: a border, no shadow, a plain head
+.vn-pf .v-card {
+  border: 1px solid var(--line) !important;
+  border-radius: 12px !important;
+  background: var(--surface) !important;
+  box-shadow: none !important;
+  overflow: hidden;
+
+  > .v-toolbar {
+    background: var(--sunken) !important;
+    color: var(--ink) !important;
+    box-shadow: none !important;
+
+    .v-toolbar__title {
+      font-weight: 600;
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .vn-pf__head {
+    flex-wrap: wrap;
+
+    > .vn-btn {
+      margin-left: 0;
+    }
+  }
+}
 </style>
