@@ -1,45 +1,23 @@
 <template lang='pug'>
   v-app(:dark='$vuetify.theme.dark').tags
     nav-header
-    v-navigation-drawer.pb-0.elevation-1(app, fixed, clipped, :right='$vuetify.rtl', permanent, width='300')
-      vue-scroll(:ops='scrollStyle')
-        v-list(dense, nav)
-          v-list-item(href='/')
-            v-list-item-icon: v-icon mdi-home
-            v-list-item-title {{$t('common:header.home')}}
-          template(v-for='(tags, groupName) in tagsGrouped')
-            v-divider.my-2
-            v-subheader.pl-4(:key='`tagGroup-` + groupName') {{groupName}}
-            v-list-item(v-for='tag of tags', @click='toggleTag(tag.tag)', :key='`tag-` + tag.tag')
-              v-list-item-icon
-                v-icon(v-if='isSelected(tag.tag)', color='primary') mdi-checkbox-intermediate
-                v-icon(v-else) mdi-checkbox-blank-outline
-              v-list-item-title {{tag.title}}
-    v-content.grey(:class='$vuetify.theme.dark ? `darken-4-d5` : `lighten-3`')
-      v-toolbar(color='primary', dark, flat, height='58')
-        template(v-if='selection.length > 0')
-          .overline.mr-3.animated.fadeInLeft {{$t('tags:currentSelection')}}
-          v-chip.mr-3.primary--text(
-            v-for='tag of tagsSelected'
-            :key='`tagSelected-` + tag.tag'
-            color='white'
-            close
-            @click:close='toggleTag(tag.tag)'
-            ) {{tag.title}}
-          v-spacer
-          v-btn.animated.fadeIn(
-            small
-            outlined
-            color='blue lighten-4'
-            rounded
-            @click='selection = []'
-            )
-            v-icon(left) mdi-close
+    v-main.vn-tool
+      header.vn-ptop
+        h1 {{$t('common:header.browseTags')}}
+        .vn-ptop__acts(v-if='selection.length > 0')
+          button.vn-btn.is-ghost(type='button', @click='selection = []')
+            v-icon(small) mdi-close
             span {{$t('tags:clearSelection')}}
-        template(v-else)
-          v-icon.mr-3.animated.fadeInRight mdi-arrow-left
-          .overline.animated.fadeInRight {{$t('tags:selectOneMoreTags')}}
-      v-toolbar(:color='$vuetify.theme.dark ? `grey darken-4-l5` : `grey lighten-4`', flat, height='58')
+      //- All tags as chips: a chip adds its tag to the selection (the side drawer did not fit phones)
+      .vn-pbody.vn-tagpick(role='group', :aria-label='$t(`tags:selectOneMoreTags`)')
+        button.vn-chip(
+          v-for='tag of sortedTags'
+          :key='`tag-` + tag.tag'
+          type='button'
+          :aria-pressed='isSelected(tag.tag) ? `true` : `false`'
+          @click='toggleTag(tag.tag)'
+          ) \#{{tag.title}}
+      v-toolbar.vn-tagbar(flat, height='58')
         v-text-field.tags-search(
           v-model='innerSearch'
           :label='$t(`tags:searchWithinResultsPlaceholder`)'
@@ -91,7 +69,7 @@
       .text-center.pt-10(v-if='selection.length < 1')
         img(src='/_assets/svg/icon-price-tag.svg')
         .subtitle-2.grey--text {{$t('tags:selectOneMoreTagsHint')}}
-      .px-5.py-2(v-else)
+      .py-2(v-else)
         v-data-iterator(
           :items='pages'
           :items-per-page='4'
@@ -186,36 +164,12 @@ export default {
       },
       pages: [],
       pageTotal: 0,
-      isLoading: true,
-      scrollStyle: {
-        vuescroll: {},
-        scrollPanel: {
-          initialScrollY: 0,
-          initialScrollX: 0,
-          scrollingX: false,
-          easing: 'easeOutQuad',
-          speed: 1000,
-          verticalNativeBarPos: this.$vuetify.rtl ? `left` : `right`
-        },
-        rail: {
-          gutterOfEnds: '2px'
-        },
-        bar: {
-          onlyShowBarOnScroll: false,
-          background: '#CCC',
-          hoverStyle: {
-            background: '#999'
-          }
-        }
-      }
+      isLoading: true
     }
   },
   computed: {
-    tagsGrouped () {
-      return _.groupBy(this.tags, t => t.title.charAt(0).toUpperCase())
-    },
-    tagsSelected () {
-      return _.filter(this.tags, t => _.includes(this.selection, t.tag))
+    sortedTags () {
+      return _.sortBy(this.tags, t => t.title.toLowerCase())
     },
     orderByItems () {
       return [
@@ -331,6 +285,65 @@ export default {
 </script>
 
 <style lang='scss'>
+.vn-tool {
+  background: var(--bg);
+}
+
+.vn-tagpick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 16px;
+}
+
+// -> The search and sort bar shares the left and right edges of the page head
+.vn-tagbar.v-toolbar {
+  max-width: calc(var(--wrap) - 40px);
+  margin: 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 12px !important;
+  background: var(--surface) !important;
+}
+
+// -> Below the page width (--wrap, 76rem), the bar keeps the 20px page gutter
+@media (max-width: 76rem) {
+  .vn-tagbar.v-toolbar {
+    margin-inline: 20px;
+  }
+}
+
+// -> Phones: the search field takes one row, the sort controls the next
+@media (max-width: 640px) {
+  .vn-tagbar.v-toolbar {
+    height: auto !important;
+
+    .v-toolbar__content {
+      height: auto !important;
+      flex-wrap: wrap;
+      gap: 8px 0;
+      padding-block: 8px;
+    }
+
+    .tags-search {
+      flex-basis: 100%;
+    }
+
+    .v-divider--vertical, .overline {
+      display: none;
+    }
+  }
+}
+
+.tags .v-data-iterator {
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding-inline: 20px;
+
+  .v-card.radius-7 {
+    border: 1px solid var(--line);
+    box-shadow: none !important;
+  }
+}
 .tags-search {
   .v-input__control {
     min-height: initial !important;

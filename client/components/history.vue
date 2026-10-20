@@ -1,15 +1,15 @@
 <template lang='pug'>
   v-app(:dark='$vuetify.theme.dark').history
     nav-header
-    v-content
-      v-toolbar(color='primary', dark)
-        .subheading Viewing history of #[strong /{{path}}]
-        template(v-if='$vuetify.breakpoint.mdAndUp')
-          v-spacer
-          .caption.blue--text.text--lighten-3.mr-4 Trail Length: {{total}}
-          .caption.blue--text.text--lighten-3 ID: {{pageId}}
-          v-btn.ml-4(depressed, color='blue darken-1', @click='goLive') Return to Live Version
-      v-container(fluid, grid-list-xl)
+    v-main.vn-tool
+      header.vn-ptop
+        h1 {{ $t('common:header.history') }} #[strong /{{path}}]
+        .vn-ptop__ids
+          span {{ trailLabel }}
+          span ID: {{pageId}}
+        .vn-ptop__acts
+          button.vn-btn(type='button', @click='goLive') {{ $t('common:page.returnNormalView') }}
+      v-container.vn-hist(fluid, grid-list-xl)
         v-layout(row, wrap)
           v-flex(xs12, md4)
             v-chip.my-0.ml-6(
@@ -80,13 +80,11 @@
                       :disabled='ph.versionId <= diffSource && ph.versionId !== 0'
                       ): strong B
 
-            v-btn.ma-0.radius-7(
+            button.vn-btn.is-ghost.vn-hist__more(
               v-if='total > trail.length'
-              block
-              color='primary'
+              type='button'
               @click='loadMore'
-              )
-              .caption.white--text Load More...
+              ) {{ $t('common:header.searchMore', 'Xem thêm') }}
 
             v-chip.ma-0(
               v-else
@@ -227,6 +225,9 @@ export default {
     }
   },
   computed: {
+    trailLabel () {
+      return this.$t('common:history.versions', { defaultValue: '{{count}} phiên bản', count: this.total })
+    },
     fullTrail () {
       const liveTrailItem = {
         versionId: 0,
@@ -558,6 +559,24 @@ export default {
 </script>
 
 <style lang='scss'>
+.vn-tool {
+  background: var(--bg);
+}
+
+// -> The page width of the site, and site borders around the cards
+.vn-hist {
+  max-width: var(--wrap);
+  margin: 0 auto;
+
+  .v-card.radius-7 {
+    border: 1px solid var(--line);
+    box-shadow: none !important;
+  }
+}
+
+.vn-hist__more {
+  width: 100%;
+}
 
 .history {
   &-promptmenu {

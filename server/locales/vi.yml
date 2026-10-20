@@ -65,6 +65,11 @@ common:
     level3: 'Nâng cao'
     level4: 'Rất khó'
     level5: 'Chuyên sâu'
+  history:
+    versions: '{{count}} phiên bản'
+  folder:
+    createHere: 'Tạo trang ở đây'
+    empty: 'Thư mục này trống.'
   login:
     via: 'Đăng nhập bằng {{name}}'
   home:

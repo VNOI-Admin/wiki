@@ -94,3 +94,49 @@
     background: linear-gradient(90deg, var(--star) 50%, var(--star-off) 50%);
   }
 }
+
+// -> Head of a tool page (source, history, folder, tags): title, ids, actions
+.vn-ptop {
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding: 28px 20px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  color: var(--ink);
+
+  h1 {
+    margin: 0;
+    min-width: 0;
+    font-size: 1.375rem;
+    font-weight: 700;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+
+    strong {
+      font-weight: 700;
+    }
+  }
+}
+
+.vn-ptop__ids {
+  display: flex;
+  gap: 4px 14px;
+  font: 500 0.8125rem var(--font-mono);
+  color: var(--muted);
+}
+
+.vn-ptop__acts {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// -> The body of a tool page, under its head
+.vn-pbody {
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding: 0 20px 56px;
+}
