@@ -37,6 +37,7 @@
                       v-icon(small) mdi-chevron-right
               v-card-text(v-else)
                 .text-center.grey--text.py-5 This folder is empty.
+    search-results
 </template>
 
 <script>

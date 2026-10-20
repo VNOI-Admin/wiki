@@ -13,6 +13,7 @@
               span.vn-rml__n {{ countLabel(roadmap.articleCount) }}
         p.vn-rml__none(v-else) {{ $t('common:roadmap.listEmptyAll', 'Chưa có lộ trình học nào.') }}
     nav-footer
+    search-results
 </template>
 
 <script>

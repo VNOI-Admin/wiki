@@ -24,6 +24,7 @@
           v-icon(v-else, small, :color='status.color') {{ status.icon }}
           span {{ status.label }}
         hr
+        .vn-menu__note(v-if='!isAccountBacked') {{ $t('common:progress.savedLocally', 'Log in to auto-sync your progress.') }}
         button.vn-menu__item(type='button', @click='dialogData = true')
           v-icon(small) mdi-database-cog-outline
           span {{ $t('common:progress.manageData', 'Quản lý dữ liệu') }}

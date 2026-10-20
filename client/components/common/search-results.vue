@@ -1,7 +1,7 @@
 <template lang="pug">
-  .vn-search(v-if='searchIsFocused', @keydown.esc.stop='close')
+  .vn-search(v-if='searchIsFocused', @keydown.esc.stop='close', @keydown.tab='trapFocus')
     .vn-search__scrim(@click='close')
-    .vn-search__box(role='dialog', aria-modal='true', :aria-label='$t(`common:header.search`, `Tìm bài viết`)')
+    .vn-search__box(ref='box', role='dialog', aria-modal='true', :aria-label='$t(`common:header.search`, `Tìm bài viết`)')
       .vn-search__in
         v-icon mdi-magnify
         input(
@@ -10,6 +10,11 @@
           type='search'
           autocomplete='off'
           spellcheck='false'
+          role='combobox'
+          aria-autocomplete='list'
+          aria-controls='vn-search-list'
+          :aria-expanded='results.length + suggestions.length > 0 ? `true` : `false`'
+          :aria-activedescendant='cursor >= 0 ? `vn-hit-` + cursor : null'
           :placeholder='$t(`common:header.searchPlaceholder`, `Tìm bài: DFS, quy hoạch động, segment tree…`)'
           :aria-label='$t(`common:header.search`, `Tìm bài viết`)'
           @keydown.down.prevent='move(1)'
@@ -17,7 +22,7 @@
           @keydown.enter.prevent='enter'
           )
         button.vn-search__esc(type='button', @click='close') Esc
-      .vn-search__out(ref='out')
+      #vn-search-list.vn-search__out(ref='out', role='listbox', :aria-label='$t(`common:header.search`, `Tìm bài viết`)')
         template(v-if='search && search.length >= 2')
           .vn-search__skel(v-if='searchIsLoading && results.length < 1', :aria-label='$t(`common:header.searchLoading`)')
             i
@@ -25,10 +30,12 @@
             i
           .vn-search__empty(v-else-if='results.length < 1') {{$t('common:header.searchNoResult')}}
           template(v-else)
-            .vn-search__grp {{$t('common:header.searchResultsCount', { total: hits })}}
+            .vn-search__grp(role='presentation') {{$t('common:header.searchResultsCount', { total: hits })}}
             a.vn-hit(
               v-for='(item, idx) of results'
               :key='item.id'
+              :id='`vn-hit-` + idx'
+              role='option'
               :href='`/${item.locale}/${item.path}`'
               :aria-selected='idx === cursor ? `true` : `false`'
               @mousemove='cursor = idx'
@@ -40,10 +47,12 @@
               span.vn-hit__p /{{item.path}}
             button.vn-search__more(v-if='results.length < response.results.length', type='button', @click='shown += perPage') {{$t('common:header.searchMore', 'Xem thêm')}}
           template(v-if='suggestions.length > 0')
-            .vn-search__grp {{$t('common:header.searchDidYouMean')}}
+            .vn-search__grp(role='presentation') {{$t('common:header.searchDidYouMean')}}
             button.vn-hit(
               v-for='(term, idx) of suggestions'
               :key='term'
+              :id='`vn-hit-` + (idx + results.length)'
+              role='option'
               type='button'
               :aria-selected='idx + results.length === cursor ? `true` : `false`'
               @click='setSearchTerm(term)'
@@ -89,7 +98,12 @@ export default {
   watch: {
     searchIsFocused (open) {
       if (open) {
+        // -> Give focus back to the control that opened the dialog
+        this.returnFocus = document.activeElement
         this.$nextTick(() => { this.$refs.input && this.$refs.input.focus() })
+      } else if (this.returnFocus && this.returnFocus.focus) {
+        this.returnFocus.focus()
+        this.returnFocus = null
       }
     },
     search(newValue, oldValue) {
@@ -105,6 +119,20 @@ export default {
     }
   },
   methods: {
+    // -> Tab and Shift+Tab stay inside the dialog
+    trapFocus (ev) {
+      const items = Array.from(this.$refs.box.querySelectorAll('input, button, a[href]'))
+      if (items.length < 1) { return }
+      const first = items[0]
+      const last = items[items.length - 1]
+      if (ev.shiftKey && document.activeElement === first) {
+        ev.preventDefault()
+        last.focus()
+      } else if (!ev.shiftKey && document.activeElement === last) {
+        ev.preventDefault()
+        first.focus()
+      }
+    },
     close () {
       this.searchIsFocused = false
       this.search = ''

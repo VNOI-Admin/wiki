@@ -123,15 +123,27 @@
       border-color: var(--line) !important;
     }
 
+    // -> !important beats the theme's zebra rows. A cell with its own inline color keeps it.
     th {
-      background: var(--sunken) !important;
-      color: var(--ink) !important;
       font-weight: 600;
+
+      &:not([style*="background"]) {
+        background: var(--sunken) !important;
+      }
+
+      &:not([style*="color"]) {
+        color: var(--ink) !important;
+      }
     }
 
     td {
-      background: none !important;
-      color: var(--ink);
+      &:not([style*="background"]) {
+        background: none !important;
+      }
+
+      &:not([style*="color"]) {
+        color: var(--ink);
+      }
     }
   }
 

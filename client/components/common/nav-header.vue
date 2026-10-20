@@ -3,8 +3,10 @@
     app
     fixed
     flat
-    height='60'
+    height='64'
     color='transparent'
+    :dark='dense'
+    :class='{ "is-dense": dense }'
     :clipped-left='!$vuetify.rtl'
     :clipped-right='$vuetify.rtl'
     )
@@ -20,8 +22,12 @@
         img.vn-brand__logo(:src='logoUrl', alt='')
         span.vn-brand__name {{title}}
 
+      //- Views put their own controls here (editor title, admin label)
+      .vn-topbar__mid(v-if='$slots.mid')
+        slot(name='mid')
+
       //- HEADER LINKS (collapse into a menu when they don't fit)
-      nav.vn-nav(v-if='hasHeaderLinks', ref='linksBox', :aria-label='$t(`common:header.links`, `Liên kết`)')
+      nav.vn-nav(v-if='hasHeaderLinks && !$slots.mid', ref='linksBox', :aria-label='$t(`common:header.links`, `Liên kết`)')
         .vn-nav__measure(aria-hidden='true')
           span.vn-nav__link(
             v-for='(link, idx) of headerLinks'
@@ -51,11 +57,11 @@
               :target='isExternal(link) ? `_blank` : null'
               ) {{link.name}}
 
-      button.vn-searchbtn(v-if='!hideSearch', type='button', @click='openSearch', :aria-label='$t(`common:header.search`, `Tìm bài viết`)')
+      button.vn-searchbtn(v-if='searchShown', type='button', @click='openSearch', :aria-label='$t(`common:header.search`, `Tìm bài viết`)')
         v-icon mdi-magnify
         span.vn-searchbtn__text {{$t('common:header.searchShort', 'Tìm bài viết…')}}
         kbd /
-      .vn-topbar__spacer(v-else)
+      .vn-topbar__spacer(v-else-if='!$slots.mid')
 
       .vn-topbar__actions
         v-progress-circular.mr-1(indeterminate, color='primary', :size='20', :width='2', v-show='isLoading')
@@ -103,6 +109,15 @@
               v-icon(small) mdi-trash-can-outline
               span {{$t('common:header.delete')}}
 
+        //- TAGS (small screens: in the sheet)
+        a.vn-iconbtn.vn-topbar__lg(
+          v-if='mode === `view`'
+          href='/t'
+          :aria-label='$t(`common:header.browseTags`)'
+          :title='$t(`common:header.browseTags`)'
+          )
+          v-icon mdi-tag-multiple-outline
+
         //- NEW PAGE (small screens: in the sheet)
         button.vn-iconbtn.vn-topbar__lg(
           v-if='hasNewPagePermission && path && mode !== `edit`'
@@ -140,7 +155,9 @@
             .vn-menu__who
               img(v-if='picture.kind === `image`', :src='picture.url', alt='')
               span.vn-initials(v-else) {{picture.initials}}
-              span.vn-menu__name {{name}}
+              span.vn-menu__id
+                span.vn-menu__name {{name}}
+                span.vn-menu__email(v-if='email') {{email}}
             hr
             a.vn-menu__item(href='/p') {{$t('common:header.profile')}}
             button.vn-menu__item(type='button', @click='logout') {{$t('common:header.logout')}}
@@ -168,6 +185,9 @@
         .vn-sheet__tools
           hr
           nav.vn-sheet__nav
+            a(v-if='mode === `view`', href='/t')
+              v-icon(small) mdi-tag-multiple-outline
+              span {{$t('common:header.browseTags')}}
             button(v-if='hasNewPagePermission && path && mode !== `edit`', type='button', @click='menuSheet = false; pageNew()')
               v-icon(small) mdi-text-box-plus-outline
               span {{$t('common:header.newPage')}}
@@ -239,6 +259,9 @@ export default {
       return this.headerLinks.length > 0
     },
     // -> Admin, editor and other tool views use the full width; reading views use the page column
+    searchShown () {
+      return !this.hideSearch && !this.dense
+    },
     isWide () {
       return this.dense || this.hideSearch || ['edit', 'admin', 'history', 'source'].includes(this.mode)
     },
@@ -316,8 +339,10 @@ export default {
     this.isDevMode = siteConfig.devMode === true
     this.onKeydown = ev => {
       const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName) || ev.target.isContentEditable
-      if (this.hideSearch) { return }
-      if ((ev.key === '/' && !typing) || (ev.key.toLowerCase() === 'k' && (ev.metaKey || ev.ctrlKey))) {
+      if (!this.searchShown) { return }
+      // -> Autofill sends keydown events with no key
+      const key = (ev.key || '').toLowerCase()
+      if ((key === '/' && !typing) || (key === 'k' && (ev.metaKey || ev.ctrlKey))) {
         ev.preventDefault()
         this.openSearch()
       }
@@ -497,6 +522,17 @@ export default {
 // TOP BAR
 // ---------------------------------
 
+// -> The editor keeps a dark header in both themes: its title field and labels are white
+#root .v-app-bar.vn-topbar.is-dense {
+  --surface: #141a24;
+  --sunken: #1a2130;
+  --ink: #e6eaf2;
+  --muted: #98a2b6;
+  --line: #252e40;
+  --accent: #7ea8ff;
+  --accent-soft: #17233d;
+}
+
 #root .v-app-bar.vn-topbar {
   background: color-mix(in srgb, var(--surface) 92%, transparent) !important;
   backdrop-filter: blur(10px);
@@ -512,7 +548,7 @@ export default {
 .vn-topbar__in {
   width: 100%;
   max-width: var(--wrap);
-  height: 60px;
+  height: 64px;
   margin: 0 auto;
   padding-inline: 20px;
   display: flex;
@@ -829,6 +865,14 @@ export default {
   color: var(--muted);
 }
 
+.vn-menu__note {
+  max-width: 16rem;
+  padding: 6px 10px;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
 .vn-menu__who {
   display: flex;
   align-items: center;
@@ -842,9 +886,30 @@ export default {
   }
 }
 
+.vn-menu__id {
+  display: grid;
+  min-width: 0;
+}
+
 .vn-menu__name {
   font-weight: 600;
   color: var(--ink);
+}
+
+.vn-menu__email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.vn-topbar__mid {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 // ---------------------------------

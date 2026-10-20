@@ -20,7 +20,17 @@
               :aria-checked='r.id === roadmap.id ? `true` : `false`'
               @click='$emit(`select`, r)'
               ) {{ r.title }}
+            hr
+            a.vn-menu__item(:href='`/roadmap/` + roadmap.id') {{ $t('common:roadmap.viewFull', 'Xem toàn bộ lộ trình') }}
         a.nav-roadmap-title(v-else, :href='`/roadmap/` + roadmap.id') {{ roadmap.title }}
+        button.nav-roadmap-hide(
+          v-if='canShowMenu'
+          type='button'
+          @click='$emit(`show-menu`)'
+          :title='$t(`common:roadmap.mainMenu`, `Menu chính`)'
+          :aria-label='$t(`common:roadmap.mainMenu`, `Menu chính`)'
+          )
+          v-icon(small) mdi-menu
         button.nav-roadmap-hide(
           v-if='canHide'
           type='button'
@@ -81,6 +91,11 @@ export default {
     path: {
       type: String,
       default: ''
+    },
+    // -> Shows a button that swaps the rail to the site navigation
+    canShowMenu: {
+      type: Boolean,
+      default: false
     },
     // -> Shows the × that hides the rail (not in the bottom sheet)
     canHide: {
@@ -216,6 +231,10 @@ export default {
   }
 
   &-hide {
+    .v-icon {
+      color: inherit !important;
+    }
+
     flex: none;
     width: 28px;
     height: 28px;

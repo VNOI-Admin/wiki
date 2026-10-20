@@ -12,6 +12,8 @@ common:
     copyCode: 'Sao chép'
     copyCodeDone: 'Đã chép'
     copyCodeError: 'Nhấn Ctrl+C để chép'
+    exitPrint: 'Thoát bản in'
+    siteNav: 'Điều hướng'
   comments:
     loginToComment: 'Đăng nhập để bình luận'
   progress:
@@ -53,6 +55,7 @@ common:
     show: 'Hiện lộ trình'
     completed: 'Đã hoàn thành {{completed}} / {{total}}'
     hide: 'Ẩn lộ trình'
+    mainMenu: 'Menu chính'
     expandAll: 'Mở tất cả'
     collapseAll: 'Thu gọn'
     hideDone: 'Ẩn bài hoàn thành'

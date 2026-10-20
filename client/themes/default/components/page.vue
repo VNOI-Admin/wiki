@@ -2,23 +2,28 @@
   v-app(:dark='$vuetify.theme.dark', :class='$vuetify.rtl ? `is-rtl` : `is-ltr`')
     nav-header(v-if='!printView')
     v-main(ref='content')
-      .vn-doc(:class='{ "has-rail": railShown, "has-toc": hasToc }')
+      //- Print view: a way back to the page (the bar does not print)
+      .vn-printbar(v-if='printView')
+        button.vn-btn.is-ghost(type='button', @click='print')
+          v-icon(small) mdi-arrow-left
+          span {{$t('common:page.exitPrint', 'Thoát bản in')}}
+      .vn-doc(:class='{ "has-rail": railShown && !printView, "has-toc": hasToc && tocOn && !printView }')
         //- LEFT RAIL: the roadmap that holds this page, or the admin navigation
         aside.vn-rail(v-if='railShown && !printView', :aria-label='$t(`common:roadmap.title`, `Lộ trình`)')
           nav-roadmap(
-            v-if='currentRoadmap'
+            v-if='currentRoadmap && !railMenu'
             :roadmap='currentRoadmap'
             :roadmaps='roadmapsDecoded'
             :locale='locale'
             :path='path'
+            :can-show-menu='navMode !== `NONE`'
             @select='selectRoadmap'
+            @show-menu='railMenu = true'
             @hide='setRailHidden(true)'
             )
-          nav-sidebar(
-            v-else
-            :items='sidebarDecoded'
-            :nav-mode='navMode'
-            )
+          template(v-else)
+            button.vn-railback(v-if='currentRoadmap', type='button', @click='railMenu = false') ← {{ currentRoadmap.title }}
+            nav-sidebar(:items='sidebarDecoded', :nav-mode='navMode')
 
         //- ARTICLE
         article.vn-article
@@ -45,7 +50,7 @@
               span {{$t('common:comments.title')}}
             span.vn-meta__by(v-if='authorName')
               | {{ authorName }} · {{ updatedAt | moment('L') }}
-            a.vn-linkbtn(v-if='hasWritePagesPermission && editShortcutsObj.editMenuBtn !== false', href='#', @click.prevent='pageEdit')
+            a.vn-linkbtn(v-if='hasWritePagesPermission && editShortcutsObj.editMenuBar && editShortcutsObj.editMenuBtn', href='#', @click.prevent='pageEdit')
               v-icon(small) mdi-pencil
               span {{$t('common:actions.edit')}}
             a.vn-linkbtn(v-if='editShortcutsObj.editMenuBar && editShortcutsObj.editMenuExternalBtn', :href='editMenuExternalUrl', target='_blank', rel='noopener')
@@ -61,6 +66,13 @@
               :href='`/t/` + tag.tag'
               :key='`tag-` + tag.tag'
               ) \#{{tag.title}}
+            a.vn-tag(
+              v-if='visibleTags.length > 1'
+              :href='`/t/` + visibleTags.map(t => t.tag).join(`/`)'
+              :aria-label='$t(`common:page.tagsMatching`)'
+              :title='$t(`common:page.tagsMatching`)'
+              )
+              v-icon(small) mdi-tag-multiple-outline
 
           nav.vn-nextprev(v-if='prevNode || nextNode', :aria-label='$t(`common:page.prevNext`, `Bài trước và bài sau`)')
             a(v-if='prevNode', :href='prevNode.href', rel='prev')
@@ -72,12 +84,12 @@
               b {{nextNode.title}}
 
           section.vn-comments#discussion(v-if='commentsEnabled && commentsPerms.read && !printView')
-            h2 {{$t('common:comments.title')}} #[span.vn-comments__n(v-if='commentsCount > 0') {{commentsCount}}]
+            h2 {{$t('common:comments.title')}}
             slot(name='comments')
 
         //- RIGHT COLUMN: table of contents and page tools
         aside.vn-toc(v-if='!printView', :aria-label='$t(`common:page.toc`)')
-          template(v-if='hasToc')
+          template(v-if='hasToc && tocOn')
             .vn-label {{$t('common:page.toc')}}
             a(
               v-for='item of tocFlat'
@@ -101,13 +113,13 @@
               span {{$t('common:page.printFormat')}}
 
       //- Narrow screens: the rail and the TOC open as sheets from a bottom bar
-      .vn-readbar(v-if='!printView && (hasToc || railAvailable)', :class='{ "has-rail": railAvailable, "rail-hidden": railHidden }')
-        button.is-toc(v-if='hasToc', type='button', @click='tocSheet = true')
+      .vn-readbar(v-if='!printView && ((hasToc && tocOn) || railAvailable)', :class='{ "has-rail": railAvailable, "rail-hidden": railHidden }')
+        button.is-toc(v-if='hasToc && tocOn', type='button', @click='tocSheet = true')
           v-icon(small) mdi-format-list-bulleted
           span {{$t('common:page.toc')}}
         button.is-rail(v-if='railAvailable', type='button', @click='onRailButton')
           v-icon(small) mdi-map-marker-path
-          span {{ currentRoadmap ? currentRoadmap.title : $t('common:roadmap.title', 'Lộ trình') }}
+          span {{ currentRoadmap ? currentRoadmap.title : $t('common:page.siteNav', 'Điều hướng') }}
 
       v-bottom-sheet(v-model='tocSheet', content-class='vn-sheet', scrollable)
         .vn-sheet__panel
@@ -123,16 +135,22 @@
               :class='{ "is-sub": item.sub, "is-active": item.anchor === activeAnchor }'
               @click.prevent='tocSheet = false; goToAnchor(item.anchor)'
               ) {{item.title}}
-      v-bottom-sheet(v-if='currentRoadmap', v-model='railSheet', content-class='vn-sheet', scrollable)
+      v-bottom-sheet(v-if='railAvailable', v-model='railSheet', content-class='vn-sheet', scrollable)
         .vn-sheet__panel
           nav-roadmap(
+            v-if='currentRoadmap && !railMenu'
             :roadmap='currentRoadmap'
             :roadmaps='roadmapsDecoded'
             :locale='locale'
             :path='path'
             :can-hide='false'
+            :can-show-menu='navMode !== `NONE`'
             @select='selectRoadmap'
+            @show-menu='railMenu = true'
             )
+          template(v-else)
+            button.vn-railback(v-if='currentRoadmap', type='button', @click='railMenu = false') ← {{ currentRoadmap.title }}
+            nav-sidebar(:items='sidebarDecoded', :nav-mode='navMode')
 
       //- Editor speed dial, when the admin turns it on
       v-tooltip(:right='$vuetify.rtl', :left='!$vuetify.rtl', v-if='hasAnyPagePermissions && editShortcutsObj.editFab')
@@ -173,6 +191,16 @@
               v-icon(size='20') mdi-trash-can-outline
         span {{$t('common:page.editPage')}}
 
+    v-fab-transition
+      button.vn-totop(
+        v-if='upBtnShown && !printView'
+        type='button'
+        :class='{ "has-fab": hasAnyPagePermissions && editShortcutsObj.editFab }'
+        @click='$vuetify.goTo(0, scrollOpts)'
+        :aria-label='$t(`common:actions.returnToTop`)'
+        :title='$t(`common:actions.returnToTop`)'
+        )
+        v-icon mdi-arrow-up
     nav-footer(v-if='!printView')
     notify
     search-results
@@ -332,6 +360,9 @@ export default {
       currentRoadmapId: null,
       railHidden: false,
       railSheet: false,
+      // -> true: the rail shows the site navigation instead of the roadmap
+      railMenu: false,
+      upBtnShown: false,
       tocSheet: false,
       activeAnchor: '',
       pageEditFab: false,
@@ -352,7 +383,6 @@ export default {
       return this.tags.filter(t => t.tag !== NO_PROGRESS_TAG)
     },
     isAuthenticated: get('user/authenticated'),
-    commentsCount: get('page/commentsCount'),
     commentsPerms: get('page/effectivePermissions@comments'),
     editShortcutsObj: get('page/editShortcuts'),
     rating: {
@@ -388,7 +418,7 @@ export default {
     },
     // -> The rail holds the roadmap that contains this page, else the admin navigation
     railAvailable () {
-      return !!this.currentRoadmap || (this.navMode !== 'NONE' && this.sidebarDecoded.length > 0)
+      return !!this.currentRoadmap || this.navMode !== 'NONE'
     },
     railShown () {
       return this.railAvailable && !this.railHidden
@@ -427,6 +457,10 @@ export default {
       return this.roadmapIndex >= 0 ? (this.roadmapArticles[this.roadmapIndex + 1] || null) : null
     },
     tocPosition: get('site/tocPosition'),
+    // -> The admin can turn the table of contents off. "left" and "right" both show it on the right.
+    tocOn () {
+      return this.tocPosition !== 'off'
+    },
     hasAdminPermission: get('page/effectivePermissions@system.manage'),
     hasWritePagesPermission: get('page/effectivePermissions@pages.write'),
     hasManagePagesPermission: get('page/effectivePermissions@pages.manage'),
@@ -542,12 +576,21 @@ export default {
 
       this.watchHeadings()
 
+      // -> The back-to-top button shows after a third of a screen
+      this.onScrollTop = () => {
+        this.upBtnShown = window.pageYOffset > window.innerHeight / 3
+      }
+      window.addEventListener('scroll', this.onScrollTop, { passive: true })
+      // -> The browser can restore the scroll position before the listener starts
+      this.onScrollTop()
+
       window.boot.notify('page-ready')
     })
   },
   beforeDestroy () {
     if (this.progressTeardown) { this.progressTeardown() }
     if (this.onScrollSpy) { window.removeEventListener('scroll', this.onScrollSpy) }
+    if (this.onScrollTop) { window.removeEventListener('scroll', this.onScrollTop) }
   },
   methods: {
     selectRoadmap (roadmap) {
@@ -788,6 +831,75 @@ export default {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 28px;
+
+  .v-icon {
+    color: inherit !important;
+  }
+}
+
+// -> Back from the roadmap's site navigation to the roadmap
+.vn-railback {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  color: var(--accent);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: left;
+
+  &:hover {
+    background: var(--sunken);
+  }
+}
+
+.vn-printbar {
+  max-width: 56rem;
+  margin: 16px auto 0;
+  padding-inline: 20px;
+
+  @media print {
+    display: none;
+  }
+}
+
+.vn-totop {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 6;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+
+  .v-icon {
+    color: var(--ink) !important;
+  }
+
+  &:hover {
+    border-color: var(--accent);
+  }
+
+  // -> Above the edit button
+  &.has-fab {
+    right: 26px;
+    bottom: 92px;
+  }
+
+  // -> Above the bottom bar, which shows at these widths
+  @media (max-width: 1220px) {
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+
+  @media print {
+    display: none;
+  }
 }
 
 .vn-tag {

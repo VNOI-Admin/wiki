@@ -131,6 +131,7 @@
           button.vn-btn.is-ghost(type='button', @click='dataDialog = true') {{ $t('common:progress.manageData', 'Quản lý dữ liệu') }}
           progress-data-dialog(v-model='dataDialog')
     nav-footer
+    search-results
 </template>
 
 <script>
