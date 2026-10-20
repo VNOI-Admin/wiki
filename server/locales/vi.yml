@@ -44,6 +44,7 @@ common:
       clearTitle: 'Xoá tất cả'
       clearHint: 'Xoá toàn bộ tiến độ đã theo dõi.'
       clear: 'Xoá'
+      confirmClear: 'Xoá tiến độ của {{count}} trang? Không thể hoàn tác.'
       imported: 'Đã nhập dữ liệu tiến độ ({{count}} trang).'
       cleared: 'Đã xoá toàn bộ dữ liệu tiến độ.'
     importError:
@@ -60,7 +61,6 @@ common:
     filterPlaceholder: 'Lọc theo tên bài'
     difficulty: 'Độ khó'
     legend: 'Ý nghĩa các mức độ khó'
-    progress: 'Tiến độ'
     topic: 'Chủ đề'
     all: 'Tất cả'
     noMatch: 'Không có bài nào khớp.'

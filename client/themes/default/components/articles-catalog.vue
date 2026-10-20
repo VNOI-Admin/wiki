@@ -63,7 +63,7 @@
               vn-stars(:value='n')
 
         .vn-facet(v-if='progressOn')
-          h2#vn-f-prog {{ $t('common:catalog.progress', 'Tiến độ') }}
+          h2#vn-f-prog {{ $t('common:progress.title', 'Tiến độ') }}
           .vn-opts.is-multi(role='group', aria-labelledby='vn-f-prog')
             button.vn-opt(
               v-for='s of statuses'

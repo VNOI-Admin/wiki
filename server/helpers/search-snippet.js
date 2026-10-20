@@ -17,7 +17,8 @@ const MAX = 180
  * @returns {string} The longest word of the query: it matches the fewest places
  */
 function pickTerm (q) {
-  return String(q || '').trim().split(/\s+/).reduce((best, w) => w.length > best.length ? w : best, '')
+  // -> Quotes and search operators ("a b", +a, -a, a*) are not in the page text
+  return String(q || '').replace(/["+\-~<>()*@]/g, ' ').trim().split(/\s+/).reduce((best, w) => w.length > best.length ? w : best, '')
 }
 
 /**

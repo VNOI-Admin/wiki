@@ -129,9 +129,13 @@ module.exports = class Comment extends Model {
    *
    * A moderator (manage:comments) can change every comment. An author with
    * write:comments can change only their own comments. Guests share one account,
-   * so a guest cannot change a comment.
+   * so a guest cannot change a comment. The GraphQL @auth rules of update and
+   * delete must also let write:comments through.
    */
   static async canChange ({ id, page, user }) {
+    if (!user) {
+      return false
+    }
     const where = {
       path: page.path,
       locale: page.localeCode,
@@ -140,7 +144,7 @@ module.exports = class Comment extends Model {
     if (WIKI.auth.checkAccess(user, ['manage:comments'], where)) {
       return true
     }
-    if (!user || user.id === 2 || !WIKI.auth.checkAccess(user, ['write:comments'], where)) {
+    if (user.id === 2 || !WIKI.auth.checkAccess(user, ['write:comments'], where)) {
       return false
     }
     const cm = await WIKI.data.commentProvider.getCommentById(id)

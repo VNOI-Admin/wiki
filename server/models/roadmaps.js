@@ -221,7 +221,7 @@ module.exports = class Roadmap extends Model {
         .where('isEnabled', true)
         .orderBy('sortOrder')
         .select('id', 'title', 'sections')
-      // -> Only what the sidebar renders
+      // -> Only what the reader views render
       index = rows.map(r => ({
         id: r.id,
         title: r.title,

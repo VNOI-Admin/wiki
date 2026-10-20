@@ -611,9 +611,10 @@ router.get('/*', async (req, res, next) => {
             }
           }
 
-          // -> The home page shows the dashboard above its contents
+          // -> The home page shows the dashboard above its contents.
+          //    The dashboard lists the catalogue, so the reader needs read access to it.
           let home = null
-          if (page.path.toLowerCase() === 'home') {
+          if (page.path.toLowerCase() === 'home' && WIKI.auth.checkAccess(req.user, ['read:pages'], { path: catalogHelper.CATALOG_PATH, locale: page.localeCode })) {
             try {
               home = await catalogHelper.getHome(page.localeCode)
             } catch (err) {

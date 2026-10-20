@@ -4,6 +4,8 @@ describe('helpers/search-snippet', () => {
   it('picks the longest word of the query', () => {
     expect(pickTerm('  cây  segment tree ')).toBe('segment')
     expect(pickTerm('')).toBe('')
+    expect(pickTerm('"segment tree"')).toBe('segment')
+    expect(pickTerm('+fenwick -bit dp*')).toBe('fenwick')
   })
 
   it('keeps the text of markdown and HTML', () => {

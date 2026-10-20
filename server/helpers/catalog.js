@@ -22,11 +22,10 @@ const _ = require('lodash')
 
 const CATALOG_PATH = 'articles'
 const STAR = '⭐'
-const CACHE_MAX = 10
-// -> A listed page can be created or unpublished without an edit of the catalogue page
-const CACHE_TTL = 10 * 60 * 1000
-
-const cache = new Map()
+// -> Difficulty levels: 1 to 5 stars
+const LEVELS = 5
+// -> Seconds. A listed page can be created or unpublished without an edit of the catalogue page.
+const CACHE_TTL = 10 * 60
 
 /**
  * Turn the markdown of a title into plain text: links, HTML, emoji codes and simple TeX.
@@ -142,7 +141,7 @@ function parseCatalog (markdown) {
       items.push({
         title: cleanText(raw),
         href: normalizeHref(link[2]),
-        stars: Math.min(stars, 5),
+        stars: Math.min(stars, LEVELS),
         isNew: /:new:/.test(raw),
         topic,
         sub
@@ -156,7 +155,7 @@ function parseCatalog (markdown) {
     topics.pop()
   }
 
-  return { legend: _.times(5, i => legend[i] || ''), topics, items }
+  return { legend: _.times(LEVELS, i => legend[i] || ''), topics, items }
 }
 
 /**
@@ -167,10 +166,9 @@ function parseCatalog (markdown) {
  * @returns {Promise<Object>} parseCatalog() output; items also get pageId and createdAt
  */
 async function getCatalog (page) {
-  const key = `${page.id}:${page.updatedAt}`
-  const hit = cache.get(key)
-  if (hit && Date.now() - hit.at < CACHE_TTL) { return hit.catalog }
-  cache.delete(key)
+  const key = `catalog:${page.id}:${page.updatedAt}`
+  const hit = WIKI.cache.get(key)
+  if (hit) { return hit }
 
   // -> The page cache keeps no source, so read it on a cache miss
   let content = page.content
@@ -194,8 +192,7 @@ async function getCatalog (page) {
     it.createdAt = found ? found.createdAt : null
   }
 
-  if (cache.size >= CACHE_MAX) { cache.delete(cache.keys().next().value) }
-  cache.set(key, { at: Date.now(), catalog })
+  WIKI.cache.set(key, catalog, CACHE_TTL)
   return catalog
 }
 
@@ -216,7 +213,7 @@ function homeSummary (catalog, newestCount = 4) {
     topics.push({
       name: t.name,
       count: list.length,
-      spread: _.times(5, k => list.filter(it => it.stars === k + 1).length)
+      spread: _.times(LEVELS, k => list.filter(it => it.stars === k + 1).length)
     })
   })
   // -> One card per page, even when the list links it twice
