@@ -226,7 +226,8 @@ export default {
   },
   computed: {
     trailLabel () {
-      return this.$t('common:history.versions', { defaultValue: '{{count}} phiên bản', count: this.total })
+      // -> The list shows the live page above the stored versions: count it too
+      return this.$t('common:history.versions', { defaultValue: '{{count}} phiên bản', count: this.total + 1 })
     },
     fullTrail () {
       const liveTrailItem = {

@@ -14,6 +14,8 @@ common:
     copyCodeError: 'Nhấn Ctrl+C để chép'
     exitPrint: 'Thoát bản in'
     siteNav: 'Điều hướng'
+    # -> The official string is half English ("Quay trở lại Normal View")
+    returnNormalView: 'Về bài viết'
   comments:
     loginToComment: 'Đăng nhập để bình luận'
   progress:
