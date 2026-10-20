@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const pageHelper = require('../helpers/page')
+const catalogHelper = require('../helpers/catalog')
 const _ = require('lodash')
 const CleanCSS = require('clean-css')
 const moment = require('moment')
@@ -600,11 +601,22 @@ router.get('/*', async (req, res, next) => {
             WIKI.logger.warn(`Failed to load roadmaps for page ${page.id}: ${err.message}`)
           }
 
+          // -> The article list page shows as a catalogue with filters
+          let catalog = null
+          if (page.path === catalogHelper.CATALOG_PATH) {
+            try {
+              catalog = await catalogHelper.getCatalog(page)
+            } catch (err) {
+              WIKI.logger.warn(`Failed to build the article catalogue: ${err.message}`)
+            }
+          }
+
           // -> Render view
           res.render('page', {
             page,
             sidebar,
             roadmaps,
+            catalog,
             injectCode,
             comments: commentTmpl,
             effectivePermissions,

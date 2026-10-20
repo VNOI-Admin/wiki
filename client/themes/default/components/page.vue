@@ -7,7 +7,9 @@
         button.vn-btn.is-ghost(type='button', @click='print')
           v-icon(small) mdi-arrow-left
           span {{$t('common:page.exitPrint', 'Thoát bản in')}}
-      .vn-doc(:class='{ "has-rail": railShown && !printView, "has-toc": hasToc && tocOn && !printView }')
+      //- The article list page shows as a catalogue with filters
+      articles-catalog(v-if='catalogDecoded', :catalog='catalogDecoded', :title='title')
+      .vn-doc(v-else, :class='{ "has-rail": railShown && !printView, "has-toc": hasToc && tocOn && !printView }')
         //- LEFT RAIL: the roadmap that holds this page, or the admin navigation
         aside.vn-rail(v-if='railShown && !printView', :aria-label='$t(`common:roadmap.title`, `Lộ trình`)')
           nav-roadmap(
@@ -210,6 +212,7 @@
 import Tabset from './tabset.vue'
 import NavSidebar from './nav-sidebar.vue'
 import NavRoadmap from './nav-roadmap.vue'
+import ArticlesCatalog from './articles-catalog.vue'
 import PageProgressSelector from '../../../components/common/page-progress-selector.vue'
 import { isProgressExcluded, NO_PROGRESS_TAG } from '../../../modules/progress'
 import { pickRoadmap, touchRoadmap } from '../../../modules/roadmap-context'
@@ -264,6 +267,7 @@ Prism.plugins.toolbar.registerButton('copy-to-clipboard', (env) => {
 
 export default {
   components: {
+    ArticlesCatalog,
     NavSidebar,
     NavRoadmap,
     PageProgressSelector
@@ -327,6 +331,11 @@ export default {
     },
     // -> Roadmaps containing this page (base64 JSON)
     roadmaps: {
+      type: String,
+      default: ''
+    },
+    // -> Set on the article list page only (server/helpers/catalog.js)
+    catalog: {
       type: String,
       default: ''
     },
@@ -413,11 +422,20 @@ export default {
         return []
       }
     },
+    catalogDecoded () {
+      if (!this.catalog) { return null }
+      try {
+        return JSON.parse(Buffer.from(this.catalog, 'base64').toString())
+      } catch (err) {
+        return null
+      }
+    },
     currentRoadmap () {
       return _.find(this.roadmapsDecoded, ['id', this.currentRoadmapId]) || null
     },
     // -> The rail holds the roadmap that contains this page, else the admin navigation
     railAvailable () {
+      if (this.catalogDecoded) { return false }
       return !!this.currentRoadmap || this.navMode !== 'NONE'
     },
     railShown () {
@@ -438,7 +456,7 @@ export default {
       ])
     },
     hasToc () {
-      return this.tocFlat.length > 0
+      return !this.catalogDecoded && this.tocFlat.length > 0
     },
     // -> Previous and next article in the roadmap order (nodes without an article are skipped)
     roadmapArticles () {
@@ -522,6 +540,12 @@ export default {
     })
   },
   mounted () {
+    // -> The catalogue shows no page contents
+    if (this.catalogDecoded) {
+      window.boot.notify('page-ready')
+      return
+    }
+
     // -> Highlight Code Blocks
     Prism.highlightAllUnder(this.$refs.container)
 

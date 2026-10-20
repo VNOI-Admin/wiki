@@ -4,7 +4,7 @@
     :aria-label='$t(`common:roadmap.difficulty`, { defaultValue: `Độ khó {{n}} / 5`, n: value })'
     :title='$t(`common:roadmap.difficulty`, { defaultValue: `Độ khó {{n}} / 5`, n: value })'
     )
-    span(v-for='i in 5', :key='i', :class='starClass(i)', aria-hidden='true') ★
+    i(v-for='i in 5', :key='i', :class='starClass(i)', aria-hidden='true')
 </template>
 
 <script>

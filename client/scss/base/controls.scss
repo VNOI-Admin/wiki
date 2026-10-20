@@ -71,23 +71,26 @@
   }
 }
 
-// -> Difficulty: five stars, half steps allowed
+// -> Difficulty: five dots, half steps allowed
 .vn-stars {
   display: inline-flex;
-  gap: 1px;
-  font-size: 0.8125rem;
-  line-height: 1;
-  letter-spacing: 0;
-  color: var(--star-off);
+  flex: none;
+  gap: 2px;
+  vertical-align: middle;
+
+  i {
+    display: block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--star-off);
+  }
 
   .is-on {
-    color: var(--star);
+    background: var(--star);
   }
 
   .is-half {
     background: linear-gradient(90deg, var(--star) 50%, var(--star-off) 50%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
   }
 }
