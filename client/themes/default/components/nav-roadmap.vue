@@ -1,65 +1,41 @@
 <template lang="pug">
   .nav-roadmap(:class='{ "is-full-page": fullPage }')
-    .nav-roadmap-header.pa-3
-      .d-flex(v-if='!fullPage')
-        v-btn(
-          depressed
-          :color='btnColor'
-          style='min-width:0;'
-          @click='goHome'
-          :aria-label='$t(`common:header.home`)'
-          )
-          v-icon(size='20') mdi-home
-        v-btn.ml-3(
-          v-if='canShowMenu'
-          depressed
-          :color='btnColor'
-          style='flex: 1 1 100%;'
-          @click='$emit(`show-menu`)'
-          )
-          v-icon(left) mdi-navigation
-          .body-2.text-none {{$t('common:sidebar.mainMenu')}}
-        v-spacer(v-else)
-        v-btn.ml-3(
-          depressed
-          :color='btnColor'
-          style='min-width:0;'
-          :href='`/roadmap/` + roadmap.id'
-          :title='$t(`common:roadmap.viewFull`, `View full roadmap`)'
-          :aria-label='$t(`common:roadmap.viewFull`, `View full roadmap`)'
-          )
-          v-icon(size='20') mdi-map-marker-path
-      v-menu(v-if='roadmaps.length > 1', offset-y, bottom)
-        template(v-slot:activator='{ on }')
-          button.nav-roadmap-title.is-switchable(
-            v-on='on'
+    .nav-roadmap-header
+      template(v-if='!fullPage')
+        .nav-roadmap-head
+          v-menu(v-if='roadmaps.length > 1', offset-y, bottom, content-class='vn-menu')
+            template(v-slot:activator='{ on }')
+              button.nav-roadmap-title.is-switchable(
+                v-on='on'
+                type='button'
+                :title='$t(`common:roadmap.switch`, `Đổi lộ trình`)'
+                )
+                span {{ roadmap.title }}
+                v-icon(small) mdi-chevron-down
+            .vn-menu__list
+              button.vn-menu__item(
+                v-for='r of roadmaps'
+                :key='r.id'
+                type='button'
+                role='menuitemradio'
+                :aria-checked='r.id === roadmap.id ? `true` : `false`'
+                @click='$emit(`select`, r)'
+                ) {{ r.title }}
+          a.nav-roadmap-title(v-else, :href='`/roadmap/` + roadmap.id') {{ roadmap.title }}
+          button.nav-roadmap-hide(
+            v-if='canHide'
             type='button'
-            :title='$t(`common:roadmap.switch`, `Switch roadmap`)'
-            )
-            span {{ roadmap.title }}
-            v-icon(small) mdi-chevron-down
-        v-list(dense)
-          v-list-item(
-            v-for='r of roadmaps'
-            :key='r.id'
-            @click='$emit(`select`, r)'
-            )
-            v-list-item-title {{ r.title }}
-            v-list-item-action.my-0(v-if='r.id === roadmap.id')
-              v-icon(small, color='primary') mdi-check
-      .nav-roadmap-title(v-else-if='fullPage') {{ roadmap.title }}
-      a.nav-roadmap-title(v-else, :href='`/roadmap/` + roadmap.id') {{ roadmap.title }}
-      p.nav-roadmap-description(v-if='fullPage && roadmap.description') {{ roadmap.description }}
+            @click='$emit(`hide`)'
+            :title='$t(`common:roadmap.hide`, `Ẩn lộ trình`)'
+            :aria-label='$t(`common:roadmap.hide`, `Ẩn lộ trình`)'
+            ) ×
+      template(v-else)
+        .nav-roadmap-title {{ roadmap.title }}
+        p.nav-roadmap-description(v-if='roadmap.description') {{ roadmap.description }}
       .nav-roadmap-stats
-        v-progress-linear(
-          :value='stats.percent'
-          color='success'
-          :background-color='$vuetify.theme.dark ? `grey darken-2` : `grey lighten-2`'
-          rounded
-          height='4'
-        )
-        .caption.mt-1 {{ statsLabel }}
-    v-divider
+        .nav-roadmap-bar(aria-hidden='true')
+          i(:style='{ width: stats.percent + `%` }')
+        .nav-roadmap-count {{ statsLabel }}
     .nav-roadmap-section(
       v-for='section of roadmap.sections'
       :key='section.id'
@@ -81,7 +57,8 @@
           @click='onOpen(node)'
           @auxclick='onOpen(node)'
           )
-          v-icon.nav-roadmap-node-icon(small, :color='nodeStatus(node).color', :title='nodeStatus(node).label') {{ nodeStatus(node).icon }}
+          span.vn-pdot.nav-roadmap-node-icon(v-if='hasDot(nodeStatus(node))', :class='`s-` + nodeStatus(node).id', :title='nodeStatus(node).label')
+          v-icon.nav-roadmap-node-icon(v-else, small, :color='nodeStatus(node).color', :title='nodeStatus(node).label') {{ nodeStatus(node).icon }}
           .nav-roadmap-node-body
             span.nav-roadmap-node-title {{ node.title }}
             .nav-roadmap-node-meta(v-if='fullPage')
@@ -175,6 +152,11 @@ export default {
     fullPage: {
       type: Boolean,
       default: false
+    },
+    // -> Shows the × that hides the rail (not in the bottom sheet)
+    canHide: {
+      type: Boolean,
+      default: true
     }
   },
   data () {
@@ -228,6 +210,10 @@ export default {
     this.$nextTick(this.scrollToCurrent)
   },
   methods: {
+    // -> The four built-in statuses draw as dots; an admin-added status keeps its icon
+    hasDot (status) {
+      return ['none', 'reading', 'completed', 'skipped'].includes(status.id)
+    },
     isExternal (node) {
       return !node.articlePath && !!node.externalUrl
     },
@@ -301,19 +287,8 @@ export default {
 
 <style lang="scss">
 .nav-roadmap {
-  --nav-roadmap-muted: rgba(0, 0, 0, 0.6);
-  --nav-roadmap-line: rgba(0, 0, 0, 0.15);
-  --nav-roadmap-hover: rgba(0, 0, 0, 0.04);
-  --nav-roadmap-header: #{mc('grey', '100')};
-  --nav-roadmap-accent: #{mc('blue', '700')};
-
-  .theme--dark & {
-    --nav-roadmap-muted: rgba(255, 255, 255, 0.6);
-    --nav-roadmap-line: rgba(255, 255, 255, 0.15);
-    --nav-roadmap-hover: rgba(255, 255, 255, 0.05);
-    --nav-roadmap-header: #{mc('grey', '900')};
-    --nav-roadmap-accent: #{mc('blue', '300')};
-  }
+  font-size: 0.875rem;
+  color: var(--ink);
 
   button {
     font: inherit;
@@ -325,49 +300,96 @@ export default {
   }
 
   &-header {
-    background-color: var(--nav-roadmap-header);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: grid;
+    gap: 8px;
+    padding: 4px 0 14px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+  }
+
+  &-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
   }
 
   &-title {
+    flex: 1 1 auto;
+    min-width: 0;
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 4px;
-    width: 100%;
-    margin-top: 12px;
-    padding: 4px;
-    border-radius: 4px;
-    font-size: 1.05rem;
-    font-weight: 600;
-    text-align: center !important;
-    text-decoration: none;
-    color: inherit !important;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--ink) !important;
+    text-decoration: none !important;
 
     &:hover {
-      background-color: var(--nav-roadmap-hover);
+      color: var(--accent) !important;
     }
   }
 
-  &-stats {
-    margin-top: 8px;
-    color: var(--nav-roadmap-muted);
-    text-align: center;
+  &-hide {
+    flex: none;
+    width: 28px;
+    height: 28px;
+    margin-top: -4px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    color: var(--muted) !important;
+    font-size: 1.125rem;
+
+    &:hover {
+      background: var(--sunken);
+      color: var(--ink) !important;
+    }
+  }
+
+  &-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--sunken);
+    overflow: hidden;
+
+    i {
+      display: block;
+      height: 100%;
+      background: var(--done);
+      border-radius: 3px;
+    }
+  }
+
+  &-count {
+    font-size: 0.8125rem;
+    color: var(--muted);
+  }
+
+  &-description {
+    margin: 0 !important;
+    color: var(--muted);
   }
 
   &-section {
-    border-bottom: 1px solid var(--nav-roadmap-line);
+    border-bottom: 1px solid var(--line);
   }
 
   &-section-header {
     display: flex;
     align-items: center;
+    gap: 8px;
     width: 100%;
-    padding: 12px 16px;
+    padding: 9px 2px;
     font-weight: 600;
-    font-size: 0.9rem;
 
-    &:hover {
-      background-color: var(--nav-roadmap-hover);
+    .v-icon {
+      order: -1;
+      color: var(--muted) !important;
     }
   }
 
@@ -377,72 +399,57 @@ export default {
   }
 
   &-section-count {
-    margin: 0 6px;
-    color: var(--nav-roadmap-muted);
+    flex: none;
+    font: 500 0.75rem var(--font-mono);
+    color: var(--muted);
   }
 
   &-nodes {
+    display: grid;
+    gap: 1px;
     padding-bottom: 8px;
   }
 
   &-node {
-    position: relative;
-    display: flex;
-    align-items: flex-start;
-    padding: 6px 16px 6px 20px;
-    font-size: 0.875rem;
-    line-height: 20px;
-    text-decoration: none;
-    color: var(--nav-roadmap-muted) !important;
-
-    // -> Timeline line between the status icons
-    &::before, &::after {
-      content: '';
-      position: absolute;
-      left: 27px;
-      width: 2px;
-      background-color: var(--nav-roadmap-line);
-    }
-    &::before {
-      top: 0;
-      height: 6px;
-    }
-    &::after {
-      top: 28px;
-      bottom: 0;
-    }
-    &:first-child::before, &:last-child::after {
-      display: none;
-    }
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: start;
+    padding: 5px 8px;
+    border-radius: 8px;
+    line-height: 1.4;
+    color: var(--ink) !important;
+    text-decoration: none !important;
 
     &:hover {
-      background-color: var(--nav-roadmap-hover);
+      background: var(--sunken);
     }
 
     &.is-current {
-      color: var(--nav-roadmap-accent) !important;
+      background: var(--accent-soft);
+      color: var(--accent) !important;
       font-weight: 600;
-      background-color: var(--nav-roadmap-hover);
-      box-shadow: inset 3px 0 0 var(--nav-roadmap-accent);
     }
 
     &.is-placeholder {
-      opacity: 0.55;
+      color: var(--muted) !important;
       cursor: default;
 
       &:hover {
-        background-color: transparent;
+        background: none;
+      }
+
+      .vn-pdot {
+        border-style: dashed;
       }
     }
   }
 
   &-node-icon {
-    flex: 0 0 auto;
-    margin: 2px 12px 0 0;
+    margin-top: 3px;
   }
 
   &-node-body {
-    flex: 1 1 auto;
     min-width: 0;
   }
 
@@ -460,7 +467,7 @@ export default {
 
   &-node-desc {
     font-size: 0.8rem;
-    color: var(--nav-roadmap-muted);
+    color: var(--muted);
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -468,46 +475,33 @@ export default {
   }
 
   &-node-actions {
-    flex-shrink: 0;
     display: flex;
     align-items: flex-start;
-    padding-top: 2px;
-    margin-left: 8px;
   }
 
   &-node-external {
-    margin: 4px 0 0 4px;
-    color: inherit !important;
-  }
-
-  &-description {
-    font-size: 0.9rem;
-    color: var(--nav-roadmap-muted);
-    margin: 6px 4px 0;
-    text-align: center;
+    margin-top: 3px;
+    color: var(--muted) !important;
   }
 
   &.is-full-page {
+    .nav-roadmap-header {
+      position: static;
+      background: none;
+    }
+
     .nav-roadmap-title {
       font-size: 1.4rem;
     }
 
     .nav-roadmap-section-header {
       font-size: 1rem;
-      padding: 14px 20px;
+      padding: 14px 4px;
     }
 
     .nav-roadmap-node {
-      padding: 10px 20px 10px 24px;
+      padding: 10px 12px;
       font-size: 0.95rem;
-      line-height: 22px;
-
-      &::before { left: 31px; }
-      &::after { left: 31px; top: 32px; }
-    }
-
-    .nav-roadmap-node-icon {
-      margin: 3px 14px 0 0;
     }
   }
 }

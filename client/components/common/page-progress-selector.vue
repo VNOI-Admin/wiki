@@ -1,57 +1,38 @@
 <template lang="pug">
-  component(
-    v-if='isEnabled'
-    :is='variant === `card` ? `v-card` : `div`'
-    :class='[`page-progress`, `is-` + variant, variant === `card` ? `page-progress-card mb-5` : ``]'
-    )
-    .page-progress-inner
-      .overline.pb-2.deep-purple--text(
-        v-if='variant === `card`'
-        :class='$vuetify.theme.dark ? `text--lighten-3` : ``'
-        ) {{ headingText }}
-      .page-progress-prompt(v-if='variant === `block`')
-        .subtitle-2 {{ headingText }}
-        .caption.grey--text(v-if='!isAccountBacked') {{ $t('common:progress.savedLocally', 'Log in to auto-sync your progress.') }}
+  .page-progress(v-if='isEnabled', :class='`is-` + variant')
+    v-menu(offset-y, bottom, min-width='220', content-class='vn-menu')
+      template(v-slot:activator='{ on: menu }')
+        button.vn-pbtn(
+          v-on='menu'
+          type='button'
+          :class='`s-` + currentStatus.id'
+          :aria-label='$t(`common:progress.statusAria`, { defaultValue: `Progress: {{status}}`, status: currentStatus.label })'
+          )
+          span.vn-pdot(v-if='hasDot(currentStatus)', :class='`s-` + currentStatus.id')
+          v-icon(v-else, small, :color='currentStatus.color') {{ currentStatus.icon }}
+          b {{ currentStatus.label }}
+      .vn-menu__list(role='menu')
+        button.vn-menu__item(
+          v-for='status of statuses'
+          :key='status.id'
+          type='button'
+          role='menuitemradio'
+          :aria-checked='status.id === currentStatus.id ? `true` : `false`'
+          @click='setStatus(status.id)'
+          )
+          span.vn-pdot(v-if='hasDot(status)', :class='`s-` + status.id')
+          v-icon(v-else, small, :color='status.color') {{ status.icon }}
+          span {{ status.label }}
+        hr
+        button.vn-menu__item(type='button', @click='dialogData = true')
+          v-icon(small) mdi-database-cog-outline
+          span {{ $t('common:progress.manageData', 'Quản lý dữ liệu') }}
+          v-icon.ml-auto(v-if='!isPersistent', small, color='orange', :title='$t(`common:progress.notPersistent`, `Trình duyệt này không lưu được tiến độ`)') mdi-alert-outline
 
-      v-menu(offset-y, bottom, min-width='220', :left='variant !== `card`')
-        template(v-slot:activator='{ on: menu }')
-          v-btn.text-none.px-3.page-progress-btn(
-            v-on='menu'
-            v-bind='buttonSize'
-            outlined
-            :block='variant === `card`'
-            :color='currentStatus.color'
-            :aria-label='$t(`common:progress.statusAria`, { defaultValue: `Progress: {{status}}`, status: currentStatus.label })'
-            )
-            v-icon(left, v-bind='iconSize') {{ currentStatus.icon }}
-            span.page-progress-label {{ currentStatus.label }}
-            v-spacer(v-if='variant === `card`')
-            v-icon(right, v-bind='iconSize') mdi-menu-down
-        v-list(dense, nav)
-          v-list-item(
-            v-for='status of statuses'
-            :key='status.id'
-            @click='setStatus(status.id)'
-            :input-value='status.id === currentStatus.id'
-            )
-            v-list-item-icon.mr-3
-              v-icon(:color='status.color', small) {{ status.icon }}
-            v-list-item-title {{ status.label }}
-
-      .page-progress-actions(v-if='showDataLink')
-        v-btn.text-none.px-1(@click='dialogData = true', text, x-small, color='grey')
-          v-icon(left, x-small) mdi-database-cog-outline
-          span {{ $t('common:progress.manageData', 'Manage data') }}
-        v-tooltip(bottom, v-if='!isPersistent')
-          template(v-slot:activator='{ on }')
-            v-icon.ml-2(v-on='on', color='orange', x-small) mdi-alert-outline
-          span {{ $t('common:progress.notPersistent', 'Progress cannot be saved in this browser') }}
-
-    progress-data-dialog(v-if='showDataLink', v-model='dialogData')
+    progress-data-dialog(v-model='dialogData')
 </template>
 
 <script>
-import { VCard } from 'vuetify/lib'
 import ProgressDataDialog from './progress-data-dialog.vue'
 
 /**
@@ -67,9 +48,6 @@ import ProgressDataDialog from './progress-data-dialog.vue'
  */
 export default {
   components: {
-    // -> vuetify-loader auto-imports components it can find in the template, but the
-    //    root element here is a dynamic `:is`, which it cannot analyse statically.
-    VCard,
     ProgressDataDialog
   },
   props: {
@@ -111,29 +89,6 @@ export default {
       // -> The account is the real store; the browser copy is only a cache
       return this.isAccountBacked || this.$progress.isPersistent
     },
-    headingText () {
-      if (this.variant === 'block') {
-        return this.$t('common:progress.blockHeading', 'Mark your progress on this page')
-      }
-      return this.$t('common:progress.title', 'Progress')
-    },
-    /**
-     * The sidebar card is hidden below the `lg` breakpoint, so the bottom block has to
-     * carry the data controls too — otherwise import/export is unreachable on mobile.
-     */
-    showDataLink () {
-      return this.variant === 'card' || this.variant === 'block'
-    },
-    /**
-     * The inline variant sits beside the page title as the primary control, so it runs
-     * at full size. The card and block variants are secondary and stay small.
-     */
-    buttonSize () {
-      return this.variant === 'inline' ? {} : { small: true }
-    },
-    iconSize () {
-      return this.variant === 'inline' ? {} : { small: true }
-    },
     statuses () {
       return this.$progress.registry.list()
     },
@@ -144,6 +99,10 @@ export default {
     }
   },
   methods: {
+    // -> The four built-in statuses draw as dots; an admin-added status keeps its icon
+    hasDot (status) {
+      return ['none', 'reading', 'completed', 'skipped'].includes(status.id)
+    },
     setStatus (statusId) {
       this.$progress.setStatus(this.pageId, statusId, {
         locale: this.locale,
@@ -156,68 +115,39 @@ export default {
 </script>
 
 <style lang="scss">
-.page-progress {
-  &.is-card > .page-progress-inner {
-    padding: 20px;
+.vn-pbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.875rem;
+
+  &:hover {
+    border-color: var(--accent);
   }
 
-  &.is-block {
-    margin-top: 32px;
-    border: 1px solid mc('grey', '300');
-    border-radius: 7px;
-
-    @at-root .theme--dark & {
-      border-color: mc('grey', '800');
-    }
-
-    > .page-progress-inner {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 8px 16px;
-      padding: 12px 16px;
-    }
-
-    .page-progress-prompt {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-
-    .page-progress-actions {
-      margin-left: auto;
-    }
+  b {
+    font-weight: 600;
   }
 
-  &.is-inline {
-    flex: 0 0 auto;
-    margin-left: 24px;
-
-    .page-progress-btn {
-      font-size: 0.9375rem;
-      letter-spacing: normal;
-    }
-
-    // -> Narrow screens: drop to an icon-only button rather than squeezing the title
-    @media (max-width: 599px) {
-      margin-left: 12px;
-
-      .page-progress-label {
-        display: none;
-      }
-    }
+  // -> Down chevron
+  &::after {
+    content: '';
+    width: 6px;
+    height: 6px;
+    margin: -3px 2px 0 4px;
+    border-right: 1.5px solid var(--muted);
+    border-bottom: 1.5px solid var(--muted);
+    transform: rotate(45deg);
   }
 
-  &.is-card .page-progress-actions {
-    display: flex;
-    align-items: center;
-    margin-top: 8px;
-  }
-}
-
-// -> Progress is a per-reader annotation, not part of the document
-@media print {
-  .page-progress {
-    display: none !important;
+  &.s-completed {
+    border-color: var(--done);
+    background: var(--done-soft);
   }
 }
 </style>

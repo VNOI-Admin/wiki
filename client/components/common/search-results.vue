@@ -1,79 +1,67 @@
 <template lang="pug">
-  .search-results(v-if='searchIsFocused || (search && search.length > 1)')
-    .search-results-container
-      .search-results-help(v-if='!search || (search && search.length < 2)')
-        img(src='/_assets/svg/icon-search-alt.svg')
-        .mt-4 {{$t('common:header.searchHint')}}
-      .search-results-loader(v-else-if='searchIsLoading && (!results || results.length < 1)')
-        orbit-spinner(
-          :animation-duration='1000'
-          :size='100'
-          color='#FFF'
-        )
-        .headline.mt-5 {{$t('common:header.searchLoading')}}
-      .search-results-none(v-else-if='!searchIsLoading && (!results || results.length < 1)')
-        img(src='/_assets/svg/icon-no-results.svg', alt='No Results')
-        .subheading {{$t('common:header.searchNoResult')}}
-      template(v-if='search && search.length >= 2 && results && results.length > 0')
-        v-subheader.white--text {{$t('common:header.searchResultsCount', { total: response.totalHits })}}
-        v-list.search-results-items.radius-7.py-0(two-line, dense)
-          template(v-for='(item, idx) of results')
-            v-list-item(@click='goToPage(item)', @click.middle="goToPageInNewTab(item)", :key='item.id', :class='idx === cursor ? `highlighted` : ``')
-              v-list-item-avatar(tile)
-                img(src='/_assets/svg/icon-selective-highlighting.svg')
-              v-list-item-content
-                v-list-item-title(v-text='item.title')
-                v-list-item-subtitle.caption(v-text='item.description')
-                .caption.grey--text(v-text='item.path')
-              v-list-item-action(v-if='statusFor(item)')
-                v-tooltip(left)
-                  template(v-slot:activator='{ on }')
-                    v-icon(v-on='on', :color='statusFor(item).color', small) {{ statusFor(item).icon }}
-                  span {{ statusFor(item).label }}
-              v-list-item-action
-                v-chip(label, outlined) {{item.locale.toUpperCase()}}
-            v-divider(v-if='idx < results.length - 1')
-        v-pagination.mt-3(
-          v-if='paginationLength > 1'
-          dark
-          v-model='pagination'
-          :length='paginationLength'
-          circle
-        )
-      template(v-if='suggestions && suggestions.length > 0')
-        v-subheader.white--text.mt-3 {{$t('common:header.searchDidYouMean')}}
-        v-list.search-results-suggestions.radius-7(dense, dark)
-          template(v-for='(term, idx) of suggestions')
-            v-list-item(:key='term', @click='setSearchTerm(term)', :class='idx + results.length === cursor ? `highlighted` : ``')
-              v-list-item-avatar
-                v-icon mdi-magnify
-              v-list-item-content
-                v-list-item-title(v-text='term')
-            v-divider(v-if='idx < suggestions.length - 1')
-      .text-xs-center.pt-5(v-if='search && search.length > 1')
-        //- v-btn.mx-2(outlined, color='orange', @click='search = ``', v-if='results.length > 0')
-        //-   v-icon(left) mdi-content-save
-        //-   span {{$t('common:header.searchCopyLink')}}
-        v-btn.mx-2(outlined, color='pink', @click='search = ``')
-          v-icon(left) mdi-close
-          span {{$t('common:header.searchClose')}}
+  .vn-search(v-if='searchIsFocused', @keydown.esc.stop='close')
+    .vn-search__scrim(@click='close')
+    .vn-search__box(role='dialog', aria-modal='true', :aria-label='$t(`common:header.search`, `Tìm bài viết`)')
+      .vn-search__in
+        v-icon mdi-magnify
+        input(
+          ref='input'
+          v-model='search'
+          type='search'
+          autocomplete='off'
+          spellcheck='false'
+          :placeholder='$t(`common:header.searchPlaceholder`, `Tìm bài: DFS, quy hoạch động, segment tree…`)'
+          :aria-label='$t(`common:header.search`, `Tìm bài viết`)'
+          @keydown.down.prevent='move(1)'
+          @keydown.up.prevent='move(-1)'
+          @keydown.enter.prevent='enter'
+          )
+        button.vn-search__esc(type='button', @click='close') Esc
+      .vn-search__out(ref='out')
+        template(v-if='search && search.length >= 2')
+          .vn-search__skel(v-if='searchIsLoading && results.length < 1', :aria-label='$t(`common:header.searchLoading`)')
+            i
+            i
+            i
+          .vn-search__empty(v-else-if='results.length < 1') {{$t('common:header.searchNoResult')}}
+          template(v-else)
+            .vn-search__grp {{$t('common:header.searchResultsCount', { total: hits })}}
+            a.vn-hit(
+              v-for='(item, idx) of results'
+              :key='item.id'
+              :href='`/${item.locale}/${item.path}`'
+              :aria-selected='idx === cursor ? `true` : `false`'
+              @mousemove='cursor = idx'
+              )
+              span.vn-hit__t {{item.title}}
+              span.vn-hit__mark(v-if='statusFor(item)', :title='statusFor(item).label')
+                v-icon(:color='statusFor(item).color', small) {{ statusFor(item).icon }}
+              span.vn-hit__s(v-if='item.description') {{item.description}}
+              span.vn-hit__p /{{item.path}}
+            button.vn-search__more(v-if='results.length < response.results.length', type='button', @click='shown += perPage') {{$t('common:header.searchMore', 'Xem thêm')}}
+          template(v-if='suggestions.length > 0')
+            .vn-search__grp {{$t('common:header.searchDidYouMean')}}
+            button.vn-hit(
+              v-for='(term, idx) of suggestions'
+              :key='term'
+              type='button'
+              :aria-selected='idx + results.length === cursor ? `true` : `false`'
+              @click='setSearchTerm(term)'
+              )
+              span.vn-hit__t {{term}}
 </template>
 
 <script>
 import _ from 'lodash'
 import { sync } from 'vuex-pathify'
-import { OrbitSpinner } from 'epic-spinners'
 
 import searchPagesQuery from 'gql/common/common-pages-query-search.gql'
 
 export default {
-  components: {
-    OrbitSpinner
-  },
   data() {
     return {
-      cursor: 0,
-      pagination: 1,
+      cursor: -1,
+      shown: 10,
       perPage: 10,
       response: {
         results: [],
@@ -89,22 +77,23 @@ export default {
     searchRestrictLocale: sync('site/searchRestrictLocale'),
     searchRestrictPath: sync('site/searchRestrictPath'),
     results() {
-      const currentIndex = (this.pagination - 1) * this.perPage
-      return this.response.results ? _.slice(this.response.results, currentIndex, currentIndex + this.perPage) : []
+      return this.response.results ? _.take(this.response.results, this.shown) : []
     },
     hits() {
       return this.response.totalHits ? this.response.totalHits : 0
     },
     suggestions() {
       return this.response.suggestions ? this.response.suggestions : []
-    },
-    paginationLength() {
-      return (this.response.totalHits > 0) ? Math.ceil(this.response.totalHits / this.perPage) : 0
     }
   },
   watch: {
+    searchIsFocused (open) {
+      if (open) {
+        this.$nextTick(() => { this.$refs.input && this.$refs.input.focus() })
+      }
+    },
     search(newValue, oldValue) {
-      this.cursor = 0
+      this.cursor = -1
       if (!newValue || (newValue && newValue.length < 2)) {
         this.searchIsLoading = false
       } else {
@@ -112,31 +101,32 @@ export default {
       }
     },
     results() {
-      this.cursor = 0
+      this.cursor = -1
     }
   },
-  mounted() {
-    this.$root.$on('searchMove', (dir) => {
-      this.cursor += ((dir === 'up') ? -1 : 1)
-      if (this.cursor < -1) {
-        this.cursor = -1
-      } else if (this.cursor > this.results.length + this.suggestions.length - 1) {
-        this.cursor = this.results.length + this.suggestions.length - 1
+  methods: {
+    close () {
+      this.searchIsFocused = false
+      this.search = ''
+    },
+    move (step) {
+      const max = this.results.length + this.suggestions.length - 1
+      this.cursor = Math.max(-1, Math.min(max, this.cursor + step))
+      this.$nextTick(() => {
+        const el = this.$refs.out && this.$refs.out.querySelector('[aria-selected="true"]')
+        if (el) { el.scrollIntoView({ block: 'nearest' }) }
+      })
+    },
+    enter () {
+      if (this.cursor < 0 && this.results.length > 0) {
+        this.cursor = 0
       }
-    })
-    this.$root.$on('searchEnter', () => {
-      if (!this.results) {
-        return
-      }
-
       if (this.cursor >= 0 && this.cursor < this.results.length) {
         this.goToPage(_.nth(this.results, this.cursor))
-      } else if (this.cursor >= 0) {
+      } else if (this.cursor >= this.results.length) {
         this.setSearchTerm(_.nth(this.suggestions, this.cursor - this.results.length))
       }
-    })
-  },
-  methods: {
+    },
     /**
      * Status to show beside a search hit.
      *
@@ -177,7 +167,7 @@ export default {
         return !this.search || this.search.length < 2
       },
       result() {
-        this.pagination = 1
+        this.shown = this.perPage
       },
       update: (data) => _.get(data, 'pages.search', {}),
       watchLoading (isLoading) {
@@ -189,84 +179,154 @@ export default {
 </script>
 
 <style lang="scss">
-.search-results {
+.vn-search {
   position: fixed;
-  top: 64px;
-  left: 0;
-  overflow-y: auto;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  justify-items: center;
+  align-items: start;
+  padding: 10vh 16px 16px;
+}
+
+.vn-search__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+}
+
+.vn-search__box {
+  position: relative;
   width: 100%;
-  height: calc(100% - 64px);
-  background-color: rgba(0,0,0,.9);
-  z-index: 100;
-  text-align: center;
-  animation: searchResultsReveal .6s ease;
+  max-width: 40rem;
+  max-height: 75vh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  text-align: left;
+}
 
-  @media #{map-get($display-breakpoints, 'sm-and-down')} {
-    top: 112px;
+.vn-search__in {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+
+  .v-icon {
+    color: var(--accent) !important;
   }
 
-  &-container {
-    margin: 12px auto;
-    width: 90vw;
-    max-width: 1024px;
-  }
-
-  &-help {
-    text-align: center;
-    padding: 32px 0;
-    font-size: 18px;
-    font-weight: 300;
-    color: #FFF;
-
-    img {
-      width: 104px;
-    }
-  }
-
-  &-loader {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    padding: 32px 0;
-    color: #FFF;
-  }
-
-  &-none {
-    color: #FFF;
-
-    img {
-      width: 200px;
-    }
-  }
-
-  &-items {
-    text-align: left;
-
-    .highlighted {
-      background: #FFF linear-gradient(to bottom, #FFF, mc('orange', '100'));
-
-      @at-root .theme--dark & {
-        background: mc('grey', '900') linear-gradient(to bottom, mc('orange', '900'), darken(mc('orange', '900'), 15%));
-      }
-    }
-  }
-
-  &-suggestions {
-    .highlighted {
-      background: transparent linear-gradient(to bottom, mc('blue', '500'), mc('blue', '700'));
-    }
+  input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font: 400 1.0625rem var(--font-ui);
+    color: var(--ink);
   }
 }
 
-@keyframes searchResultsReveal {
-  0% {
-    background-color: rgba(0,0,0,0);
-    padding-top: 32px;
+.vn-search__esc {
+  font: 500 0.75rem var(--font-mono);
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: var(--muted);
+}
+
+.vn-search__out {
+  overflow: auto;
+  padding: 8px;
+
+  &:empty {
+    display: none;
   }
-  100% {
-    background-color: rgba(0,0,0,.9);
-    padding-top: 0;
+}
+
+.vn-search__grp {
+  padding: 10px 10px 4px;
+  font: 600 0.75rem/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.vn-search__empty {
+  padding: 18px 10px;
+  color: var(--muted);
+}
+
+.vn-search__more {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  color: var(--accent);
+  font-weight: 600;
+
+  &:hover {
+    background: var(--sunken);
   }
+}
+
+.vn-search__skel {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+
+  i {
+    height: 14px;
+    border-radius: 4px;
+    background: var(--sunken);
+    animation: vnSkel 1.2s ease-in-out infinite alternate;
+  }
+
+  i:nth-child(2) { width: 80%; }
+  i:nth-child(3) { width: 60%; }
+}
+
+@keyframes vnSkel {
+  to { opacity: 0.45; }
+}
+
+.vn-hit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  align-items: center;
+  color: var(--ink) !important;
+  text-align: left;
+  text-decoration: none !important;
+
+  &[aria-selected='true'] {
+    background: var(--accent-soft);
+  }
+}
+
+.vn-hit__t {
+  font-weight: 500;
+}
+
+.vn-hit__s, .vn-hit__p {
+  grid-column: 1;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.vn-hit__p {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
 }
 </style>

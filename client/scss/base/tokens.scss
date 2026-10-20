@@ -1,0 +1,128 @@
+// ---------------------------------
+// VNOI DESIGN TOKENS
+// ---------------------------------
+// One set of colors for both themes. The client sets `data-theme` on <html> from the
+// Vuetify dark flag (client-app.js), so these tokens and Vuetify components always agree.
+
+:root {
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --sunken: #eef1f7;
+  --ink: #121a2b;
+  --muted: #5b6579;
+  --line: #e1e5ee;
+  --accent: #1c58d6;
+  --accent-soft: #e7eefd;
+  --on-accent: #ffffff;
+  --star: #b07a00;
+  --star-off: #d6dbe5;
+  --mark-red: #d8392b;
+  --done: #23854a;
+  --done-soft: #e3f3e9;
+  --code-bg: #f3f5fa;
+  --code-ink: #1d2638;
+  --code-kw: #9a2bb5;
+  --code-cm: #5f6a82;
+  --code-num: #a35200;
+  --code-str: #1a7f37;
+  --code-meta: #9a3e8c;
+  --code-fn: #1c58d6;
+  --scrim: rgba(12, 17, 28, 0.45);
+  --shadow: 0 1px 2px rgba(18, 26, 43, 0.06), 0 8px 24px rgba(18, 26, 43, 0.08);
+  --font-ui: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --wrap: 76rem;
+  --topbar-h: 60px;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0d1118;
+  --surface: #141a24;
+  --sunken: #1a2130;
+  --ink: #e6eaf2;
+  --muted: #98a2b6;
+  --line: #252e40;
+  --accent: #7ea8ff;
+  --accent-soft: #17233d;
+  --on-accent: #0d1118;
+  --star: #f2c14e;
+  --star-off: #3a4458;
+  --mark-red: #f28b82;
+  --done: #6fd096;
+  --done-soft: #15291e;
+  --code-bg: #10151f;
+  --code-ink: #d7deea;
+  --code-kw: #d59bf0;
+  --code-cm: #7f8aa3;
+  --code-num: #f0a86a;
+  --code-str: #8bd49c;
+  --code-meta: #f28b82;
+  --code-fn: #7ea8ff;
+  --scrim: rgba(0, 0, 0, 0.6);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 28px rgba(0, 0, 0, 0.35);
+  color-scheme: dark;
+}
+
+html, body {
+  background: var(--bg);
+}
+
+#root .v-application {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+// -> Vuetify paints its own dark background on the app wrapper; the token wins
+#root .v-application--wrap,
+#root .theme--dark .v-application--wrap {
+  background-color: var(--bg);
+}
+
+.vn-wrap {
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding-inline: 20px;
+}
+
+.vn-mono {
+  font-family: var(--font-mono);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+// -> Progress status dot, like the live wiki: none, reading, completed, skipped
+.vn-pdot {
+  display: inline-block;
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid var(--muted);
+
+  &.s-reading {
+    border-color: var(--accent);
+    background: linear-gradient(90deg, var(--accent) 50%, transparent 50%);
+  }
+
+  &.s-completed {
+    border-color: var(--done);
+    background: var(--done);
+  }
+
+  &.s-skipped {
+    border-style: dashed;
+  }
+}

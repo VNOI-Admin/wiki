@@ -207,6 +207,8 @@ let bootstrap = () => {
     darkModeEnabled = (localTheme === 'dark')
   }
 
+  document.documentElement.dataset.theme = darkModeEnabled ? 'dark' : 'light'
+
   window.WIKI = new Vue({
     el: '#root',
     components: {},
@@ -221,6 +223,10 @@ let bootstrap = () => {
       }
     }),
     mounted () {
+      // -> CSS tokens follow the Vuetify dark flag, whoever changes it (header toggle, profile)
+      this.$watch(() => this.$vuetify.theme.dark, dark => {
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+      }, { immediate: true })
       this.$moment.locale(siteConfig.lang)
       if ((store.get('user/dateFormat') || '').length > 0) {
         this.$moment.updateLocale(this.$moment.locale(), {

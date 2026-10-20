@@ -4,6 +4,16 @@ common:
     lightMode: 'Chế độ sáng'
     darkMode: 'Chế độ tối'
     links: 'Liên kết'
+    home: 'Trang chủ'
+    searchShort: 'Tìm bài viết…'
+    searchPlaceholder: 'Tìm bài: DFS, quy hoạch động, segment tree…'
+    searchMore: 'Xem thêm'
+  page:
+    copyCode: 'Sao chép'
+    copyCodeDone: 'Đã chép'
+    copyCodeError: 'Nhấn Ctrl+C để chép'
+  comments:
+    loginToComment: 'Đăng nhập để bình luận'
   progress:
     title: 'Tiến độ'
     blockHeading: 'Đánh dấu tiến độ của bạn ở trang này'

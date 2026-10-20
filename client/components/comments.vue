@@ -1,125 +1,63 @@
 <template lang="pug">
-  div(v-intersect.once='onIntersect')
-    v-textarea#discussion-new(
-      outlined
-      flat
-      :placeholder='$t(`common:comments.newPlaceholder`)'
-      auto-grow
-      dense
-      rows='3'
-      hide-details
-      v-model='newcomment'
-      color='blue-grey darken-2'
-      :background-color='$vuetify.theme.dark ? `grey darken-5` : `white`'
-      v-if='permissions.write'
-      :aria-label='$t(`common:comments.fieldContent`)'
-    )
-    v-row.mt-2(dense, v-if='!isAuthenticated && permissions.write')
-      v-col(cols='12', lg='6')
-        v-text-field(
-          outlined
-          color='blue-grey darken-2'
-          :background-color='$vuetify.theme.dark ? `grey darken-5` : `white`'
-          :placeholder='$t(`common:comments.fieldName`)'
-          hide-details
-          dense
-          autocomplete='name'
-          v-model='guestName'
-          :aria-label='$t(`common:comments.fieldName`)'
-        )
-      v-col(cols='12', lg='6')
-        v-text-field(
-          outlined
-          color='blue-grey darken-2'
-          :background-color='$vuetify.theme.dark ? `grey darken-5` : `white`'
-          :placeholder='$t(`common:comments.fieldEmail`)'
-          hide-details
-          type='email'
-          dense
-          autocomplete='email'
-          v-model='guestEmail'
-          :aria-label='$t(`common:comments.fieldEmail`)'
-        )
-    .d-flex.align-center.pt-3(v-if='permissions.write')
-      v-icon.mr-1(color='blue-grey') mdi-language-markdown-outline
-      .caption.blue-grey--text {{$t('common:comments.markdownFormat')}}
-      v-spacer
-      .caption.mr-3(v-if='isAuthenticated')
-        i18next(tag='span', path='common:comments.postingAs')
-          strong(place='name') {{userDisplayName}}
-      v-btn(
-        dark
-        color='blue-grey darken-2'
-        @click='postComment'
-        depressed
-        :aria-label='$t(`common:comments.postComment`)'
-        )
-        v-icon(left) mdi-comment
-        span.text-none {{$t('common:comments.postComment')}}
-    v-divider.mt-3(v-if='permissions.write')
-    .pa-5.d-flex.align-center.justify-center(v-if='isLoading && !hasLoadedOnce')
-      v-progress-circular(
-        indeterminate
-        size='20'
-        width='1'
-        color='blue-grey'
-      )
-      .caption.blue-grey--text.pl-3: em {{$t('common:comments.loading')}}
-    v-timeline(
-      dense
-      v-else-if='comments && comments.length > 0'
-      )
-      v-timeline-item.comments-post(
-        color='pink darken-4'
-        large
+  .vn-cmts(v-intersect.once='onIntersect')
+    //- LIST
+    p.vn-cmts__note(v-if='isLoading && !hasLoadedOnce') {{$t('common:comments.loading')}}
+    .vn-cmts__list(v-else-if='comments && comments.length > 0')
+      article.vn-cmt(
         v-for='cm of comments'
         :key='`comment-` + cm.id'
         :id='`comment-post-id-` + cm.id'
         )
-        template(v-slot:icon)
-          v-avatar(color='blue-grey')
-            //- v-img(src='http://i.pravatar.cc/64')
-            span.white--text.title {{cm.initials}}
-        v-card.elevation-1
-          v-card-text
-            .comments-post-actions(v-if='permissions.manage && !isBusy && commentEditId === 0')
-              v-icon.mr-3(small, @click='editComment(cm)') mdi-pencil
-              v-icon(small, @click='deleteCommentConfirm(cm)') mdi-delete
-            .comments-post-name.caption: strong {{cm.authorName}}
-            .comments-post-date.overline.grey--text {{cm.createdAt | moment('from') }} #[em(v-if='cm.createdAt !== cm.updatedAt') - {{$t('common:comments.modified', { reldate: $options.filters.moment(cm.updatedAt, 'from') })}}]
-            .comments-post-content.mt-3(v-if='commentEditId !== cm.id', v-html='cm.render')
-            .comments-post-editcontent.mt-3(v-else)
-              v-textarea(
-                outlined
-                flat
-                auto-grow
-                dense
-                rows='3'
-                hide-details
-                v-model='commentEditContent'
-                color='blue-grey darken-2'
-                :background-color='$vuetify.theme.dark ? `grey darken-5` : `white`'
-              )
-              .d-flex.align-center.pt-3
-                v-spacer
-                v-btn.mr-3(
-                  dark
-                  color='blue-grey darken-2'
-                  @click='editCommentCancel'
-                  outlined
-                  )
-                  v-icon(left) mdi-close
-                  span.text-none {{$t('common:actions.cancel')}}
-                v-btn(
-                  dark
-                  color='blue-grey darken-2'
-                  @click='updateComment'
-                  depressed
-                  )
-                  v-icon(left) mdi-comment
-                  span.text-none {{$t('common:comments.updateComment')}}
-    .pt-5.text-center.body-2.blue-grey--text(v-else-if='permissions.write') {{$t('common:comments.beFirst')}}
-    .text-center.body-2.blue-grey--text(v-else) {{$t('common:comments.none')}}
+        span.vn-cmt__av(aria-hidden='true') {{cm.initials}}
+        .vn-cmt__who
+          b {{cm.authorName}}
+          span(:title='cm.createdAt') {{cm.createdAt | moment('from') }}
+          span(v-if='cm.createdAt !== cm.updatedAt', :title='cm.updatedAt') · {{$t('common:comments.modified', { reldate: $options.filters.moment(cm.updatedAt, 'from') })}}
+          span.vn-cmt__acts(v-if='permissions.manage && !isBusy && commentEditId === 0')
+            button(type='button', @click='editComment(cm)') {{$t('common:actions.edit')}}
+            button(type='button', @click='deleteCommentConfirm(cm)') {{$t('common:actions.delete')}}
+        .vn-cmt__body(v-if='commentEditId !== cm.id', v-html='cm.render')
+        .vn-cform.is-edit(v-else)
+          textarea(
+            v-model='commentEditContent'
+            rows='3'
+            :aria-label='$t(`common:comments.fieldContent`)'
+            )
+          .vn-cform__foot
+            span.vn-cform__btns
+              button.vn-btn.is-ghost(type='button', @click='editCommentCancel') {{$t('common:actions.cancel')}}
+              button.vn-btn(type='button', @click='updateComment') {{$t('common:comments.updateComment')}}
+    p.vn-cmts__note(v-else-if='permissions.write') {{$t('common:comments.beFirst')}}
+    p.vn-cmts__note(v-else) {{$t('common:comments.none')}}
+
+    //- NEW COMMENT
+    form.vn-cform(v-if='permissions.write', @submit.prevent='postComment')
+      span.vn-cmt__av(aria-hidden='true') {{myInitials}}
+      textarea#discussion-new(
+        v-model='newcomment'
+        rows='3'
+        maxlength='4000'
+        :placeholder='$t(`common:comments.newPlaceholder`)'
+        :aria-label='$t(`common:comments.fieldContent`)'
+        )
+      .vn-cform__guest(v-if='!isAuthenticated')
+        input(
+          v-model='guestName'
+          autocomplete='name'
+          :placeholder='$t(`common:comments.fieldName`)'
+          :aria-label='$t(`common:comments.fieldName`)'
+          )
+        input(
+          v-model='guestEmail'
+          type='email'
+          autocomplete='email'
+          :placeholder='$t(`common:comments.fieldEmail`)'
+          :aria-label='$t(`common:comments.fieldEmail`)'
+          )
+      .vn-cform__foot
+        span {{$t('common:comments.markdownFormat')}}
+        button.vn-btn(type='submit') {{$t('common:comments.postComment')}}
+    a.vn-btn.is-ghost.vn-cmts__login(v-else-if='!isAuthenticated', href='/login') {{$t('common:comments.loginToComment', 'Đăng nhập để bình luận')}}
 
     v-dialog(v-model='deleteCommentDialogShown', max-width='500')
       v-card
@@ -138,6 +76,13 @@ import gql from 'graphql-tag'
 import { get } from 'vuex-pathify'
 import validate from 'validate.js'
 import _ from 'lodash'
+
+// -> "Nguyễn Văn An" -> "NA"
+function initialsOf (name) {
+  const parts = _.compact(String(name || '').toUpperCase().split(' '))
+  if (parts.length < 1) { return '?' }
+  return parts.length > 1 ? parts[0].charAt(0) + _.last(parts).charAt(0) : parts[0].charAt(0)
+}
 
 export default {
   data () {
@@ -164,7 +109,10 @@ export default {
     pageId: get('page/id'),
     permissions: get('page/effectivePermissions@comments'),
     isAuthenticated: get('user/authenticated'),
-    userDisplayName: get('user/name')
+    userDisplayName: get('user/name'),
+    myInitials () {
+      return initialsOf(this.isAuthenticated ? this.userDisplayName : this.guestName)
+    }
   },
   methods: {
     onIntersect (entries, observer, isIntersecting) {
@@ -196,12 +144,7 @@ export default {
           fetchPolicy: 'network-only'
         })
         this.comments = _.get(results, 'data.comments.list', []).map(c => {
-          const nameParts = c.authorName.toUpperCase().split(' ')
-          let initials = _.head(nameParts).charAt(0)
-          if (nameParts.length > 1) {
-            initials += _.last(nameParts).charAt(0)
-          }
-          c.initials = initials
+          c.initials = initialsOf(c.authorName)
           return c
         })
       } catch (err) {
@@ -499,55 +442,202 @@ export default {
 </script>
 
 <style lang="scss">
-.comments-post {
-  position: relative;
+.vn-cmts {
+  display: grid;
+  gap: 16px;
+}
+
+.vn-cmts__list {
+  display: grid;
+  gap: 18px;
+}
+
+.vn-cmts__note {
+  margin: 0 !important;
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
+.vn-cmts__login {
+  justify-self: start;
+}
+
+.vn-cmt {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 4px 12px;
+  scroll-margin-top: calc(var(--topbar-h) + 24px);
+}
+
+.vn-cmt__av {
+  grid-row: span 2;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.vn-cmt__who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: 0.875rem;
+
+  b {
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  > span {
+    color: var(--muted);
+  }
+}
+
+.vn-cmt__acts {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+
+  button {
+    font-size: 0.8125rem;
+    color: var(--muted);
+
+    &:hover {
+      color: var(--accent);
+    }
+  }
+}
+
+.vn-cmt__body {
+  display: grid;
+  gap: 8px;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+
+  > * {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  pre {
+    padding: 10px 12px !important;
+    border-radius: 8px;
+    background: var(--code-bg);
+    overflow-x: auto;
+
+    > code {
+      padding: 0;
+      background: none;
+      box-shadow: none;
+      color: var(--code-ink);
+      font: 0.8125rem/1.5 var(--font-mono);
+    }
+  }
+
+  :not(pre) > code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--sunken);
+    box-shadow: none;
+    color: var(--ink);
+    font: 0.875em var(--font-mono);
+  }
+
+  img {
+    max-width: 100%;
+    border-radius: 8px;
+  }
+}
+
+.vn-cform {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 8px 12px;
+
+  &.is-edit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  textarea,
+  input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--ink);
+    font: 0.9375rem/1.55 var(--font-ui);
+
+    &:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: -1px;
+      border-color: transparent;
+    }
+  }
+
+  textarea {
+    min-height: 5.5rem;
+    resize: vertical;
+  }
+}
+
+.vn-cform__guest,
+.vn-cform__foot {
+  grid-column: 2;
+
+  .is-edit & {
+    grid-column: 1;
+  }
+}
+
+.vn-cform__guest {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 8px;
+}
+
+.vn-cform__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.vn-cform__btns {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.vn-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--on-accent) !important;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none !important;
 
   &:hover {
-    .comments-post-actions {
-      opacity: 1;
-    }
+    filter: brightness(1.08);
   }
 
-  &-actions {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    opacity: 0;
-    transition: opacity .4s ease;
-  }
-
-  &-content {
-    > p:first-child {
-      padding-top: 0;
-    }
-
-    p {
-      padding-top: 1rem;
-      margin-bottom: 0;
-    }
-
-    img {
-      max-width: 100%;
-      border-radius: 5px;
-    }
-
-    code {
-      background-color: rgba(mc('pink', '500'), .1);
-      box-shadow: none;
-    }
-
-    pre > code {
-      margin-top: 1rem;
-      padding: 12px;
-      background-color: #111;
-      box-shadow: none;
-      border-radius: 5px;
-      width: 100%;
-      color: #FFF;
-      font-weight: 400;
-      font-size: .85rem;
-      font-family: Roboto Mono, monospace;
-    }
+  &.is-ghost {
+    background: transparent;
+    color: var(--accent) !important;
   }
 }
 </style>
