@@ -2,7 +2,7 @@
   .vn-wrap.vn-cat
     header.vn-cat__head
       h1 {{ title }}
-      button.vn-cat__clear(v-if='hasFilters', type='button', @click='clearFilters') {{ $t('common:catalog.clear', 'Xoá bộ lọc') }}
+      button.vn-cat__clear(v-if='hasFilters', type='button', @click='clearFilters') {{ $t('common:catalog.clear', 'Xóa bộ lọc') }}
 
     .vn-cat__layout
       //- FILTERS
@@ -97,8 +97,9 @@
                 @click='topic = `p:` + p'
                 ) {{ p }}
 
-      //- RESULTS
-      .vn-results(aria-live='polite')
+      //- RESULTS (a screen reader hears only the count, not every card)
+      span.d-sr-only(aria-live='polite') {{ countLabel }}
+      .vn-results
         section.vn-group(v-for='g of groups', :key='g.name')
           h2 {{ g.name }} #[span.vn-group__n {{ g.items.length }}]
           .vn-cards
@@ -200,6 +201,9 @@ export default {
     levelsOn () {
       if (!this.topic) { return true }
       return this.items.some(it => this.inTopic(it) && it.stars > 0)
+    },
+    countLabel () {
+      return this.$t('common:catalog.count', { count: this.filtered.length, defaultValue: '{{count}} bài' })
     },
     filtered () {
       const q = fold(this.q.trim())

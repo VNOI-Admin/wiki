@@ -72,7 +72,7 @@
           template(v-slot:activator='{ on, attrs }')
             button.vn-iconbtn(type='button', v-bind='attrs', v-on='on', :aria-label='$t(`common:header.language`)')
               v-icon mdi-web
-          .vn-menu__list
+          .vn-menu__list(role='menu')
             button.vn-menu__item(v-for='lc of locales', :key='lc.code', type='button', @click='changeLocale(lc)', :aria-checked='lc.code === locale ? `true` : `false`', role='menuitemradio')
               span.vn-mono.mr-2 {{lc.code.toUpperCase()}}
               span {{lc.name}}
@@ -161,7 +161,7 @@
             hr
             a.vn-menu__item(href='/p') {{$t('common:header.profile')}}
             button.vn-menu__item(type='button', @click='logout') {{$t('common:header.logout')}}
-        a.vn-acctbtn(v-else, href='/login')
+        a.vn-acctbtn(v-else, href='/login', @click='rememberPage')
           v-icon mdi-account-outline
           span {{$t('common:header.login')}}
 
@@ -212,6 +212,7 @@ import { get, sync } from 'vuex-pathify'
 import _ from 'lodash'
 import { initialsOf } from '../../modules/initials'
 import { setTheme } from '../../modules/theme'
+import { rememberPage } from '../../modules/login-return'
 
 import movePageMutation from 'gql/common/common-pages-mutation-move.gql'
 
@@ -250,9 +251,7 @@ export default {
     }
   },
   computed: {
-    search: sync('site/search'),
     searchIsFocused: sync('site/searchIsFocused'),
-    searchIsLoading: sync('site/searchIsLoading'),
     isLoading: get('isLoading'),
     title: get('site/title'),
     logoUrl: get('site/logoUrl'),
@@ -362,6 +361,7 @@ export default {
     }
   },
   methods: {
+    rememberPage,
     /**
      * Show as many header links as fit next to the title; the rest go in a menu.
      * Widths come from an invisible copy of every link, so the result doesn't
@@ -403,23 +403,23 @@ export default {
       }
     },
     /**
-     * A link is current when the page path starts with the link path (locale prefix ignored).
+     * A link is current when the page path starts with the link path (page locale prefix ignored).
      */
     isCurrent (link) {
       if (this.isExternal(link)) { return false }
-      const strip = p => decodeURIComponent(p).replace(/^\/[a-z]{2}(?=\/|$)/i, '').replace(/\/+$/, '').toLowerCase()
+      const prefix = `/${this.locale}`
+      const strip = p => {
+        let path = p
+        try { path = decodeURIComponent(p) } catch (err) {}
+        if (path === prefix || path.startsWith(prefix + '/')) { path = path.slice(prefix.length) }
+        return path.replace(/\/+$/, '').toLowerCase()
+      }
       const target = strip(new URL(link.url, window.location.origin).pathname)
       const here = strip(window.location.pathname)
       return target.length > 0 && (here === target || here.startsWith(target + '/'))
     },
     openSearch () {
       this.searchIsFocused = true
-    },
-    searchFocus () {
-      this.searchIsFocused = true
-    },
-    searchBlur () {
-      this.searchIsFocused = false
     },
     pageNew () {
       this.newPageModal = true
@@ -480,14 +480,6 @@ export default {
     pageDelete () {
       this.deletePageModal = true
     },
-    assets () {
-      // window.location.assign(`/f`)
-      this.$store.commit('showNotification', {
-        style: 'indigo',
-        message: `Coming soon...`,
-        icon: 'ferry'
-      })
-    },
     async changeLocale (locale) {
       await this.$i18n.i18next.changeLanguage(locale.code)
       switch (this.mode) {
@@ -499,9 +491,6 @@ export default {
     },
     logout () {
       window.location.assign('/logout')
-    },
-    goHome () {
-      window.location.assign('/')
     },
     toggleTheme () {
       setTheme(this.$vuetify, this.$vuetify.theme.dark ? 'light' : 'dark')
@@ -542,7 +531,7 @@ export default {
 .vn-topbar__in {
   width: 100%;
   max-width: var(--wrap);
-  height: 64px;
+  height: var(--topbar-h);
   margin: 0 auto;
   padding-inline: 20px;
   display: flex;
@@ -908,6 +897,13 @@ export default {
 .v-dialog.v-bottom-sheet.vn-sheet {
   overflow-y: auto;
   overscroll-behavior: contain;
+
+  // -> A scrollable dialog is a flex row: the panel grows with its content, so its
+  //    background covers a long list too
+  > .vn-sheet__panel {
+    flex: 1 1 100%;
+    align-self: flex-start;
+  }
 }
 
 .vn-sheet__panel {

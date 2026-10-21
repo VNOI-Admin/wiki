@@ -4,7 +4,7 @@
       .nav-roadmap-head
         v-menu(v-if='roadmaps.length > 1', offset-y, bottom, content-class='vn-menu')
           template(v-slot:activator='{ on }')
-            button.nav-roadmap-title.is-switchable(
+            button.nav-roadmap-title(
               v-on='on'
               type='button'
               :title='$t(`common:roadmap.switch`, `Đổi lộ trình`)'
@@ -23,7 +23,7 @@
             hr
             a.vn-menu__item(:href='`/roadmap/` + roadmap.id') {{ $t('common:roadmap.viewFull', 'Xem toàn bộ lộ trình') }}
         a.nav-roadmap-title(v-else, :href='`/roadmap/` + roadmap.id') {{ roadmap.title }}
-        button.nav-roadmap-hide(
+        button.nav-roadmap-iconbtn(
           v-if='canShowMenu'
           type='button'
           @click='$emit(`show-menu`)'
@@ -31,7 +31,7 @@
           :aria-label='$t(`common:roadmap.mainMenu`, `Menu chính`)'
           )
           v-icon(small) mdi-menu
-        button.nav-roadmap-hide(
+        button.nav-roadmap-iconbtn(
           v-if='canHide'
           type='button'
           @click='$emit(`hide`)'
@@ -47,7 +47,7 @@
       :key='section.id'
       :class='{ "is-collapsed": collapsed[section.id] }'
       )
-      button.nav-roadmap-section-header(type='button', @click='toggleSection(section.id)')
+      button.nav-roadmap-section-header(type='button', :aria-expanded='collapsed[section.id] ? `false` : `true`', @click='toggleSection(section.id)')
         span.nav-roadmap-section-title {{ section.title }}
         span.nav-roadmap-section-count {{ sectionStats(section).completed }}/{{ sectionStats(section).total }}
         v-icon(small) {{ collapsed[section.id] ? 'mdi-chevron-right' : 'mdi-chevron-down' }}
@@ -60,6 +60,7 @@
           :target='isExternal(node) ? `_blank` : undefined'
           :rel='isExternal(node) ? `noopener noreferrer` : undefined'
           :class='{ "is-current": isCurrent(node), "is-placeholder": !nodeHref(node) }'
+          :aria-current='isCurrent(node) ? `page` : null'
           @click='onOpen(node)'
           @auxclick='onOpen(node)'
           )
@@ -225,7 +226,8 @@ export default {
     }
   }
 
-  &-hide {
+  // -> The main menu and hide buttons
+  &-iconbtn {
     .v-icon {
       color: inherit !important;
     }
@@ -262,11 +264,6 @@ export default {
 
   &-count {
     font-size: 0.8125rem;
-    color: var(--muted);
-  }
-
-  &-description {
-    margin: 0 !important;
     color: var(--muted);
   }
 
@@ -348,5 +345,10 @@ export default {
     margin-top: 3px;
     color: var(--muted) !important;
   }
+}
+
+// -> In the phone sheet, the sticky header takes the sheet colour
+.vn-sheet .nav-roadmap-header {
+  background: var(--surface);
 }
 </style>

@@ -371,7 +371,8 @@ export default {
       saveLoading: false,
       changePassLoading: false,
       user: {
-        name: 'unknown',
+        // -> The signed-in name shows at once; the query fills in the rest
+        name: this.$store.get('user/name') || '',
         location: '',
         jobTitle: '',
         timezone: '',

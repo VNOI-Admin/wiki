@@ -9,7 +9,7 @@
         v-for='s of statuses'
         :key='s.id'
         type='button'
-        aria-controls='vn-pfp-list'
+        :aria-controls='listStatus ? `vn-pfp-list` : null'
         :aria-pressed='listStatus === s.id ? `true` : `false`'
         @click='listStatus = listStatus === s.id ? null : s.id'
         )

@@ -6,7 +6,7 @@
         h1 {{ $t('common:header.history') }} #[strong /{{path}}]
         .vn-ptop__ids
           span {{ trailLabel }}
-          span ID: {{pageId}}
+          span {{ $t('common:page.id', { id: pageId }) }}
         .vn-ptop__acts
           button.vn-btn(type='button', @click='goLive') {{ $t('common:page.returnNormalView') }}
       v-container.vn-hist(fluid, grid-list-xl)
@@ -84,7 +84,7 @@
               v-if='total > trail.length'
               type='button'
               @click='loadMore'
-              ) {{ $t('common:header.searchMore', 'Xem thêm') }}
+              ) {{ $t('common:actions.loadMore', 'Xem thêm') }}
 
             v-chip.ma-0(
               v-else

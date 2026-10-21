@@ -24,7 +24,10 @@
         button.vn-search__esc(type='button', @click='close') Esc
       #vn-search-list.vn-search__out(ref='out', role='listbox', :aria-label='$t(`common:header.search`, `Tìm bài viết`)')
         template(v-if='search && search.length >= 2')
-          .vn-search__skel(v-if='searchIsLoading && results.length < 1', :aria-label='$t(`common:header.searchLoading`)')
+          .vn-search__empty(v-if='loadError', role='alert')
+            span {{$t('common:header.searchError', 'Không tải được kết quả.')}}
+            button.vn-search__retry(type='button', @click='$apollo.queries.response.refetch()') {{$t('common:actions.retry', 'Thử lại')}}
+          .vn-search__skel(v-else-if='searchIsLoading && results.length < 1', role='status', :aria-label='$t(`common:header.searchLoading`)')
             i
             i
             i
@@ -41,8 +44,7 @@
               @mousemove='cursor = idx'
               )
               span.vn-hit__t {{item.title}}
-              span.vn-hit__mark(v-if='statusFor(item)', :title='statusFor(item).label')
-                v-icon(:color='statusFor(item).color', small) {{ statusFor(item).icon }}
+              status-mark.vn-hit__mark(v-if='statusFor(item)', :status='statusFor(item)', :title='statusFor(item).label')
               span.vn-hit__x(v-if='item.snippet')
                 template(v-for='(part, pi) of markParts(item.snippet)')
                   mark(v-if='part.hit', :key='pi') {{ part.text }}
@@ -69,6 +71,7 @@ import _ from 'lodash'
 import { sync } from 'vuex-pathify'
 
 import searchPagesQuery from 'gql/common/common-pages-query-search.gql'
+import StatusMark from './status-mark.vue'
 
 /**
  * Lowercase, and remove the Vietnamese marks of each character.
@@ -84,9 +87,11 @@ function foldText (text) {
 }
 
 export default {
+  components: { StatusMark },
   data() {
     return {
       cursor: -1,
+      loadError: false,
       shown: 10,
       perPage: 10,
       response: {
@@ -100,8 +105,6 @@ export default {
     search: sync('site/search'),
     searchIsFocused: sync('site/searchIsFocused'),
     searchIsLoading: sync('site/searchIsLoading'),
-    searchRestrictLocale: sync('site/searchRestrictLocale'),
-    searchRestrictPath: sync('site/searchRestrictPath'),
     results() {
       return this.response.results ? _.take(this.response.results, this.shown) : []
     },
@@ -222,9 +225,6 @@ export default {
     },
     goToPage(item) {
       window.location.assign(`/${item.locale}/${item.path}`)
-    },
-    goToPageInNewTab(item) {
-      window.open(`/${item.locale}/${item.path}`, '_blank')
     }
   },
   apollo: {
@@ -241,8 +241,14 @@ export default {
       skip() {
         return !this.search || this.search.length < 2
       },
-      result() {
+      // -> A failed search must not look like "no results". The client error policy also
+      //    sends a failed result here, after error().
+      result({ error }) {
+        this.loadError = Boolean(error)
         this.shown = this.perPage
+      },
+      error() {
+        this.loadError = true
       },
       update: (data) => _.get(data, 'pages.search', {}),
       watchLoading (isLoading) {
@@ -336,6 +342,12 @@ export default {
 .vn-search__empty {
   padding: 18px 10px;
   color: var(--muted);
+}
+
+.vn-search__retry {
+  margin-left: 8px;
+  color: var(--accent);
+  font: inherit;
 }
 
 .vn-search__more {

@@ -6,7 +6,7 @@
         nav.vn-fcrumbs(:aria-label='$t(`common:page.breadcrumb`, `Đường dẫn`)')
           template(v-for='(crumb, idx) of breadcrumbs')
             span(v-if='idx > 0', aria-hidden='true') /
-            a(:href='crumb.path', :key='crumb.path') {{ idx === 0 ? $t(`common:header.home`, `Trang chủ`) : crumb.name }}
+            a(:href='crumb.path', :key='crumb.path') {{ crumb.name }}
         h1
           v-icon mdi-folder-open-outline
           span {{ folderTitle || path }}
@@ -71,7 +71,7 @@ export default {
     breadcrumbs () {
       const segments = this.path.split('/')
       let cur = `/${this.locale}`
-      return [{ path: '/', name: 'Home' }].concat(segments.map(seg => {
+      return [{ path: '/', name: this.$t('common:header.home', 'Trang chủ') }].concat(segments.map(seg => {
         cur += `/${seg}`
         return { path: cur, name: seg }
       }))

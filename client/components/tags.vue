@@ -294,18 +294,13 @@ export default {
 
 // -> The search and sort bar shares the left and right edges of the page head
 .vn-tagbar.v-toolbar {
+  // -> The 20px page gutter on each side, at every width
+  width: calc(100% - 40px);
   max-width: calc(var(--wrap) - 40px);
   margin: 0 auto;
   border: 1px solid var(--line);
   border-radius: 12px !important;
   background: var(--surface) !important;
-}
-
-// -> Below the page width (--wrap, 76rem), the bar keeps the 20px page gutter
-@media (max-width: 76rem) {
-  .vn-tagbar.v-toolbar {
-    margin-inline: 20px;
-  }
 }
 
 // -> Phones: the search field takes one row, the sort controls the next

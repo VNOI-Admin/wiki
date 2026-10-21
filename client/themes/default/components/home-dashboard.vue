@@ -293,8 +293,9 @@ export default {
 
 // -> The card fills the hero height, so its edges line up with the left column
 .vn-cont {
-  display: grid;
-  grid-template-rows: repeat(5, auto) 1fr;
+  // -> A column: the button sits at the bottom, whichever rows show
+  display: flex;
+  flex-direction: column;
   gap: 14px;
   padding: 22px;
   border: 1px solid var(--line);
@@ -309,8 +310,8 @@ export default {
   }
 
   > .vn-btn {
-    align-self: end;
-    justify-self: start;
+    margin-top: auto;
+    align-self: flex-start;
   }
 }
 

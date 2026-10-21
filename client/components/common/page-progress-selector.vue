@@ -1,5 +1,5 @@
 <template lang="pug">
-  .page-progress(v-if='isEnabled', :class='`is-` + variant')
+  .page-progress(v-if='isEnabled')
     v-menu(offset-y, bottom, min-width='220', content-class='vn-menu')
       template(v-slot:activator='{ on: menu }')
         button.vn-pbtn(
@@ -36,15 +36,10 @@ import ProgressDataDialog from './progress-data-dialog.vue'
 import StatusMark from './status-mark.vue'
 
 /**
- * Per-article progress selector.
+ * Per-article progress selector, in the article meta row.
  *
  * Presentation only: all state lives in `this.$progress` (ProgressManager), which is the
  * single source of truth and the only thing that knows about storage.
- *
- * Rendered in three places on an article, hence the variants:
- *   card   sidebar column (hidden below the `lg` breakpoint)
- *   inline beside the page title, compact
- *   block  below the page content, with a prompt
  */
 export default {
   components: {
@@ -67,11 +62,6 @@ export default {
     title: {
       type: String,
       default: ''
-    },
-    variant: {
-      type: String,
-      default: 'card',
-      validator: v => ['card', 'inline', 'block'].includes(v)
     }
   },
   data () {

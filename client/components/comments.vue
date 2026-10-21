@@ -2,6 +2,9 @@
   .vn-cmts
     //- LIST
     p.vn-cmts__note(v-if='isLoading && !hasLoadedOnce') {{$t('common:comments.loading')}}
+    p.vn-cmts__note(v-else-if='loadError')
+      span {{$t('common:comments.loadError', 'Không tải được bình luận.')}}
+      button.vn-cmts__retry(type='button', @click='fetch()') {{$t('common:actions.retry', 'Thử lại')}}
     .vn-cmts__list(v-else-if='comments && comments.length > 0')
       article.vn-cmt(
         v-for='cm of comments'
@@ -63,7 +66,7 @@
       .vn-cform__foot
         span {{$t('common:comments.markdownFormat')}}
         button.vn-btn(type='submit') {{$t('common:comments.postComment')}}
-    a.vn-btn.is-ghost.vn-cmts__login(v-else-if='!isAuthenticated', href='/login') {{$t('common:comments.loginToComment', 'Đăng nhập để bình luận')}}
+    a.vn-btn.is-ghost.vn-cmts__login(v-else-if='!isAuthenticated', href='/login', @click='rememberPage') {{$t('common:comments.loginToComment', 'Đăng nhập để bình luận')}}
     p.vn-cmts__note(v-else) {{$t('common:comments.readOnly', 'Bạn chỉ có quyền xem bình luận.')}}
 
 </template>
@@ -74,6 +77,7 @@ import { get } from 'vuex-pathify'
 import validate from 'validate.js'
 import _ from 'lodash'
 import { initialsOf } from '../modules/initials'
+import { rememberPage } from '../modules/login-return'
 
 // -> A second click on "Xóa" within this time deletes the comment
 const ARM_MS = 4000
@@ -84,6 +88,7 @@ export default {
       newcomment: '',
       isLoading: true,
       hasLoadedOnce: false,
+      loadError: false,
       comments: [],
       guestName: '',
       guestEmail: '',
@@ -123,6 +128,7 @@ export default {
     clearTimeout(this.armTimer)
   },
   methods: {
+    rememberPage,
     // -> Moderators change every comment; a signed-in author changes their own
     canChange (cm) {
       return this.permissions.manage || (this.isAuthenticated && this.permissions.write && cm.authorId === this.userId)
@@ -162,8 +168,10 @@ export default {
           c.initials = initialsOf(c.authorName)
           return c
         })
+        this.loadError = false
       } catch (err) {
         console.warn(err)
+        this.loadError = true
         if (!silent) {
           this.$store.commit('showNotification', {
             style: 'red',
@@ -308,6 +316,7 @@ export default {
         if (this.commentEditContent === null) {
           throw new Error('Failed to load comment content.')
         }
+        this.commentEditId = cm.id
       } catch (err) {
         console.warn(err)
         this.$store.commit('showNotification', {
@@ -316,7 +325,6 @@ export default {
           icon: 'alert'
         })
       }
-      this.commentEditId = cm.id
       this.isBusy = false
       this.$store.commit(`loadingStop`, 'comments-edit')
     },
@@ -481,6 +489,12 @@ export default {
 
 .vn-cmts__login {
   justify-self: start;
+}
+
+.vn-cmts__retry {
+  margin-left: 8px;
+  color: var(--accent);
+  font: inherit;
 }
 
 .vn-cmt {

@@ -60,7 +60,6 @@
           .vn-meta(v-if='!homeDecoded')
             page-progress-selector(
               v-if='!progressExcluded && !printView'
-              variant='inline'
               :page-id='pageId'
               :locale='locale'
               :path='path'
@@ -823,7 +822,6 @@ export default {
 // At 900px and below, the rail moves to the bottom bar too.
 
 .vn-doc {
-  --read: 56rem;
   display: grid;
   grid-template-columns: minmax(0, var(--read)) 13rem;
   justify-content: center;
@@ -998,7 +996,7 @@ export default {
 }
 
 .vn-printbar {
-  max-width: 56rem;
+  max-width: var(--read);
   margin: 16px auto 0;
   padding-inline: 20px;
 }
@@ -1222,7 +1220,7 @@ export default {
 
 @media (max-width: 900px) {
   // -> The edit button and the back-to-top button stay above the bottom bar
-  .vn-readbar ~ .v-tooltip .v-speed-dial--fixed {
+  .vn-readbar ~ .v-speed-dial--fixed {
     bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   }
 

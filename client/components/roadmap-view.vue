@@ -29,7 +29,7 @@
               v-for='s of trackedStatuses'
               :key='s.id'
               type='button'
-              aria-controls='vn-rmp-list'
+              :aria-controls='listStatus ? `vn-rmp-list` : null'
               :aria-pressed='listStatus === s.id ? `true` : `false`'
               @click='listStatus = listStatus === s.id ? null : s.id'
               )
@@ -74,7 +74,9 @@
           li.vn-rmp__none(v-if='byStatus(listStatus).length < 1') {{ $t('common:roadmap.listEmpty', 'Chưa có bài nào.') }}
 
         //- STAGES: one row per section, opens to its articles
-        ol.vn-rmp__stages(v-if='rm.sections.length > 0')
+        //- "Hide done" can hide every stage
+        p.vn-rmp__none(v-if='rm.sections.length > 0 && visibleSections.length < 1') {{ $t('common:roadmap.allStagesDone', 'Đã hoàn thành mọi chặng.') }}
+        ol.vn-rmp__stages(v-else-if='rm.sections.length > 0')
           li.vn-stage(
             v-for='st of visibleSections'
             :key='st.section.id'
