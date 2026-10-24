@@ -1,0 +1,21 @@
+query ($locale: String!) {
+  catalog {
+    searchIndex(locale: $locale) {
+      articles {
+        title
+        href
+        pageId
+        stars
+        topic
+      }
+      roadmapItems {
+        title
+        href
+        roadmapId
+        roadmapTitle
+        stage
+        stageTitle
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-const { articleContext, cleanText, homeSummary, normalizeHref, parseCatalog } = require('../../helpers/catalog')
+const { articleContext, cleanText, homeSummary, normalizeHref, parseCatalog, searchIndex } = require('../../helpers/catalog')
 
 const PAGE = `# Danh sách bài viết
 
@@ -110,5 +110,25 @@ describe('helpers/catalog', () => {
     ])
     expect(ctx.topics[2].items[0].path).toEqual('algo/algebra/binary_exponentation')
     expect(articleContext({ ...catalog, items }, 99)).toBeNull()
+  })
+
+  it('builds the search index from the catalogue and the roadmaps', () => {
+    const roadmaps = [{
+      id: 'general',
+      title: 'Lộ trình tổng quát',
+      sections: [
+        { title: 'Nhập môn', nodes: [{ title: 'Độ phức tạp', articlePath: 'vi/algo/basic/computational-complexity' }] },
+        { title: 'Đồ thị', nodes: [{ title: 'Luồng', articlePath: '' }, { title: 'Bài tập', externalUrl: 'https://oj.vnoi.info' }] }
+      ]
+    }]
+    const index = searchIndex(catalog, roadmaps)
+    expect(index.articles).toHaveLength(6)
+    expect(index.articles[2]).toEqual({ title: 'Persistent Data Structures', href: '/algo/data-structures/persistent-data-structures-2', pageId: null, stars: 3, topic: 'Cấu trúc dữ liệu' })
+    expect(index.roadmapItems.map(it => [it.title, it.href, it.stage])).toEqual([
+      ['Độ phức tạp', '/vi/algo/basic/computational-complexity', 1],
+      ['Luồng', null, 2],
+      ['Bài tập', 'https://oj.vnoi.info', 2]
+    ])
+    expect(searchIndex(null, []).articles).toEqual([])
   })
 })

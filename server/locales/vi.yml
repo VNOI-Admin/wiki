@@ -12,6 +12,12 @@ common:
     searchPlaceholder: 'Tìm bài: DFS, quy hoạch động, segment tree…'
     searchMore: 'Xem thêm'
     searchError: 'Không tải được kết quả.'
+    searchTips: 'Gợi ý:'
+    searchTitles: 'Bài viết'
+    searchText: 'Trong nội dung'
+    searchRoadmap: 'Mục lộ trình'
+    searchStage: '{{roadmap}} · Chặng {{n}}: {{stage}}'
+    searchSynonym: 'khớp "{{term}}"'
   page:
     copyCode: 'Sao chép'
     copyCodeDone: 'Đã chép'

@@ -66,9 +66,7 @@ import _ from 'lodash'
 import VnStars from '../../../components/common/vn-stars.vue'
 import { recordHref } from '../../../modules/progress/page-path'
 import { CLOSED_STATUSES, READING_STATUS, getNodeStatus, nodeHref, nodeStats, pickRoadmap, touchRoadmap } from '../../../modules/roadmap-context'
-
-// -> Search shortcuts for common topics
-const POPULAR = ['Quy hoạch động', 'DFS', 'Segment Tree', 'Fenwick', 'Dijkstra']
+import { POPULAR_TERMS } from '../../../modules/search-rank'
 
 export default {
   components: { VnStars },
@@ -79,7 +77,7 @@ export default {
     }
   },
   data () {
-    return { popular: POPULAR }
+    return { popular: POPULAR_TERMS }
   },
   computed: {
     roadmap () {

@@ -13,7 +13,7 @@
           role='combobox'
           aria-autocomplete='list'
           aria-controls='vn-search-list'
-          :aria-expanded='results.length + suggestions.length > 0 ? `true` : `false`'
+          :aria-expanded='options.length > 0 ? `true` : `false`'
           :aria-activedescendant='cursor >= 0 ? `vn-hit-` + cursor : null'
           :placeholder='$t(`common:header.searchPlaceholder`, `Tìm bài: DFS, quy hoạch động, segment tree…`)'
           :aria-label='$t(`common:header.search`, `Tìm bài viết`)'
@@ -23,47 +23,61 @@
           )
         button.vn-search__esc(type='button', @click='close') Esc
       #vn-search-list.vn-search__out(ref='out', role='listbox', :aria-label='$t(`common:header.search`, `Tìm bài viết`)')
-        template(v-if='search && search.length >= 2')
+        //- No query yet: common topics
+        .vn-search__tips(v-if='!term')
+          span {{$t('common:header.searchTips', 'Gợi ý:')}}
+          button.vn-chip(v-for='p of popular', :key='p', type='button', @click='setSearchTerm(p)') {{ p }}
+        template(v-else-if='term.length >= 2')
+          template(v-for='g of groups')
+            .vn-search__grp(role='presentation', :key='`g-` + g.key') {{ g.label }}
+            template(v-for='row of g.rows')
+              button.vn-hit(
+                v-if='row.kind === `suggest`'
+                :key='row.key'
+                :id='`vn-hit-` + row.idx'
+                role='option'
+                type='button'
+                :aria-selected='row.idx === cursor ? `true` : `false`'
+                @click='setSearchTerm(row.term)'
+                )
+                span.vn-hit__t {{ row.term }}
+              a.vn-hit(
+                v-else
+                :key='row.key'
+                :id='`vn-hit-` + row.idx'
+                role='option'
+                :href='row.href'
+                :target='row.external ? `_blank` : null'
+                :rel='row.external ? `noopener` : null'
+                :aria-selected='row.idx === cursor ? `true` : `false`'
+                @mousemove='cursor = row.idx'
+                @click='onOpen(row)'
+                )
+                span.vn-hit__t
+                  template(v-for='(part, pi) of markParts(row.title)')
+                    mark(v-if='part.hit', :key='pi') {{ part.text }}
+                    template(v-else) {{ part.text }}
+                span.vn-hit__end
+                  vn-stars(v-if='row.stars', :value='row.stars')
+                  em.vn-hit__soon(v-if='row.soon') {{$t('common:roadmap.noArticle', 'Chưa có bài')}}
+                  status-mark(v-if='row.status', :status='row.status', :title='row.status.label')
+                span.vn-hit__x(v-if='row.snippet')
+                  template(v-for='(part, pi) of markParts(row.snippet)')
+                    mark(v-if='part.hit', :key='pi') {{ part.text }}
+                    template(v-else) {{ part.text }}
+                span.vn-hit__s(v-else-if='row.sub')
+                  | {{ row.sub }}
+                  span.vn-hit__syn(v-if='row.syn')  · {{ synLabel(row.syn) }}
+            button.vn-search__more(v-if='g.key === `text` && moreText', :key='`more-` + g.key', type='button', @click='shown += perPage') {{$t('common:header.searchMore', 'Xem thêm')}}
+          //- The text search: error, loading and empty states
           .vn-search__empty(v-if='loadError', role='alert')
             span {{$t('common:header.searchError', 'Không tải được kết quả.')}}
             button.vn-search__retry(type='button', @click='$apollo.queries.response.refetch()') {{$t('common:actions.retry', 'Thử lại')}}
-          .vn-search__skel(v-else-if='searchIsLoading && results.length < 1', role='status', :aria-label='$t(`common:header.searchLoading`)')
+          .vn-search__skel(v-else-if='searchIsLoading && textHits.length < 1', role='status', :aria-label='$t(`common:header.searchLoading`)')
             i
             i
             i
-          .vn-search__empty(v-else-if='results.length < 1') {{$t('common:header.searchNoResult')}}
-          template(v-else)
-            .vn-search__grp(role='presentation') {{$t('common:header.searchResultsCount', { total: hits })}}
-            a.vn-hit(
-              v-for='(item, idx) of results'
-              :key='item.id'
-              :id='`vn-hit-` + idx'
-              role='option'
-              :href='`/${item.locale}/${item.path}`'
-              :aria-selected='idx === cursor ? `true` : `false`'
-              @mousemove='cursor = idx'
-              )
-              span.vn-hit__t {{item.title}}
-              status-mark.vn-hit__mark(v-if='statusFor(item)', :status='statusFor(item)', :title='statusFor(item).label')
-              span.vn-hit__x(v-if='item.snippet')
-                template(v-for='(part, pi) of markParts(item.snippet)')
-                  mark(v-if='part.hit', :key='pi') {{ part.text }}
-                  template(v-else) {{ part.text }}
-              span.vn-hit__s(v-else-if='item.description') {{item.description}}
-              span.vn-hit__p /{{item.path}}
-            button.vn-search__more(v-if='results.length < response.results.length', type='button', @click='shown += perPage') {{$t('common:header.searchMore', 'Xem thêm')}}
-          template(v-if='suggestions.length > 0')
-            .vn-search__grp(role='presentation') {{$t('common:header.searchDidYouMean')}}
-            button.vn-hit(
-              v-for='(term, idx) of suggestions'
-              :key='term'
-              :id='`vn-hit-` + (idx + results.length)'
-              role='option'
-              type='button'
-              :aria-selected='idx + results.length === cursor ? `true` : `false`'
-              @click='setSearchTerm(term)'
-              )
-              span.vn-hit__t {{term}}
+          .vn-search__empty(v-else-if='options.length < 1') {{$t('common:header.searchNoResult')}}
 </template>
 
 <script>
@@ -71,29 +85,25 @@ import _ from 'lodash'
 import { sync } from 'vuex-pathify'
 
 import searchPagesQuery from 'gql/common/common-pages-query-search.gql'
+import searchIndexQuery from 'gql/common/common-catalog-query-search-index.gql'
 import StatusMark from './status-mark.vue'
+import VnStars from './vn-stars.vue'
+import { POPULAR_TERMS, foldText, rankArticles, rankRoadmapItems } from '../../modules/search-rank'
+import { touchRoadmap } from '../../modules/roadmap-context'
 
-/**
- * Lowercase, and remove the Vietnamese marks of each character.
- * Each character stays one character, so a match position in the result is the same in the input.
- */
-function foldText (text) {
-  return Array.from(String(text || ''), c => {
-    const f = c.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
-    if (f === 'đ') { return 'd' }
-    // -> One UTF-16 unit per character, so indexOf positions match the Array.from positions
-    return f.length === 1 ? f : '\ufffd'
-  }).join('')
-}
+/* global siteConfig */
 
 export default {
-  components: { StatusMark },
+  components: { StatusMark, VnStars },
   data() {
     return {
       cursor: -1,
       loadError: false,
       shown: 10,
       perPage: 10,
+      popular: POPULAR_TERMS,
+      // -> Catalogue titles and roadmap items, loaded when the dialog first opens
+      index: null,
       response: {
         results: [],
         suggestions: [],
@@ -105,23 +115,85 @@ export default {
     search: sync('site/search'),
     searchIsFocused: sync('site/searchIsFocused'),
     searchIsLoading: sync('site/searchIsLoading'),
-    results() {
-      return this.response.results ? _.take(this.response.results, this.shown) : []
+    term () {
+      return String(this.search || '').trim()
     },
-    hits() {
-      return this.response.totalHits ? this.response.totalHits : 0
+    locale () {
+      return this.$store.get('page/locale') || siteConfig.lang
+    },
+    titleHits () {
+      return this.index ? rankArticles(this.index.articles, this.term) : []
+    },
+    roadmapHits () {
+      return this.index ? rankRoadmapItems(this.index.roadmapItems, this.term) : []
+    },
+    // -> Text hits that the title group does not already show
+    textAll () {
+      const shown = new Set(this.titleHits.map(h => h.article.href.replace(/^\//, '')))
+      return (this.response.results || []).filter(item => !shown.has(item.path) && !shown.has(`${item.locale}/${item.path}`))
+    },
+    textHits () {
+      return _.take(this.textAll, this.shown)
+    },
+    moreText () {
+      return this.textAll.length > this.shown
     },
     suggestions() {
       return this.response.suggestions ? this.response.suggestions : []
     },
-    // -> Query words without Vietnamese marks, for the excerpt marks
+    // -> The rows in display order: each row has its index in the keyboard order
+    groups () {
+      this.$progress.state.records // eslint-disable-line no-unused-expressions
+      const groups = []
+      let idx = 0
+      const add = (key, label, rows) => {
+        if (rows.length > 0) { groups.push({ key, label, rows: rows.map(r => ({ ...r, idx: idx++ })) }) }
+      }
+      add('titles', this.$t('common:header.searchTitles', 'Bài viết'), this.titleHits.map(({ article, syn }) => ({
+        kind: 'title',
+        key: `a:${article.href}`,
+        href: article.href,
+        external: !article.href.startsWith('/'),
+        title: article.title,
+        stars: article.stars,
+        sub: article.topic,
+        syn,
+        status: this.statusFor(article.href)
+      })))
+      add('text', this.$t('common:header.searchText', 'Trong nội dung'), this.textHits.map(item => ({
+        kind: 'text',
+        key: `t:${item.id}`,
+        href: `/${item.locale}/${item.path}`,
+        title: item.title,
+        snippet: item.snippet,
+        sub: item.snippet ? '' : (item.description || `/${item.path}`),
+        status: this.statusFor(`/${item.locale}/${item.path}`)
+      })))
+      add('roadmap', this.$t('common:header.searchRoadmap', 'Mục lộ trình'), this.roadmapHits.map(item => ({
+        kind: 'roadmap',
+        key: `r:${item.roadmapId}:${item.stage}:${item.title}`,
+        href: item.href || `/roadmap/${item.roadmapId}`,
+        external: !!item.href && !item.href.startsWith('/'),
+        roadmapId: item.roadmapId,
+        title: item.title,
+        soon: !item.href,
+        sub: this.$t('common:header.searchStage', { defaultValue: '{{roadmap}} · Chặng {{n}}: {{stage}}', roadmap: item.roadmapTitle, n: item.stage, stage: item.stageTitle })
+      })))
+      add('suggest', this.$t('common:header.searchDidYouMean'), this.suggestions.map(term => ({ kind: 'suggest', key: `s:${term}`, term })))
+      return groups
+    },
+    options () {
+      return _.flatMap(this.groups, 'rows')
+    },
+    // -> Query words without Vietnamese marks, for the marks in titles and excerpts
     markTerms() {
-      return _.uniq(String(this.search || '').split(/\s+/).map(foldText).filter(t => t.length > 1))
+      return _.uniq(this.term.split(/\s+/).map(foldText).filter(t => t.length > 1))
     }
   },
   watch: {
     searchIsFocused (open) {
       if (open) {
+        this.loadIndex()
         // -> Give focus back to the control that opened the dialog
         this.returnFocus = document.activeElement
         this.$nextTick(() => { this.$refs.input && this.$refs.input.focus() })
@@ -138,14 +210,30 @@ export default {
         this.searchIsLoading = true
       }
     },
-    results() {
+    options() {
       this.cursor = -1
     }
   },
   methods: {
     /**
-     * Split an excerpt into parts, so the query words show in a mark element.
-     * The excerpt is text only: the template renders each part as text, never as HTML.
+     * Load the catalogue titles and the roadmap items once. Without them, the dialog
+     * still shows the text search.
+     */
+    async loadIndex () {
+      if (this.index || this.indexLoading) { return }
+      this.indexLoading = true
+      try {
+        const resp = await this.$apollo.query({ query: searchIndexQuery, variables: { locale: this.locale } })
+        this.index = _.get(resp, 'data.catalog.searchIndex', null)
+      } catch (err) {
+        console.warn('[search] failed to load the article index', err)
+      } finally {
+        this.indexLoading = false
+      }
+    },
+    /**
+     * Split a text into parts, so the query words show in a mark element.
+     * The text is plain text: the template renders each part as text, never as HTML.
      */
     markParts (text) {
       const chars = Array.from(text)
@@ -169,6 +257,9 @@ export default {
       })
       return parts
     },
+    synLabel (syn) {
+      return this.$t('common:header.searchSynonym', { defaultValue: 'khớp "{{term}}"', term: syn })
+    },
     // -> Tab and Shift+Tab stay inside the dialog
     trapFocus (ev) {
       const items = Array.from(this.$refs.box.querySelectorAll('input, button, a[href]'))
@@ -188,7 +279,7 @@ export default {
       this.search = ''
     },
     move (step) {
-      const max = this.results.length + this.suggestions.length - 1
+      const max = this.options.length - 1
       this.cursor = Math.max(-1, Math.min(max, this.cursor + step))
       this.$nextTick(() => {
         const el = this.$refs.out && this.$refs.out.querySelector('[aria-selected="true"]')
@@ -196,35 +287,37 @@ export default {
       })
     },
     enter () {
-      if (this.cursor < 0 && this.results.length > 0) {
-        this.cursor = 0
+      const row = this.options[Math.max(0, this.cursor)]
+      if (!row) { return }
+      if (row.kind === 'suggest') {
+        this.setSearchTerm(row.term)
+        return
       }
-      if (this.cursor >= 0 && this.cursor < this.results.length) {
-        this.goToPage(_.nth(this.results, this.cursor))
-      } else if (this.cursor >= this.results.length) {
-        this.setSearchTerm(_.nth(this.suggestions, this.cursor - this.results.length))
+      this.onOpen(row)
+      if (row.external) {
+        window.open(row.href, '_blank', 'noopener')
+      } else {
+        window.location.assign(row.href)
       }
     },
+    // -> A roadmap item opens its page with that roadmap in the rail
+    onOpen (row) {
+      if (row.kind === 'roadmap') { touchRoadmap(row.roadmapId) }
+    },
     /**
-     * Status to show beside a search hit.
+     * Status to show beside a hit, by path: the hit id depends on the search engine.
      *
-     * Resolves by path rather than by `item.id`: the id comes from whichever search
-     * engine is configured, and only the DB engine guarantees it is the numeric
-     * pages.id. Paths are reliable across every engine.
-     *
-     * @param {Object} item Search hit
+     * @param {string} href
      * @returns {Object|null} Status to show, or null when there is nothing to mark
      */
-    statusFor (item) {
-      if (!this.$progress.isEnabled) { return null }
-      const status = this.$progress.getStatusByHref(`/${item.locale}/${item.path}`)
+    statusFor (href) {
+      if (!this.$progress.isEnabled || !href.startsWith('/')) { return null }
+      const status = this.$progress.getStatusByHref(href)
       return (status && status.showMarker) ? status : null
     },
     setSearchTerm(term) {
       this.search = term
-    },
-    goToPage(item) {
-      window.location.assign(`/${item.locale}/${item.path}`)
+      this.$nextTick(() => { this.$refs.input && this.$refs.input.focus() })
     }
   },
   apollo: {
@@ -232,14 +325,14 @@ export default {
       query: searchPagesQuery,
       variables() {
         return {
-          query: this.search
+          query: this.term
         }
       },
       fetchPolicy: 'network-only',
       debounce: 300,
       throttle: 1000,
       skip() {
-        return !this.search || this.search.length < 2
+        return this.term.length < 2
       },
       // -> A failed search must not look like "no results". The client error policy also
       //    sends a failed result here, after error().
@@ -403,7 +496,7 @@ export default {
   font-weight: 500;
 }
 
-.vn-hit__s, .vn-hit__p {
+.vn-hit__s {
   grid-column: 1;
   font-size: 0.8125rem;
   color: var(--muted);
@@ -430,8 +523,44 @@ export default {
   }
 }
 
-.vn-hit__p {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
+// -> Stars, the status and the "Chưa có bài" tag: on the right of line 1
+.vn-hit__end {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vn-hit__t mark {
+  background: none;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.vn-hit__syn {
+  font: 500 0.75rem var(--font-mono);
+}
+
+.vn-hit__soon {
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font: 500 0.75rem var(--font-mono);
+  font-style: normal;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.vn-search__tips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 10px;
+  font-size: 0.875rem;
+  color: var(--muted);
+
+  > span {
+    margin-right: 2px;
+  }
 }
 </style>

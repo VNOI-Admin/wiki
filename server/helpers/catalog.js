@@ -311,10 +311,53 @@ async function getHome (locale) {
   return { ...summary, roadmaps }
 }
 
+/**
+ * What the search dialog ranks on the client: every catalogue title, and every roadmap item.
+ *
+ * @param {Object|null} catalog getCatalog() output
+ * @param {Object[]} roadmaps Roadmaps.getIndex() output for this locale
+ * @returns {{articles: Object[], roadmapItems: Object[]}}
+ *   articles: { title, href, pageId, stars, topic }, one per link.
+ *   roadmapItems: { title, href, roadmapId, roadmapTitle, stage, stageTitle }; href is null
+ *   when the item has no article yet.
+ */
+function searchIndex (catalog, roadmaps) {
+  const articles = !catalog ? [] : _.uniqBy(catalog.items, 'href').map(it => ({
+    title: it.title,
+    href: it.href,
+    pageId: it.pageId || null,
+    stars: it.stars,
+    topic: _.get(catalog.topics, [it.topic, 'name'], '')
+  }))
+  const roadmapItems = _.flatMap(roadmaps, r => _.flatMap(r.sections, (s, si) => s.nodes.map(n => ({
+    title: n.title,
+    href: n.articlePath ? `/${n.articlePath}` : (n.externalUrl || null),
+    roadmapId: r.id,
+    roadmapTitle: r.title,
+    stage: si + 1,
+    stageTitle: s.title
+  }))))
+  return { articles, roadmapItems }
+}
+
+/**
+ * @param {string} locale
+ * @param {boolean} canReadCatalog Whether the reader may read the catalogue page
+ * @returns {Promise<Object>} searchIndex() for this locale
+ */
+async function getSearchIndex (locale, canReadCatalog) {
+  const catalog = canReadCatalog ? await getLocaleCatalog(locale) : null
+  const roadmaps = (await WIKI.models.roadmaps.getIndex())
+    .filter(r => _.some(r.sections, s => _.some(s.nodes, n => _.startsWith(n.articlePath, `${locale}/`))))
+  return searchIndex(catalog, roadmaps)
+}
+
 module.exports = {
   CATALOG_PATH,
   articleContext,
   getArticleContext,
+  getSearchIndex,
+  searchIndex,
   homeSummary,
   getHome,
   cleanText,
