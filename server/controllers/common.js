@@ -622,6 +622,16 @@ router.get('/*', async (req, res, next) => {
             }
           }
 
+          // -> An article listed in the catalogue: its topic, level and topic neighbours
+          let article = null
+          if (!catalog && !home && WIKI.auth.checkAccess(req.user, ['read:pages'], { path: catalogHelper.CATALOG_PATH, locale: page.localeCode })) {
+            try {
+              article = await catalogHelper.getArticleContext(page.localeCode, page.id)
+            } catch (err) {
+              WIKI.logger.warn(`Failed to find page ${page.id} in the article catalogue: ${err.message}`)
+            }
+          }
+
           // -> Render view
           res.render('page', {
             page,
@@ -629,6 +639,7 @@ router.get('/*', async (req, res, next) => {
             roadmaps,
             catalog,
             home,
+            article,
             injectCode,
             comments: commentTmpl,
             effectivePermissions,

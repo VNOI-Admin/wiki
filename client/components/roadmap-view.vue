@@ -148,6 +148,7 @@ import {
   setNodeStatus,
   touchRoadmap
 } from '../modules/roadmap-context'
+import { notifyStatus } from '../modules/progress/notify-status'
 
 // -> The reader's choice to hide finished sections and articles, for every roadmap
 const HIDE_DONE_KEY = 'vnRoadmapHideDone'
@@ -246,7 +247,9 @@ export default {
       return canSetNodeStatus(this.$progress, this.rm.id, node)
     },
     setStatus (node, statusId) {
+      if (this.statusOf(node).id === statusId) { return }
       setNodeStatus(this.$progress, this.rm.id, node, statusId)
+      notifyStatus(this, this.$progress.registry.resolve(statusId))
     },
     toggleDone (node) {
       this.setStatus(node, this.isDone(node) ? this.$progress.registry.getDefault().id : DONE_STATUS)

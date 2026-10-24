@@ -16,6 +16,8 @@ common:
     copyCode: 'Sao chép'
     copyCodeDone: 'Đã chép'
     copyCodeError: 'Nhấn Ctrl+C để chép'
+    codeMore: 'Hiện toàn bộ {{lines}} dòng'
+    codeLess: 'Thu gọn'
     exitPrint: 'Thoát bản in'
     siteNav: 'Điều hướng'
     # -> The official string is half English ("Quay trở lại Normal View")
@@ -30,6 +32,7 @@ common:
     title: 'Tiến độ'
     statusAria: 'Tiến độ: {{status}}'
     manageData: 'Quản lý dữ liệu'
+    viewAll: 'Xem tất cả bài theo tiến độ'
     notPersistent: 'Trình duyệt này không lưu được tiến độ'
     savedLocally: 'Đăng nhập để tự động đồng bộ tiến độ.'
     loginToSync: 'Đăng nhập để đồng bộ tiến độ giữa các thiết bị.'
@@ -60,6 +63,7 @@ common:
       noRecords: 'Tệp này không có bản ghi nào dùng được.'
       unreadable: 'Không đọc được tệp đã chọn.'
   catalog:
+    title: 'Bài viết'
     clear: 'Xóa bộ lọc'
     filters: 'Bộ lọc'
     filterPlaceholder: 'Lọc theo tên bài'
@@ -94,7 +98,7 @@ common:
     switch: 'Đổi lộ trình'
     show: 'Hiện lộ trình'
     completed: 'Đã hoàn thành {{completed}} / {{total}}'
-    hide: 'Ẩn lộ trình'
+    hide: 'Ẩn thanh bên'
     mainMenu: 'Menu chính'
     expandAll: 'Mở tất cả'
     collapseAll: 'Thu gọn'

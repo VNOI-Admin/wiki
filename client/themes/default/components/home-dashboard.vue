@@ -18,6 +18,7 @@
             a(v-for='r of reading', :key='r.pageId', :href='r.href')
               span.vn-pdot.s-reading
               span.vn-reading__t {{ r.title || r.path }}
+              span.vn-reading__s(v-if='home.topicOf') {{ home.topicOf[r.pageId] }}
 
       aside.vn-cont(v-if='roadmap')
         h2 {{ roadmap.title }}
@@ -267,7 +268,7 @@ export default {
 
   a {
     display: grid;
-    grid-template-columns: 12px minmax(0, 1fr);
+    grid-template-columns: 12px minmax(0, 1fr) auto;
     align-items: center;
     gap: 12px;
     padding: 11px 16px;
@@ -289,6 +290,16 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.vn-reading__s {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  white-space: nowrap;
+
+  @media (max-width: 640px) {
+    display: none;
+  }
 }
 
 // -> The card fills the hero height, so its edges line up with the left column

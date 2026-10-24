@@ -29,12 +29,12 @@
       //- Home: the dashboard, then the page contents
       home-dashboard(v-if='homeDecoded', :home='homeDecoded')
       .vn-doc(v-if='!catalogDecoded', :class='{ "is-home": homeDecoded, "has-rail": railShown && !printView, "has-toc": hasToc && tocOn && !printView }')
-        //- LEFT RAIL: the roadmap that holds this page, or the admin navigation
-        aside.vn-rail(v-if='railShown && !printView', :aria-label='$t(`common:roadmap.title`, `Lộ trình`)')
+        //- LEFT RAIL: the roadmap that holds this page, else its catalogue topics, else the admin navigation
+        aside.vn-rail(v-if='railShown && !printView', :aria-label='railRoadmap ? railRoadmap.title : $t(`common:page.siteNav`, `Điều hướng`)')
           nav-roadmap(
-            v-if='currentRoadmap && !railMenu'
-            :roadmap='currentRoadmap'
-            :roadmaps='roadmapsDecoded'
+            v-if='railRoadmap && !railMenu'
+            :roadmap='railRoadmap'
+            :roadmaps='currentRoadmap ? roadmapsDecoded : []'
             :locale='locale'
             :path='path'
             :can-show-menu='navMode !== `NONE`'
@@ -43,7 +43,7 @@
             @hide='setRailHidden(true)'
             )
           template(v-else)
-            button.vn-railback(v-if='currentRoadmap', type='button', @click='railMenu = false') ← {{ currentRoadmap.title }}
+            button.vn-railback(v-if='railRoadmap', type='button', @click='railMenu = false') ← {{ railRoadmap.title }}
             nav-sidebar(:items='sidebarDecoded', :nav-mode='navMode')
 
         //- ARTICLE
@@ -58,6 +58,9 @@
           h1.vn-title(v-if='!homeDecoded') {{title}}
           p.vn-desc(v-if='description && !homeDecoded') {{description}}
           .vn-meta(v-if='!homeDecoded')
+            span.vn-meta__level(v-if='articleDecoded && articleDecoded.stars')
+              vn-stars(:value='articleDecoded.stars')
+              span {{ levelLabel }}
             page-progress-selector(
               v-if='!progressExcluded && !printView'
               :page-id='pageId'
@@ -78,7 +81,7 @@
               v-icon(small) {{ editShortcutsObj.editMenuExternalIcon }}
               span {{$t(`common:page.editExternal`, { name: editShortcutsObj.editMenuExternalName })}}
 
-          .contents(ref='container')
+          .contents(ref='container', @click='openImage')
             slot(name='contents')
 
           .vn-tags(v-if='visibleTags.length > 0')
@@ -134,7 +137,7 @@
           span {{$t('common:page.toc')}}
         button.is-rail(v-if='railAvailable', type='button', @click='onRailButton')
           v-icon(small) mdi-map-marker-path
-          span {{ currentRoadmap ? currentRoadmap.title : $t('common:page.siteNav', 'Điều hướng') }}
+          span {{ railRoadmap ? railRoadmap.title : $t('common:page.siteNav', 'Điều hướng') }}
 
       v-bottom-sheet(v-model='tocSheet', content-class='vn-sheet', scrollable)
         .vn-sheet__panel
@@ -154,9 +157,9 @@
         .vn-sheet__panel
           nav-roadmap(
             ref='sheetRoadmap'
-            v-if='currentRoadmap && !railMenu'
-            :roadmap='currentRoadmap'
-            :roadmaps='roadmapsDecoded'
+            v-if='railRoadmap && !railMenu'
+            :roadmap='railRoadmap'
+            :roadmaps='currentRoadmap ? roadmapsDecoded : []'
             :locale='locale'
             :path='path'
             :can-hide='false'
@@ -165,8 +168,12 @@
             @show-menu='railMenu = true'
             )
           template(v-else)
-            button.vn-railback(v-if='currentRoadmap', type='button', @click='railMenu = false') ← {{ currentRoadmap.title }}
+            button.vn-railback(v-if='railRoadmap', type='button', @click='railMenu = false') ← {{ railRoadmap.title }}
             nav-sidebar(:items='sidebarDecoded', :nav-mode='navMode')
+
+      //- An article image at full size
+      v-dialog(v-model='lightbox', content-class='vn-lightbox', max-width='none')
+        img(v-if='lightboxImg', :src='lightboxImg.src', :alt='lightboxImg.alt', @click='lightbox = false')
 
       //- Editor speed dial, when the admin turns it on
       v-tooltip(:right='$vuetify.rtl', :left='!$vuetify.rtl', v-if='hasAnyPagePermissions && editShortcutsObj.editFab')
@@ -229,10 +236,14 @@ import NavRoadmap from './nav-roadmap.vue'
 import ArticlesCatalog from './articles-catalog.vue'
 import HomeDashboard from './home-dashboard.vue'
 import PageProgressSelector from '../../../components/common/page-progress-selector.vue'
+import VnStars from '../../../components/common/vn-stars.vue'
+import { levelName } from '../../../modules/levels'
 import { isProgressExcluded, NO_PROGRESS_TAG } from '../../../modules/progress'
 import { DONE_STATUS, pickRoadmap, touchRoadmap } from '../../../modules/roadmap-context'
 import { fitWide } from '../../../modules/fit-wide'
+import { registerCodeFold } from '../../../modules/code-fold'
 import { startAutoProgress } from '../../../modules/progress/auto-progress'
+import { notifyStatus } from '../../../modules/progress/notify-status'
 import Prism from 'prismjs'
 import mermaid from 'mermaid'
 import { get, sync } from 'vuex-pathify'
@@ -283,6 +294,7 @@ Prism.plugins.toolbar.registerButton('copy-to-clipboard', (env) => {
     }, 5000)
   }
 })
+registerCodeFold()
 
 export default {
   components: {
@@ -290,7 +302,8 @@ export default {
     HomeDashboard,
     NavSidebar,
     NavRoadmap,
-    PageProgressSelector
+    PageProgressSelector,
+    VnStars
   },
   props: {
     pageId: {
@@ -364,6 +377,11 @@ export default {
       type: String,
       default: ''
     },
+    // -> Set on an article that the catalogue lists (server/helpers/catalog.js)
+    article: {
+      type: String,
+      default: ''
+    },
     navMode: {
       type: String,
       default: 'MIXED'
@@ -398,6 +416,8 @@ export default {
       railMenu: false,
       upBtnShown: false,
       tocSheet: false,
+      lightbox: false,
+      lightboxImg: null,
       activeAnchor: '',
       pageEditFab: false,
       scrollOpts: {
@@ -431,7 +451,13 @@ export default {
     commentsCount: get('page/commentsCount'),
     editShortcutsObj: get('page/editShortcuts'),
     breadcrumbs() {
-      return [{ path: '/', name: this.$t('common:header.home', 'Trang chủ') }].concat(_.reduce(this.path.split('/'), (result, value, key) => {
+      const home = { path: '/', name: this.$t('common:header.home', 'Trang chủ') }
+      // -> A catalogue article: its topic, which opens the catalogue on that topic
+      if (this.articleDecoded) {
+        const group = this.articleDecoded.group
+        return [home, { path: `/${this.locale}/articles?topic=${encodeURIComponent(group.filter)}`, name: group.name }]
+      }
+      return [home].concat(_.reduce(this.path.split('/'), (result, value, key) => {
         result.push({
           path: _.get(_.last(result), 'path', `/${this.locale}`) + `/${value}`,
           name: value
@@ -466,13 +492,40 @@ export default {
         return null
       }
     },
+    articleDecoded () {
+      if (!this.article) { return null }
+      try {
+        return JSON.parse(Buffer.from(this.article, 'base64').toString())
+      } catch (err) {
+        return null
+      }
+    },
+    levelLabel () {
+      return levelName(this.$t.bind(this), this.articleDecoded.stars)
+    },
+    // -> The catalogue topics in the shape of a roadmap, for the rail
+    topicRoadmap () {
+      if (!this.articleDecoded) { return null }
+      return {
+        id: null,
+        title: this.$t('common:catalog.title', 'Bài viết'),
+        href: `/${this.locale}/articles`,
+        sections: this.articleDecoded.topics.map((t, i) => ({
+          id: `t${i}`,
+          title: t.name,
+          nodes: t.items.map(it => ({ id: it.pageId, title: it.title, pageId: it.pageId, articlePath: `${this.locale}/${it.path}` }))
+        }))
+      }
+    },
+    railRoadmap () {
+      return this.currentRoadmap || this.topicRoadmap
+    },
     currentRoadmap () {
       return _.find(this.roadmapsDecoded, ['id', this.currentRoadmapId]) || null
     },
-    // -> The rail holds the roadmap that contains this page, else the admin navigation
     railAvailable () {
       if (this.catalogDecoded || this.homeDecoded) { return false }
-      return !!this.currentRoadmap || this.navMode !== 'NONE'
+      return !!this.railRoadmap || this.navMode !== 'NONE'
     },
     railShown () {
       return this.railAvailable && !this.railHidden
@@ -491,24 +544,35 @@ export default {
         ..._.map(item.children || [], child => ({ anchor: child.anchor, title: child.title, sub: true }))
       ])
     },
+    // -> One heading is no table of contents
     hasToc () {
-      return !this.catalogDecoded && !this.homeDecoded && this.tocFlat.length > 0
+      return !this.catalogDecoded && !this.homeDecoded && this.tocFlat.length > 1
     },
-    // -> Previous and next article in the roadmap order (nodes without an article are skipped)
-    roadmapArticles () {
-      if (!this.currentRoadmap) { return [] }
-      return _.flatMap(this.currentRoadmap.sections, 'nodes')
+    // -> Previous and next article in the roadmap order, else in the order of the page's
+    //    catalogue topic. Nodes without an article are skipped.
+    seqArticles () {
+      const toLinks = nodes => nodes
         .filter(n => n.articlePath)
         .map(n => ({ path: n.articlePath, href: '/' + n.articlePath, title: n.pageTitle || n.title }))
+      if (this.currentRoadmap) {
+        const list = toLinks(_.flatMap(this.currentRoadmap.sections, 'nodes'))
+        if (_.some(list, ['path', this.articlePath])) { return list }
+      }
+      if (!this.topicRoadmap) { return [] }
+      const section = _.find(this.topicRoadmap.sections, s => _.some(s.nodes, ['articlePath', this.articlePath]))
+      return section ? toLinks(section.nodes) : []
     },
-    roadmapIndex () {
-      return _.findIndex(this.roadmapArticles, ['path', `${this.locale}/${this.path}`])
+    articlePath () {
+      return `${this.locale}/${this.path}`
+    },
+    seqIndex () {
+      return _.findIndex(this.seqArticles, ['path', this.articlePath])
     },
     prevNode () {
-      return this.roadmapIndex > 0 ? this.roadmapArticles[this.roadmapIndex - 1] : null
+      return this.seqIndex > 0 ? this.seqArticles[this.seqIndex - 1] : null
     },
     nextNode () {
-      return this.roadmapIndex >= 0 ? (this.roadmapArticles[this.roadmapIndex + 1] || null) : null
+      return this.seqIndex >= 0 ? (this.seqArticles[this.seqIndex + 1] || null) : null
     },
     tocPosition: get('site/tocPosition'),
     // -> The admin can turn the table of contents off. "left" and "right" both show it on the right.
@@ -656,11 +720,7 @@ export default {
           pageId: this.pageId,
           meta: { locale: this.locale, path: this.path, title: this.title },
           content: this.$refs.container,
-          onDone: () => this.$store.commit('showNotification', {
-            style: 'success',
-            icon: 'check',
-            message: `${this.$t('common:progress.title', 'Tiến độ')}: ${this.$progress.registry.resolve(DONE_STATUS).label}`
-          })
+          onDone: () => notifyStatus(this, this.$progress.registry.resolve(DONE_STATUS))
         })
         // -> One layout read per frame
         let queued = false
@@ -731,6 +791,13 @@ export default {
       } else {
         this.railSheet = true
       }
+    },
+    // -> An image opens at full size, unless it is a link
+    openImage (e) {
+      const img = e.target.closest('img')
+      if (!img || img.closest('a')) { return }
+      this.lightboxImg = { src: img.currentSrc || img.src, alt: img.alt }
+      this.lightbox = true
     },
     goToAnchor (anchor) {
       // -> The clicked entry stays active until the reader scrolls: a short section can
@@ -929,6 +996,19 @@ export default {
   color: var(--muted);
 }
 
+.vn-meta__level {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-weight: 500;
+
+  .vn-stars i {
+    width: 9px;
+    height: 9px;
+  }
+}
+
 .vn-linkbtn {
   display: inline-flex;
   align-items: center;
@@ -974,6 +1054,32 @@ export default {
 
   &:hover {
     background: var(--sunken);
+  }
+}
+
+// -> Article images open at full size (not those in a link)
+.vn-article .contents img {
+  cursor: zoom-in;
+}
+
+.vn-article .contents a img {
+  cursor: pointer;
+}
+
+.v-dialog.vn-lightbox {
+  width: auto;
+  max-height: calc(100vh - 48px);
+  box-shadow: none;
+  overflow: visible;
+
+  img {
+    display: block;
+    max-width: calc(100vw - 48px);
+    max-height: calc(100vh - 48px);
+    border-radius: 8px;
+    // -> Most figures are drawn for a white page
+    background: #fff;
+    cursor: zoom-out;
   }
 }
 

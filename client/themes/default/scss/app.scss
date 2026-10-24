@@ -1260,6 +1260,7 @@
   .vn-endtools,
   .vn-totop,
   .vn-printbar,
+  .vn-codefold,
   .page-progress,
   .vn-comments,
   .vn-foot,
@@ -1274,6 +1275,15 @@
   // -> The article takes the full width
   .vn-doc {
     display: block !important;
+  }
+
+  // -> Print every line of a folded code block
+  .code-toolbar.is-long > .prismjs {
+    max-height: none !important;
+  }
+
+  .code-toolbar.is-long::after {
+    display: none !important;
   }
 
   .layout {

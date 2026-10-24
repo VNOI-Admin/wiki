@@ -65,6 +65,14 @@ function normalizeHref (href) {
 }
 
 /**
+ * @param {string} href An internal catalogue link
+ * @returns {string} The page path, without the leading slash, query and hash
+ */
+function hrefPath (href) {
+  return href.replace(/^\//, '').replace(/[?#].*$/, '')
+}
+
+/**
  * Parse the catalogue page.
  *
  * @param {string} markdown Page source
@@ -179,7 +187,7 @@ async function getCatalog (page) {
   const catalog = parseCatalog(content)
   const paths = _.uniq(catalog.items
     .filter(it => it.href.startsWith('/'))
-    .map(it => it.href.replace(/^\//, '').replace(/[?#].*$/, '')))
+    .map(it => hrefPath(it.href)))
   const pages = paths.length < 1 ? [] : await WIKI.models.pages.query()
     .select('id', 'path', 'createdAt')
     .where('localeCode', page.localeCode)
@@ -187,7 +195,7 @@ async function getCatalog (page) {
     .whereIn('path', paths)
   const byPath = _.keyBy(pages, 'path')
   for (const it of catalog.items) {
-    const found = byPath[it.href.replace(/^\//, '').replace(/[?#].*$/, '')]
+    const found = byPath[hrefPath(it.href)]
     it.pageId = found ? found.id : null
     it.createdAt = found ? found.createdAt : null
   }
@@ -202,7 +210,7 @@ async function getCatalog (page) {
  *
  * @param {Object} catalog getCatalog() output
  * @param {number} newestCount
- * @returns {{topics: Object[], newest: Object[]}}
+ * @returns {{topics: Object[], newest: Object[], topicOf: Object}}
  */
 function homeSummary (catalog, newestCount = 4) {
   const firstPart = _.get(catalog, 'topics[0].part', '')
@@ -227,22 +235,77 @@ function homeSummary (catalog, newestCount = 4) {
       createdAt: it.createdAt,
       topic: _.get(catalog.topics, [it.topic, 'name'], '')
     }))
-  return { topics, newest }
+  // -> The topic of each listed page, for the "Đang đọc" rows. A page listed twice keeps its first topic.
+  const topicOf = {}
+  for (const it of catalog.items) {
+    if (it.pageId && !topicOf[it.pageId]) {
+      topicOf[it.pageId] = _.get(catalog.topics, [it.topic, 'name'], '')
+    }
+  }
+  return { topics, newest, topicOf }
+}
+
+/**
+ * Where an article sits in the catalogue: its topic and level, and every topic with its
+ * articles, for the article rail and the previous and next links.
+ *
+ * @param {Object} catalog getCatalog() output
+ * @param {number} pageId
+ * @returns {Object|null} { group: { name, filter }, stars, topics: [{ name, items: [{ title, path, pageId }] }] };
+ *   null when the catalogue does not list the page. A page listed twice takes its first place.
+ */
+function articleContext (catalog, pageId) {
+  const own = _.find(catalog.items, ['pageId', pageId])
+  if (!own) { return null }
+  const topics = catalog.topics
+    .map((t, i) => ({
+      name: t.name,
+      items: _.uniqBy(catalog.items.filter(it => it.topic === i && it.pageId), 'pageId')
+        .map(it => ({ title: it.title, path: hrefPath(it.href), pageId: it.pageId }))
+    }))
+    .filter(t => t.items.length > 0)
+  // -> The catalogue filter that lists the article's group: its topic in the first part, else its part
+  const topic = catalog.topics[own.topic]
+  const inFirstPart = topic.part === catalog.topics[0].part
+  return {
+    group: inFirstPart ? { name: topic.name, filter: `t:${topic.name}` } : { name: topic.part, filter: `p:${topic.part}` },
+    stars: own.stars,
+    topics
+  }
+}
+
+/**
+ * @param {string} locale
+ * @returns {Promise<Object|null>} The catalogue of this locale; null when it has no catalogue page
+ */
+async function getLocaleCatalog (locale) {
+  const listPage = await WIKI.models.pages.query()
+    .select('id', 'localeCode', 'updatedAt')
+    .where({ path: CATALOG_PATH, localeCode: locale })
+    .first()
+  return listPage ? getCatalog(listPage) : null
+}
+
+/**
+ * @param {string} locale
+ * @param {number} pageId
+ * @returns {Promise<Object|null>} articleContext() for this page
+ */
+async function getArticleContext (locale, pageId) {
+  const catalog = await getLocaleCatalog(locale)
+  return catalog ? articleContext(catalog, pageId) : null
 }
 
 /**
  * Data for the Home dashboard.
  *
  * @param {string} locale
- * @returns {Promise<{topics: Object[], newest: Object[], roadmaps: Object[]}>}
+ * @returns {Promise<{topics: Object[], newest: Object[], topicOf: Object, roadmaps: Object[]}>}
  *   roadmaps: those with an article in this locale; the client picks one
  */
 async function getHome (locale) {
-  const listPage = await WIKI.models.pages.query()
-    .select('id', 'localeCode', 'updatedAt')
-    .where({ path: CATALOG_PATH, localeCode: locale })
-    .first()
-  const summary = listPage ? homeSummary(await getCatalog(listPage)) : { topics: [], newest: [] }
+  const catalog = await getLocaleCatalog(locale)
+  const summary = catalog ? homeSummary(catalog) : { topics: [], newest: [], topicOf: {} }
   const roadmaps = (await WIKI.models.roadmaps.getIndex())
     .filter(r => _.some(r.sections, s => _.some(s.nodes, n => _.startsWith(n.articlePath, `${locale}/`))))
   return { ...summary, roadmaps }
@@ -250,6 +313,8 @@ async function getHome (locale) {
 
 module.exports = {
   CATALOG_PATH,
+  articleContext,
+  getArticleContext,
   homeSummary,
   getHome,
   cleanText,

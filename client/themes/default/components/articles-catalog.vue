@@ -126,9 +126,7 @@
 import _ from 'lodash'
 import StatusMark from '../../../components/common/status-mark.vue'
 import VnStars from '../../../components/common/vn-stars.vue'
-
-// -> Short names for the five levels. The full meaning comes from the page's legend table.
-const LEVEL_NAMES = ['Cơ bản', 'HSG QG, ICPC', 'Nâng cao', 'Rất khó', 'Chuyên sâu']
+import { levelName } from '../../../modules/levels'
 
 // -> Lowercase, no Vietnamese marks: "Đồ thị" matches "do thi"
 function fold (text) {
@@ -251,7 +249,7 @@ export default {
       if (e.key === 'Escape') { this.legendOpen = false }
     },
     levelName (n) {
-      return this.$t(`common:catalog.level${n}`, LEVEL_NAMES[n - 1])
+      return levelName(this.$t.bind(this), n)
     },
     inTopic (it) {
       if (!this.topic) { return true }

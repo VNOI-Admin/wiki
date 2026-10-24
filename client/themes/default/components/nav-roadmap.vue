@@ -21,8 +21,8 @@
               @click='$emit(`select`, r)'
               ) {{ r.title }}
             hr
-            a.vn-menu__item(:href='`/roadmap/` + roadmap.id') {{ $t('common:roadmap.viewFull', 'Xem toàn bộ lộ trình') }}
-        a.nav-roadmap-title(v-else, :href='`/roadmap/` + roadmap.id') {{ roadmap.title }}
+            a.vn-menu__item(:href='titleHref') {{ $t('common:roadmap.viewFull', 'Xem toàn bộ lộ trình') }}
+        a.nav-roadmap-title(v-else, :href='titleHref') {{ roadmap.title }}
         button.nav-roadmap-iconbtn(
           v-if='canShowMenu'
           type='button'
@@ -35,10 +35,10 @@
           v-if='canHide'
           type='button'
           @click='$emit(`hide`)'
-          :title='$t(`common:roadmap.hide`, `Ẩn lộ trình`)'
-          :aria-label='$t(`common:roadmap.hide`, `Ẩn lộ trình`)'
+          :title='$t(`common:roadmap.hide`, `Ẩn thanh bên`)'
+          :aria-label='$t(`common:roadmap.hide`, `Ẩn thanh bên`)'
           ) ×
-      .nav-roadmap-stats
+      .nav-roadmap-stats(v-if='roadmap.id')
         .nav-roadmap-bar(aria-hidden='true')
           i(:style='{ width: stats.percent + `%` }')
         .nav-roadmap-count {{ statsLabel }}
@@ -66,6 +66,7 @@
           )
           status-mark.nav-roadmap-node-icon(:status='nodeStatus(node)', :title='nodeStatus(node).label')
           span.nav-roadmap-node-title {{ node.title }}
+            em.nav-roadmap-node-soon(v-if='!nodeHref(node)') {{ $t('common:roadmap.noArticle', 'Chưa có bài') }}
           v-icon.nav-roadmap-node-external(v-if='isExternal(node)', x-small) mdi-open-in-new
 </template>
 
@@ -77,6 +78,7 @@ import { getNodeStatus, isExternalNode, nodeHref, nodeStats, touchRoadmap } from
 export default {
   components: { StatusMark },
   props: {
+    // -> A roadmap, or the catalogue topics in its shape: id null, href to the catalogue
     roadmap: {
       type: Object,
       required: true
@@ -106,11 +108,11 @@ export default {
     }
   },
   data () {
-    return { collapsed: {} }
+    return { collapsed: this.initialCollapsed() }
   },
   computed: {
-    currentArticlePath () {
-      return `${this.locale}/${this.path}`
+    titleHref () {
+      return this.roadmap.href || `/roadmap/${this.roadmap.id}`
     },
     nodeStatus () {
       // -> Touch observable state so status changes re-render the sidebar
@@ -130,8 +132,8 @@ export default {
     }
   },
   watch: {
-    'roadmap.id' () {
-      this.collapsed = {}
+    roadmap () {
+      this.collapsed = this.initialCollapsed()
       this.$nextTick(this.scrollToCurrent)
     }
   },
@@ -146,11 +148,16 @@ export default {
     }
   },
   methods: {
+    // -> Only the section of the current page starts open. The reader can open the others.
+    initialCollapsed () {
+      return _.fromPairs(this.roadmap.sections.map(s => [s.id, !s.nodes.some(this.isCurrent)]))
+    },
     isExternal (node) {
       return isExternalNode(node)
     },
+    // -> Not a computed: data() calls it, before computed properties exist
     isCurrent (node) {
-      return node.articlePath === this.currentArticlePath
+      return node.articlePath === `${this.locale}/${this.path}`
     },
     nodeHref (node) {
       return nodeHref(node)
@@ -344,6 +351,16 @@ export default {
   &-node-external {
     margin-top: 3px;
     color: var(--muted) !important;
+  }
+
+  &-node-soon {
+    margin-left: 6px;
+    padding: 0 4px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    font: 500 0.75rem var(--font-mono);
+    font-style: normal;
+    white-space: nowrap;
   }
 }
 

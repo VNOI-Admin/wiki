@@ -1,4 +1,4 @@
-const { cleanText, homeSummary, normalizeHref, parseCatalog } = require('../../helpers/catalog')
+const { articleContext, cleanText, homeSummary, normalizeHref, parseCatalog } = require('../../helpers/catalog')
 
 const PAGE = `# Danh sách bài viết
 
@@ -90,5 +90,25 @@ describe('helpers/catalog', () => {
       { name: 'Toán học', count: 1, spread: [1, 0, 0, 0, 0] }
     ])
     expect(home.newest.map(n => n.title)).toEqual(['a^b mod c - Lũy thừa nhị phân', 'Persistent Data Structures'])
+    // -> A page listed twice keeps its first topic
+    expect(home.topicOf[4]).toEqual('Cấu trúc dữ liệu')
+  })
+
+  it('places an article in its topic, with every topic for the rail', () => {
+    // -> The external link (Range Tree) has no page
+    const items = catalog.items.map((it, i) => ({ ...it, pageId: it.href.startsWith('/') ? i + 1 : null }))
+    const ctx = articleContext({ ...catalog, items }, 3)
+    expect(ctx.group).toEqual({ name: 'Cấu trúc dữ liệu', filter: 't:Cấu trúc dữ liệu' })
+    // -> Outside the first part, the group is the part
+    expect(articleContext({ ...catalog, items }, 6).group).toEqual({ name: 'Chia sẻ kinh nghiệm', filter: 'p:Chia sẻ kinh nghiệm' })
+    expect(ctx.stars).toEqual(3)
+    expect(ctx.topics.map(t => [t.name, t.items.map(it => it.pageId)])).toEqual([
+      ['Nhập môn', [1, 2]],
+      ['Cấu trúc dữ liệu', [3]],
+      ['Toán học', [5]],
+      ['Kĩ năng thi cử', [6]]
+    ])
+    expect(ctx.topics[2].items[0].path).toEqual('algo/algebra/binary_exponentation')
+    expect(articleContext({ ...catalog, items }, 99)).toBeNull()
   })
 })

@@ -253,6 +253,41 @@
       margin: 0;
       border-radius: 0;
     }
+
+    // -> A long block shows its first 30 lines until the reader opens it (modules/code-fold.js)
+    &.is-long {
+      position: relative;
+
+      &:not(.is-open) > .prismjs {
+        max-height: 30rem;
+        overflow-y: hidden;
+      }
+
+      &:not(.is-open)::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 41px;
+        height: 64px;
+        background: linear-gradient(transparent, var(--code-bg));
+        pointer-events: none;
+      }
+    }
+
+    > .vn-codefold {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      border-top: 1px solid var(--line);
+      background: var(--code-bg);
+      color: var(--accent);
+      font: 600 0.875rem var(--font-ui);
+
+      &:hover {
+        background: var(--sunken);
+      }
+    }
   }
 
   .prismjs {

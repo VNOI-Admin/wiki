@@ -9,6 +9,7 @@
           :aria-label='$t(`common:progress.statusAria`, { defaultValue: `Progress: {{status}}`, status: currentStatus.label })'
           )
           status-mark(:status='currentStatus')
+          span.vn-pbtn__k {{ $t('common:progress.title', 'Tiến độ') }}:
           b {{ currentStatus.label }}
       .vn-menu__list(role='menu')
         button.vn-menu__item(
@@ -22,6 +23,7 @@
           status-mark(:status='status')
           span {{ status.label }}
         hr
+        a.vn-menu__item(:href='listHref') {{ $t('common:progress.viewAll', 'Xem tất cả bài theo tiến độ') }}
         .vn-menu__note(v-if='!isAccountBacked') {{ $t('common:progress.savedLocally', 'Log in to auto-sync your progress.') }}
         button.vn-menu__item(type='button', @click='dialogData = true')
           v-icon(small) mdi-database-cog-outline
@@ -34,6 +36,8 @@
 <script>
 import ProgressDataDialog from './progress-data-dialog.vue'
 import StatusMark from './status-mark.vue'
+import { notifyStatus } from '../../modules/progress/notify-status'
+import { READING_STATUS } from '../../modules/roadmap-context'
 
 /**
  * Per-article progress selector, in the article meta row.
@@ -87,15 +91,22 @@ export default {
       // -> Reads the observable manager state, so this recomputes on every change,
       //    including writes made in another tab.
       return this.$progress.getStatusByPageId(this.pageId)
+    },
+    // -> The catalogue, filtered on this page's status ("Đang đọc" for a page not started)
+    listHref () {
+      const status = this.currentStatus.id === this.$progress.registry.getDefault().id ? READING_STATUS : this.currentStatus.id
+      return `/${this.locale}/articles?p=${encodeURIComponent(status)}`
     }
   },
   methods: {
     setStatus (statusId) {
+      if (statusId === this.currentStatus.id) { return }
       this.$progress.setStatus(this.pageId, statusId, {
         locale: this.locale,
         path: this.path,
         title: this.title
       })
+      notifyStatus(this, this.$progress.registry.resolve(statusId))
     }
   }
 }
@@ -115,6 +126,10 @@ export default {
 
   &:hover {
     border-color: var(--accent);
+  }
+
+  &__k {
+    color: var(--muted);
   }
 
   b {
