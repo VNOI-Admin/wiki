@@ -27,6 +27,7 @@ import Cookies from 'js-cookie'
 import boot from './modules/boot'
 import localization from './modules/localization'
 import progress from './modules/progress'
+import { defaultDark, followSystemTheme, savedTheme } from './modules/theme'
 
 // ====================================
 // Load Helpers
@@ -227,8 +228,8 @@ let bootstrap = () => {
 
   const i18n = localization.init()
 
-  let darkModeEnabled = siteConfig.darkMode
-  const localTheme = localStorage.getItem('theme')
+  let darkModeEnabled = defaultDark()
+  const localTheme = savedTheme()
   const userAppearance = store.get('user/appearance') || ''
 
   // -> The last choice in this browser (header toggle or profile select) wins over the profile value
@@ -260,6 +261,7 @@ let bootstrap = () => {
         root.dataset.theme = dark ? 'dark' : 'light'
         window.requestAnimationFrame(() => window.requestAnimationFrame(() => root.classList.remove('is-theme-switch')))
       }, { immediate: true })
+      followSystemTheme(this.$vuetify, () => !!savedTheme() || !!store.get('user/appearance'))
       this.$moment.locale(siteConfig.lang)
       if ((store.get('user/dateFormat') || '').length > 0) {
         this.$moment.updateLocale(this.$moment.locale(), {

@@ -210,7 +210,7 @@
 <script>
 import { get, sync } from 'vuex-pathify'
 import _ from 'lodash'
-import { initialsOf } from '../../modules/initials'
+import { avatarOf } from '../../modules/initials'
 import { setTheme } from '../../modules/theme'
 import { rememberPage } from '../../modules/login-return'
 
@@ -281,17 +281,7 @@ export default {
     isAuthenticated: get('user/authenticated'),
     permissions: get('user/permissions'),
     picture () {
-      if (this.pictureUrl && this.pictureUrl.length > 1) {
-        return {
-          kind: 'image',
-          url: (this.pictureUrl === 'internal') ? `/_userav/${this.$store.get('user/id')}` : this.pictureUrl
-        }
-      } else {
-        return {
-          kind: 'initials',
-          initials: initialsOf(this.name)
-        }
-      }
+      return avatarOf(this.pictureUrl, this.$store.get('user/id'), this.name)
     },
     isAdmin () {
       return _.intersection(this.permissions, ['manage:system', 'write:users', 'manage:users', 'write:groups', 'manage:groups', 'manage:navigation', 'manage:theme', 'manage:api']).length > 0

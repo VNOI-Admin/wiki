@@ -3,7 +3,8 @@
     v-layout(row wrap)
       v-flex(xs12)
         .vn-pf__head
-          .vn-pf__av(aria-hidden='true') {{ initials }}
+          img.vn-pf__av(v-if='picture.kind === `image`', :src='picture.url', alt='')
+          .vn-pf__av(v-else, aria-hidden='true') {{ picture.initials }}
           .vn-pf__who
             h1 {{ user.name }}
             span(v-if='user.email') {{ user.email }}
@@ -353,7 +354,7 @@ import validate from 'validate.js'
 
 import PasswordStrength from '../common/password-strength.vue'
 import ProfileProgress from './profile-progress.vue'
-import { initialsOf } from '../../modules/initials'
+import { avatarOf } from '../../modules/initials'
 import { setTheme } from '../../modules/theme'
 
 /* global WIKI */
@@ -649,9 +650,6 @@ export default {
     }
   },
   computed: {
-    initials () {
-      return initialsOf(this.user.name)
-    },
     dateFormats () {
       return [
         { text: this.$t('profile:localeDefault'), value: '' },
@@ -674,22 +672,7 @@ export default {
     },
     pictureUrl: get('user/pictureUrl'),
     picture () {
-      if (this.pictureUrl && this.pictureUrl.length > 1) {
-        return {
-          kind: 'image',
-          url: this.pictureUrl
-        }
-      } else {
-        const nameParts = this.user.name.toUpperCase().split(' ')
-        let initials = _.head(nameParts).charAt(0)
-        if (nameParts.length > 1) {
-          initials += _.last(nameParts).charAt(0)
-        }
-        return {
-          kind: 'initials',
-          initials
-        }
-      }
+      return avatarOf(this.pictureUrl, this.$store.get('user/id'), this.user.name)
     }
   },
   watch: {
@@ -948,6 +931,7 @@ export default {
   width: 64px;
   height: 64px;
   flex: none;
+  object-fit: cover;
   display: grid;
   place-items: center;
   border-radius: 50%;

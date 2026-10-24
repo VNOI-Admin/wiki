@@ -9,6 +9,7 @@ query ($locale: String!) {
         topic
       }
       roadmapItems {
+        nodeId
         title
         href
         roadmapId

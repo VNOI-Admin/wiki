@@ -116,6 +116,7 @@ common:
     stage: 'Chặng {{n}}'
     allStagesDone: 'Đã hoàn thành mọi chặng.'
     noArticle: 'Chưa có bài'
+    tile: 'Bài trong lộ trình'
     markDone: 'Đánh dấu hoàn thành'
     unmarkDone: 'Bỏ đánh dấu hoàn thành'
     listEmpty: 'Chưa có bài nào.'

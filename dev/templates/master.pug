@@ -32,10 +32,11 @@ html(lang=siteConfig.lang)
       var siteConfig = !{JSON.stringify(siteConfig)}
       var siteLangs = !{JSON.stringify(langs)}
 
-    //- Theme before the first paint, so a dark page does not flash light (client-app.js sets it again)
+    //- Theme before the first paint, so a dark page does not flash light (client-app.js sets it again).
+    //- With no saved choice: the admin's dark mode, else the system setting (modules/theme.js).
     script.
       (function () {
-        var dark = siteConfig.darkMode
+        var dark = siteConfig.darkMode || (!!window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
         try {
           var t = window.localStorage.getItem('theme')
           if (t) { dark = (t === 'dark') }

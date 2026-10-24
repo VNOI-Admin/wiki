@@ -5,6 +5,10 @@
       a(href='/roadmaps') {{ $t('common:roadmap.listTitle', 'Lộ trình học') }} →
     //- One tile per status: a tile opens the list of its pages
     .vn-pfp__tiles(role='group', :aria-label='$t(`common:roadmap.byStatus`, `Bài theo tiến độ`)')
+      //- The roadmap the reader used last: its done count, a link to it
+      a(v-if='roadmap', :href='`/roadmap/` + roadmap.id', :title='roadmap.title')
+        b {{ roadmapStats.completed }}/{{ roadmapStats.total }}
+        span {{ $t('common:roadmap.tile', 'Bài trong lộ trình') }}
       button(
         v-for='s of statuses'
         :key='s.id'
@@ -33,13 +37,18 @@ import _ from 'lodash'
 import ProgressDataDialog from '../common/progress-data-dialog.vue'
 import StatusMark from '../common/status-mark.vue'
 import { recordHref } from '../../modules/progress/page-path'
+import { nodeStats, pickRoadmap } from '../../modules/roadmap-context'
+import searchIndexQuery from 'gql/common/common-catalog-query-search-index.gql'
+
+/* global siteConfig */
 
 export default {
   components: { ProgressDataDialog, StatusMark },
   data () {
     return {
       listStatus: null,
-      dataDialog: false
+      dataDialog: false,
+      roadmapItems: []
     }
   },
   computed: {
@@ -56,6 +65,34 @@ export default {
     },
     grouped () {
       return _.groupBy(this.records, 'statusId')
+    },
+    // -> Roadmaps rebuilt from the search index items: one section, nodes in order
+    roadmap () {
+      const roadmaps = _.map(_.groupBy(this.roadmapItems, 'roadmapId'), items => ({
+        id: items[0].roadmapId,
+        title: items[0].roadmapTitle,
+        nodes: items.map(it => ({
+          id: it.nodeId,
+          articlePath: it.href && it.href.startsWith('/') ? it.href.slice(1) : '',
+          externalUrl: it.href && !it.href.startsWith('/') ? it.href : ''
+        }))
+      }))
+      return pickRoadmap(roadmaps)
+    },
+    roadmapStats () {
+      this.$progress.state.records // eslint-disable-line no-unused-expressions
+      return nodeStats(this.$progress, this.roadmap.id, this.roadmap.nodes)
+    }
+  },
+  apollo: {
+    roadmapItems: {
+      query: searchIndexQuery,
+      variables () {
+        return { locale: siteConfig.lang }
+      },
+      update: data => _.get(data, 'catalog.searchIndex.roadmapItems', []),
+      // -> Without the roadmaps, the tile does not show
+      error () {}
     }
   },
   methods: {
@@ -97,7 +134,7 @@ export default {
   grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
   gap: 10px;
 
-  button {
+  button, a {
     display: grid;
     gap: 4px;
     padding: 14px 16px;
@@ -117,6 +154,12 @@ export default {
     &[aria-pressed='true'] {
       border-color: var(--accent);
       background: var(--accent-soft);
+    }
+
+    // -> The roadmap tile is a link: keep the tile colours
+    &:is(a) {
+      color: var(--muted) !important;
+      text-decoration: none !important;
     }
 
     > span {

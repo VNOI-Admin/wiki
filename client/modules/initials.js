@@ -11,3 +11,18 @@ export function initialsOf (name) {
   const first = w => Array.from(w)[0].toUpperCase()
   return words.length > 1 ? first(words[0]) + first(words[words.length - 1]) : first(words[0])
 }
+
+/**
+ * What the avatar shows: the user picture, else the initials.
+ *
+ * @param {string} pictureUrl The `user/pictureUrl` store value ('internal' for an uploaded picture)
+ * @param {number} userId
+ * @param {string} name
+ * @returns {{kind: string, url?: string, initials?: string}}
+ */
+export function avatarOf (pictureUrl, userId, name) {
+  if (pictureUrl && pictureUrl.length > 1) {
+    return { kind: 'image', url: pictureUrl === 'internal' ? `/_userav/${userId}` : pictureUrl }
+  }
+  return { kind: 'initials', initials: initialsOf(name) }
+}

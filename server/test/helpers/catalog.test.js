@@ -117,17 +117,17 @@ describe('helpers/catalog', () => {
       id: 'general',
       title: 'Lộ trình tổng quát',
       sections: [
-        { title: 'Nhập môn', nodes: [{ title: 'Độ phức tạp', articlePath: 'vi/algo/basic/computational-complexity' }] },
-        { title: 'Đồ thị', nodes: [{ title: 'Luồng', articlePath: '' }, { title: 'Bài tập', externalUrl: 'https://oj.vnoi.info' }] }
+        { title: 'Nhập môn', nodes: [{ id: 'n1', title: 'Độ phức tạp', articlePath: 'vi/algo/basic/computational-complexity' }] },
+        { title: 'Đồ thị', nodes: [{ id: 'n2', title: 'Luồng', articlePath: '' }, { id: 'n3', title: 'Bài tập', externalUrl: 'https://oj.vnoi.info' }] }
       ]
     }]
     const index = searchIndex(catalog, roadmaps)
     expect(index.articles).toHaveLength(6)
     expect(index.articles[2]).toEqual({ title: 'Persistent Data Structures', href: '/algo/data-structures/persistent-data-structures-2', pageId: null, stars: 3, topic: 'Cấu trúc dữ liệu' })
-    expect(index.roadmapItems.map(it => [it.title, it.href, it.stage])).toEqual([
-      ['Độ phức tạp', '/vi/algo/basic/computational-complexity', 1],
-      ['Luồng', null, 2],
-      ['Bài tập', 'https://oj.vnoi.info', 2]
+    expect(index.roadmapItems.map(it => [it.nodeId, it.title, it.href, it.stage])).toEqual([
+      ['n1', 'Độ phức tạp', '/vi/algo/basic/computational-complexity', 1],
+      ['n2', 'Luồng', null, 2],
+      ['n3', 'Bài tập', 'https://oj.vnoi.info', 2]
     ])
     expect(searchIndex(null, []).articles).toEqual([])
   })

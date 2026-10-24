@@ -318,7 +318,7 @@ async function getHome (locale) {
  * @param {Object[]} roadmaps Roadmaps.getIndex() output for this locale
  * @returns {{articles: Object[], roadmapItems: Object[]}}
  *   articles: { title, href, pageId, stars, topic }, one per link.
- *   roadmapItems: { title, href, roadmapId, roadmapTitle, stage, stageTitle }; href is null
+ *   roadmapItems: { nodeId, title, href, roadmapId, roadmapTitle, stage, stageTitle }; href is null
  *   when the item has no article yet.
  */
 function searchIndex (catalog, roadmaps) {
@@ -330,6 +330,7 @@ function searchIndex (catalog, roadmaps) {
     topic: _.get(catalog.topics, [it.topic, 'name'], '')
   }))
   const roadmapItems = _.flatMap(roadmaps, r => _.flatMap(r.sections, (s, si) => s.nodes.map(n => ({
+    nodeId: n.id,
     title: n.title,
     href: n.articlePath ? `/${n.articlePath}` : (n.externalUrl || null),
     roadmapId: r.id,

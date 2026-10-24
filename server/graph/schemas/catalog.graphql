@@ -24,6 +24,7 @@ type CatalogArticle {
 }
 
 type CatalogRoadmapItem {
+  nodeId: String!
   title: String!
   href: String
   roadmapId: String!
