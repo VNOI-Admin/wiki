@@ -30,7 +30,8 @@ describe('search-rank', () => {
     const hits = rankArticles(ARTICLES, 'dp')
     expect(hits[0].article.title).toEqual('Quy hoạch động cơ bản')
     expect(hits[0].syn).toEqual('quy hoach dong')
-    expect(rankArticles(ARTICLES, 'BIT')[0].article.title).toEqual('Phép toán bit')
+    // -> The query's own whole-word hit ranks above a synonym prefix hit ("Fenwick")
+    expect(rankArticles([...ARTICLES, { title: 'Fenwick Tree 2D', href: '/x', topic: '' }], 'BIT')[0].article.title).toEqual('Phép toán bit')
     expect(rankArticles(ARTICLES, 'BIT').map(h => h.article.href)).toContain('/algo/data-structures/fenwick')
   })
 

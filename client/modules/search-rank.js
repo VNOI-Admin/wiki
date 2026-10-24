@@ -53,6 +53,8 @@ const SYNONYMS = [
 
 // -> A synonym this short must match a whole word: "it" must not match "bit"
 const STRICT_LEN = 3
+// -> A synonym hit counts less, so a whole-word hit of the query (55) beats a synonym prefix hit (70 x 0.7)
+const SYN_WEIGHT = 0.7
 
 /**
  * @param {string} q Normalized query
@@ -64,7 +66,7 @@ export function expandQuery (q) {
     if (!group.some(s => q === s || (s.length > 2 && q.includes(s)))) { continue }
     for (const s of group) {
       if (s !== q && !out.some(o => o.q === s)) {
-        out.push({ q: s, weight: 0.8, syn: true, strict: s.length <= STRICT_LEN })
+        out.push({ q: s, weight: SYN_WEIGHT, syn: true, strict: s.length <= STRICT_LEN })
       }
     }
   }
