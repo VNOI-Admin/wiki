@@ -505,7 +505,7 @@ export default {
     },
     // -> The catalogue topics in the shape of a roadmap, for the rail
     topicRoadmap () {
-      if (!this.articleDecoded) { return null }
+      if (!this.articleDecoded || this.articleDecoded.topics.length < 1) { return null }
       return {
         id: null,
         title: this.$t('common:catalog.title', 'Bài viết'),

@@ -222,7 +222,8 @@ export default {
       return !!(this.q || this.topic || this.stars.length || this.prog.length)
     },
     searchWikiLabel () {
-      return this.$t('common:catalog.searchWiki', { defaultValue: 'Tìm "{{q}}" trong toàn wiki', q: this.q })
+      // -> Vue escapes the text; i18next must not escape it again
+      return this.$t('common:catalog.searchWiki', { defaultValue: 'Tìm "{{q}}" trong toàn wiki', q: this.q, interpolation: { escapeValue: false } })
     }
   },
   watch: {

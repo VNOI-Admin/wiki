@@ -110,6 +110,7 @@ describe('helpers/catalog', () => {
     ])
     expect(ctx.topics[2].items[0].path).toEqual('algo/algebra/binary_exponentation')
     expect(articleContext({ ...catalog, items }, 99)).toBeNull()
+    expect(articleContext({ ...catalog, items }, 3, false).topics).toEqual([])
   })
 
   it('builds the search index from the catalogue and the roadmaps', () => {

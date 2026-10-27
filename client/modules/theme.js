@@ -21,6 +21,26 @@ export function savedTheme () {
   }
 }
 
+// -> A copy of the profile appearance, for the script before the first paint (master.pug)
+const ACCOUNT_KEY = 'themeAccount'
+
+/**
+ * Keep a copy of the profile appearance in this browser, so the next page paints with it.
+ *
+ * @param {string} appearance 'dark', 'light', or '' (none, or a guest)
+ */
+export function rememberAccountTheme (appearance) {
+  try {
+    if (appearance) {
+      window.localStorage.setItem(ACCOUNT_KEY, appearance)
+    } else {
+      window.localStorage.removeItem(ACCOUNT_KEY)
+    }
+  } catch (err) {
+    // -> Storage blocked: the first paint uses the default theme
+  }
+}
+
 /**
  * Switch the theme and keep the choice in this browser.
  * client-app.js reads the choice back on the next page load.

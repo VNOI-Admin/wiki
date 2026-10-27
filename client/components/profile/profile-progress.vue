@@ -38,7 +38,7 @@ import ProgressDataDialog from '../common/progress-data-dialog.vue'
 import StatusMark from '../common/status-mark.vue'
 import { recordHref } from '../../modules/progress/page-path'
 import { nodeStats, pickRoadmap } from '../../modules/roadmap-context'
-import searchIndexQuery from 'gql/common/common-catalog-query-search-index.gql'
+import roadmapItemsQuery from 'gql/common/common-catalog-query-roadmap-items.gql'
 
 /* global siteConfig */
 
@@ -86,7 +86,7 @@ export default {
   },
   apollo: {
     roadmapItems: {
-      query: searchIndexQuery,
+      query: roadmapItemsQuery,
       variables () {
         return { locale: siteConfig.lang }
       },
@@ -156,17 +156,17 @@ export default {
       background: var(--accent-soft);
     }
 
-    // -> The roadmap tile is a link: keep the tile colours
-    &:is(a) {
-      color: var(--muted) !important;
-      text-decoration: none !important;
-    }
-
     > span {
       display: inline-flex;
       align-items: center;
       gap: 8px;
     }
+  }
+
+  // -> The roadmap tile is a link: keep the tile colours
+  a {
+    color: var(--muted) !important;
+    text-decoration: none !important;
   }
 
   b {

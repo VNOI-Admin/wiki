@@ -27,7 +27,7 @@ import Cookies from 'js-cookie'
 import boot from './modules/boot'
 import localization from './modules/localization'
 import progress from './modules/progress'
-import { defaultDark, followSystemTheme, savedTheme } from './modules/theme'
+import { defaultDark, followSystemTheme, rememberAccountTheme, savedTheme } from './modules/theme'
 
 // ====================================
 // Load Helpers
@@ -231,6 +231,8 @@ let bootstrap = () => {
   let darkModeEnabled = defaultDark()
   const localTheme = savedTheme()
   const userAppearance = store.get('user/appearance') || ''
+
+  rememberAccountTheme(userAppearance)
 
   // -> The last choice in this browser (header toggle or profile select) wins over the profile value
   if (localTheme) {

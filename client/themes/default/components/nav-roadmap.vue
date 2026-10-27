@@ -132,7 +132,8 @@ export default {
     }
   },
   watch: {
-    roadmap () {
+    // -> Another roadmap: open its current section again. The topic rail (id null) keeps the reader's choice.
+    'roadmap.id' () {
       this.collapsed = this.initialCollapsed()
       this.$nextTick(this.scrollToCurrent)
     }

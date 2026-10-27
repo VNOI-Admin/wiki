@@ -118,8 +118,9 @@ export default {
     term () {
       return String(this.search || '').trim()
     },
+    // -> The page locale on a page; other views (roadmap, profile, tags) keep the store default 'en'
     locale () {
-      return this.$store.get('page/locale') || siteConfig.lang
+      return this.$store.get('page/id') > 0 ? this.$store.get('page/locale') : siteConfig.lang
     },
     titleHits () {
       return this.index ? rankArticles(this.index.articles, this.term) : []
@@ -144,6 +145,8 @@ export default {
     // -> The rows in display order: each row has its index in the keyboard order
     groups () {
       this.$progress.state.records // eslint-disable-line no-unused-expressions
+      // -> The template shows rows from two characters on: the keyboard order must match it
+      if (this.term.length < 2) { return [] }
       const groups = []
       let idx = 0
       const add = (key, label, rows) => {
@@ -171,13 +174,14 @@ export default {
       })))
       add('roadmap', this.$t('common:header.searchRoadmap', 'Mục lộ trình'), this.roadmapHits.map(item => ({
         kind: 'roadmap',
-        key: `r:${item.roadmapId}:${item.stage}:${item.title}`,
+        key: `r:${item.roadmapId}:${item.nodeId}`,
         href: item.href || `/roadmap/${item.roadmapId}`,
         external: !!item.href && !item.href.startsWith('/'),
         roadmapId: item.roadmapId,
         title: item.title,
         soon: !item.href,
-        sub: this.$t('common:header.searchStage', { defaultValue: '{{roadmap}} · Chặng {{n}}: {{stage}}', roadmap: item.roadmapTitle, n: item.stage, stage: item.stageTitle })
+        // -> Vue escapes the text; i18next must not escape it again ("DFS/BFS")
+        sub: this.$t('common:header.searchStage', { defaultValue: '{{roadmap}} · Chặng {{n}}: {{stage}}', roadmap: item.roadmapTitle, n: item.stage, stage: item.stageTitle, interpolation: { escapeValue: false } })
       })))
       add('suggest', this.$t('common:header.searchDidYouMean'), this.suggestions.map(term => ({ kind: 'suggest', key: `s:${term}`, term })))
       return groups
@@ -210,8 +214,10 @@ export default {
         this.searchIsLoading = true
       }
     },
-    options() {
-      this.cursor = -1
+    // -> New rows (text hits, a status change) keep the selected row selected
+    options (rows, oldRows) {
+      const key = this.cursor >= 0 && oldRows[this.cursor] ? oldRows[this.cursor].key : null
+      this.cursor = key ? rows.findIndex(r => r.key === key) : -1
     }
   },
   methods: {
@@ -258,7 +264,7 @@ export default {
       return parts
     },
     synLabel (syn) {
-      return this.$t('common:header.searchSynonym', { defaultValue: 'khớp "{{term}}"', term: syn })
+      return this.$t('common:header.searchSynonym', { defaultValue: 'khớp "{{term}}"', term: syn, interpolation: { escapeValue: false } })
     },
     // -> Tab and Shift+Tab stay inside the dialog
     trapFocus (ev) {

@@ -606,6 +606,8 @@ router.get('/*', async (req, res, next) => {
           if (page.path === catalogHelper.CATALOG_PATH) {
             try {
               catalog = await catalogHelper.getCatalog(page)
+              // -> A page format the parser does not read: show the page as it is
+              if (catalog.items.length < 1) { catalog = null }
             } catch (err) {
               WIKI.logger.warn(`Failed to build the article catalogue: ${err.message}`)
             }
@@ -626,7 +628,8 @@ router.get('/*', async (req, res, next) => {
           let article = null
           if (!catalog && !home && WIKI.auth.checkAccess(req.user, ['read:pages'], { path: catalogHelper.CATALOG_PATH, locale: page.localeCode })) {
             try {
-              article = await catalogHelper.getArticleContext(page.localeCode, page.id)
+              // -> A page in a roadmap shows the roadmap in its rail, so it needs no topic list
+              article = await catalogHelper.getArticleContext(page.localeCode, page.id, roadmaps.length < 1)
             } catch (err) {
               WIKI.logger.warn(`Failed to find page ${page.id} in the article catalogue: ${err.message}`)
             }

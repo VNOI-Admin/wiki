@@ -26,6 +26,8 @@ const STAR = '⭐'
 const LEVELS = 5
 // -> Seconds. A listed page can be created or unpublished without an edit of the catalogue page.
 const CACHE_TTL = 10 * 60
+// -> Seconds. A catalogue edit shows within this time.
+const PAGE_ROW_TTL = 60
 
 /**
  * Turn the markdown of a title into plain text: links, HTML, emoji codes and simple TeX.
@@ -251,13 +253,14 @@ function homeSummary (catalog, newestCount = 4) {
  *
  * @param {Object} catalog getCatalog() output
  * @param {number} pageId
+ * @param {boolean} withTopics Add every topic: only the rail of a page outside the roadmaps uses them
  * @returns {Object|null} { group: { name, filter }, stars, topics: [{ name, items: [{ title, path, pageId }] }] };
  *   null when the catalogue does not list the page. A page listed twice takes its first place.
  */
-function articleContext (catalog, pageId) {
+function articleContext (catalog, pageId, withTopics = true) {
   const own = _.find(catalog.items, ['pageId', pageId])
   if (!own) { return null }
-  const topics = catalog.topics
+  const topics = !withTopics ? [] : catalog.topics
     .map((t, i) => ({
       name: t.name,
       items: _.uniqBy(catalog.items.filter(it => it.topic === i && it.pageId), 'pageId')
@@ -279,21 +282,28 @@ function articleContext (catalog, pageId) {
  * @returns {Promise<Object|null>} The catalogue of this locale; null when it has no catalogue page
  */
 async function getLocaleCatalog (locale) {
-  const listPage = await WIKI.models.pages.query()
-    .select('id', 'localeCode', 'updatedAt')
-    .where({ path: CATALOG_PATH, localeCode: locale })
-    .first()
+  // -> Every article view asks for it: keep the page row for a minute
+  const key = `catalog:page:${locale}`
+  let listPage = WIKI.cache.get(key)
+  if (listPage === undefined) {
+    listPage = (await WIKI.models.pages.query()
+      .select('id', 'localeCode', 'updatedAt')
+      .where({ path: CATALOG_PATH, localeCode: locale })
+      .first()) || null
+    WIKI.cache.set(key, listPage, PAGE_ROW_TTL)
+  }
   return listPage ? getCatalog(listPage) : null
 }
 
 /**
  * @param {string} locale
  * @param {number} pageId
+ * @param {boolean} withTopics See articleContext()
  * @returns {Promise<Object|null>} articleContext() for this page
  */
-async function getArticleContext (locale, pageId) {
+async function getArticleContext (locale, pageId, withTopics) {
   const catalog = await getLocaleCatalog(locale)
-  return catalog ? articleContext(catalog, pageId) : null
+  return catalog ? articleContext(catalog, pageId, withTopics) : null
 }
 
 /**
