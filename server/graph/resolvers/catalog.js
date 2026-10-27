@@ -7,10 +7,11 @@ module.exports = {
     async catalog () { return {} }
   },
   CatalogQuery: {
-    // -> The catalogue titles need read access to the catalogue page; the roadmap items do not
+    // -> The same rules as the pages: the catalogue page for the titles, /roadmaps for the roadmap items
     async searchIndex (obj, { locale }, context) {
       const canReadCatalog = WIKI.auth.checkAccess(context.req.user, ['read:pages'], { path: catalogHelper.CATALOG_PATH, locale })
-      return catalogHelper.getSearchIndex(locale, canReadCatalog)
+      const canReadRoadmaps = WIKI.auth.checkAccess(context.req.user, ['read:pages'])
+      return catalogHelper.getSearchIndex(locale, canReadCatalog, canReadRoadmaps)
     }
   }
 }

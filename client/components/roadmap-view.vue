@@ -57,7 +57,7 @@
               span {{ it.section.title }}
             v-menu(v-if='canSet(it.node)', offset-y, bottom, left, content-class='vn-menu')
               template(v-slot:activator='{ on, attrs }')
-                button.vn-chip(type='button', v-bind='attrs', v-on='on', :aria-label='$t(`common:progress.statusAria`, { defaultValue: `Progress: {{status}}`, status: statusOf(it.node).label })')
+                button.vn-chip(type='button', v-bind='attrs', v-on='on', :aria-label='$t(`common:progress.statusAria`, { defaultValue: `Progress: {{status}}`, status: statusOf(it.node).label, interpolation: { escapeValue: false } })')
                   span {{ statusOf(it.node).label }}
                   v-icon(small) mdi-chevron-down
               .vn-menu__list(role='menu')

@@ -6,7 +6,7 @@ import Cookies from 'js-cookie'
  */
 export function rememberPage () {
   const path = window.location.pathname
-  // -> Never come back to an auth page
-  if (/^\/(login|register|logout)\b/.test(path)) { return }
+  // -> Never come back to an auth page, and never to another host ("//host")
+  if (path.startsWith('//') || /^\/(login|register|logout)\b/.test(path)) { return }
   Cookies.set('loginRedirect', path, { expires: 1 / 96 })
 }

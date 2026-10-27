@@ -6,7 +6,7 @@
           v-on='menu'
           type='button'
           :class='`s-` + currentStatus.id'
-          :aria-label='$t(`common:progress.statusAria`, { defaultValue: `Progress: {{status}}`, status: currentStatus.label })'
+          :aria-label='$t(`common:progress.statusAria`, { defaultValue: `Progress: {{status}}`, status: currentStatus.label, interpolation: { escapeValue: false } })'
           )
           status-mark(:status='currentStatus')
           span.vn-pbtn__k {{ $t('common:progress.title', 'Tiến độ') }}:

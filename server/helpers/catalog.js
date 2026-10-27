@@ -55,15 +55,18 @@ function cleanText (text) {
 }
 
 /**
+ * The page is raw markdown, so its links skip the HTML sanitizer: keep only safe links.
+ *
  * @param {string} href
- * @returns {string} Site paths without a trailing `.md`; other links unchanged
+ * @returns {string} A site path without a trailing `.md`, an http(s) link unchanged,
+ *   or '' for any other link (`javascript:`, `//host`, a relative path)
  */
 function normalizeHref (href) {
   const h = String(href || '').trim()
   if (/^\/(?!\/)/.test(h)) {
     return h.replace(/\.md(?=$|[?#])/i, '')
   }
-  return h
+  return /^https?:\/\//i.test(h) ? h : ''
 }
 
 /**
@@ -145,7 +148,7 @@ function parseCatalog (markdown) {
 
     // -> An article: - [Title - ⭐⭐](/path)
     const link = /^\s*[-*]\s+\[(.+)\]\(([^)\s]+)\)/.exec(line)
-    if (link && topic >= 0) {
+    if (link && topic >= 0 && normalizeHref(link[2])) {
       const raw = link[1]
       const stars = (raw.match(new RegExp(STAR, 'g')) || []).length
       items.push({
@@ -354,11 +357,12 @@ function searchIndex (catalog, roadmaps) {
 /**
  * @param {string} locale
  * @param {boolean} canReadCatalog Whether the reader may read the catalogue page
+ * @param {boolean} canReadRoadmaps Whether the reader may read the roadmap pages
  * @returns {Promise<Object>} searchIndex() for this locale
  */
-async function getSearchIndex (locale, canReadCatalog) {
+async function getSearchIndex (locale, canReadCatalog, canReadRoadmaps) {
   const catalog = canReadCatalog ? await getLocaleCatalog(locale) : null
-  const roadmaps = (await WIKI.models.roadmaps.getIndex())
+  const roadmaps = !canReadRoadmaps ? [] : (await WIKI.models.roadmaps.getIndex())
     .filter(r => _.some(r.sections, s => _.some(s.nodes, n => _.startsWith(n.articlePath, `${locale}/`))))
   return searchIndex(catalog, roadmaps)
 }

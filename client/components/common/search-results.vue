@@ -104,6 +104,7 @@ export default {
       popular: POPULAR_TERMS,
       // -> Catalogue titles and roadmap items, loaded when the dialog first opens
       index: null,
+      indexLoading: false,
       response: {
         results: [],
         suggestions: [],

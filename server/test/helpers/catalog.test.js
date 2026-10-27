@@ -69,6 +69,15 @@ describe('helpers/catalog', () => {
     expect(normalizeHref('https://example.com/readme.md')).toEqual('https://example.com/readme.md')
   })
 
+  it('drops links that are not a site path or http(s)', () => {
+    expect(normalizeHref('javascript:alert(1)')).toEqual('')
+    expect(normalizeHref('//evil.example/x')).toEqual('')
+    expect(normalizeHref('data:text/html,x')).toEqual('')
+    expect(normalizeHref('relative/path')).toEqual('')
+    const bad = parseCatalog('# T\n## A\n- [Bad - ⭐](javascript:alert(1))\n- [Good - ⭐](/good)\n')
+    expect(bad.items.map(i => i.href)).toEqual(['/good'])
+  })
+
   it('cleans titles', () => {
     expect(cleanText('Chia căn - <big>:new:</big> - Phần I - ⭐⭐')).toEqual('Chia căn - Phần I')
     expect(cleanText('Sắp xếp Tô-pô - ⭐⭐')).toEqual('Sắp xếp Tô-pô')

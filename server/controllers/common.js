@@ -430,7 +430,7 @@ router.get('/roadmaps', async (req, res, next) => {
     description: r.description,
     articleCount: WIKI.models.roadmaps.articleCount(r.sections)
   }))
-  _.set(res.locals, 'pageMeta.title', 'Lộ trình học')
+  _.set(res.locals, 'pageMeta.title', req.i18n.t('common:roadmap.listTitle', 'Lộ trình học'))
   res.render('roadmaps', {
     roadmaps: Buffer.from(JSON.stringify(summaries)).toString('base64')
   })

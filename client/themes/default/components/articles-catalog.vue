@@ -100,12 +100,12 @@
       //- RESULTS (a screen reader hears only the count, not every card)
       span.d-sr-only(aria-live='polite') {{ countLabel }}
       .vn-results
-        section.vn-group(v-for='g of groups', :key='g.name')
+        section.vn-group(v-for='g of groups', :key='g.topic')
           h2 {{ g.name }} #[span.vn-group__n {{ g.items.length }}]
           .vn-cards
             a.vn-acard(
-              v-for='it of g.items'
-              :key='it.href'
+              v-for='(it, idx) of g.items'
+              :key='idx'
               :href='it.href'
               :target='it.external ? `_blank` : null'
               :rel='it.external ? `noopener` : null'
@@ -127,11 +127,7 @@ import _ from 'lodash'
 import StatusMark from '../../../components/common/status-mark.vue'
 import VnStars from '../../../components/common/vn-stars.vue'
 import { levelName } from '../../../modules/levels'
-
-// -> Lowercase, no Vietnamese marks: "Đồ thị" matches "do thi"
-function fold (text) {
-  return String(text || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd')
-}
+import { foldText } from '../../../modules/search-rank'
 
 export default {
   components: { StatusMark, VnStars },
@@ -192,7 +188,7 @@ export default {
         external: !it.href.startsWith('/'),
         topicName: _.get(this.catalog.topics, [it.topic, 'name'], ''),
         part: _.get(this.catalog.topics, [it.topic, 'part'], ''),
-        key: fold(it.title + ' ' + it.href)
+        key: foldText(it.title + ' ' + it.href)
       }))
     },
     // -> Levels apply to the selected topic only when its articles have levels
@@ -204,7 +200,7 @@ export default {
       return this.$t('common:catalog.count', { count: this.filtered.length, defaultValue: '{{count}} bài' })
     },
     filtered () {
-      const q = fold(this.q.trim())
+      const q = foldText(this.q.trim())
       const stars = this.levelsOn ? this.stars : []
       return this.items.filter(it =>
         this.inTopic(it) &&
@@ -215,7 +211,7 @@ export default {
     },
     groups () {
       return this.catalog.topics
-        .map((t, i) => ({ name: t.name, items: this.filtered.filter(it => it.topic === i) }))
+        .map((t, i) => ({ topic: i, name: t.name, items: this.filtered.filter(it => it.topic === i) }))
         .filter(g => g.items.length > 0)
     },
     hasFilters () {

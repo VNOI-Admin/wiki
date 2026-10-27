@@ -50,9 +50,9 @@
     section.vn-hsec(v-if='home.topics.length > 0')
       .vn-hsec__head
         h2 {{ $t('common:home.topics', 'Chủ đề thuật toán') }}
-        a(href='/articles') {{ $t('common:home.allArticles', 'Tất cả bài viết') }} →
+        a(:href='catalogHref') {{ $t('common:home.allArticles', 'Tất cả bài viết') }} →
       .vn-topics
-        a.vn-topic(v-for='(t, ti) of home.topics', :key='ti', :href='`/articles?topic=` + encodeURIComponent(`t:` + t.name)')
+        a.vn-topic(v-for='(t, ti) of home.topics', :key='ti', :href='catalogHref + `?topic=` + encodeURIComponent(`t:` + t.name)')
           span.vn-topic__t {{ t.name }}
           span.vn-topic__c {{ countLabel(t.count) }}
           span.vn-topic__spread(role='img', :aria-label='spreadLabel(t.spread)')
@@ -80,6 +80,9 @@ export default {
     return { popular: POPULAR_TERMS }
   },
   computed: {
+    catalogHref () {
+      return `/${this.$store.get('page/locale')}/articles`
+    },
     roadmap () {
       return pickRoadmap(this.home.roadmaps)
     },
