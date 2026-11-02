@@ -203,8 +203,6 @@
     page-selector(mode='create', v-model='duplicateOpts.modal', :open-handler='pageDuplicateHandle', :path='duplicateOpts.path', :locale='duplicateOpts.locale')
     page-delete(v-model='deletePageModal', v-if='path && path.length')
     page-convert(v-model='convertPageModal', v-if='path && path.length')
-
-    .vn-devflag(v-if='isDevMode', title='This code base is NOT for production use!') DEV
 </template>
 
 <script>
@@ -216,7 +214,7 @@ import { rememberPage } from '../../modules/login-return'
 
 import movePageMutation from 'gql/common/common-pages-mutation-move.gql'
 
-/* global siteConfig, siteLangs */
+/* global siteLangs */
 
 export default {
   components: {
@@ -240,7 +238,6 @@ export default {
       convertPageModal: false,
       deletePageModal: false,
       locales: siteLangs,
-      isDevMode: false,
       menuSheet: false,
       visibleLinkCount: Infinity,
       duplicateOpts: {
@@ -322,7 +319,6 @@ export default {
     this.$root.$on('pageDelete', () => {
       this.pageDelete()
     })
-    this.isDevMode = siteConfig.devMode === true
     this.onKeydown = ev => {
       const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(ev.target.tagName) || ev.target.isContentEditable
       if (!this.searchShown) { return }
@@ -715,18 +711,6 @@ export default {
   color: var(--on-accent);
   font-size: 0.75rem;
   font-weight: 700;
-}
-
-.vn-devflag {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  padding: 0 6px;
-  border-radius: 4px;
-  background: var(--mark-red);
-  color: #fff;
-  font: 600 0.625rem/1.6 var(--font-mono);
-  pointer-events: none;
 }
 
 @media (max-width: 860px) {

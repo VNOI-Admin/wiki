@@ -26,6 +26,8 @@ common:
     codeLess: 'Thu gọn'
     exitPrint: 'Thoát bản in'
     siteNav: 'Điều hướng'
+    tocHide: 'Ẩn mục lục'
+    tocShow: 'Hiện mục lục'
     # -> The official string is half English ("Quay trở lại Normal View")
     returnNormalView: 'Về bài viết'
   comments:
@@ -105,6 +107,7 @@ common:
     show: 'Hiện lộ trình'
     completed: 'Đã hoàn thành {{completed}} / {{total}}'
     hide: 'Ẩn thanh bên'
+    showRail: 'Hiện thanh bên'
     mainMenu: 'Menu chính'
     expandAll: 'Mở tất cả'
     collapseAll: 'Thu gọn'

@@ -28,7 +28,7 @@
       articles-catalog(v-if='catalogDecoded', :catalog='catalogDecoded', :title='title')
       //- Home: the dashboard, then the page contents
       home-dashboard(v-if='homeDecoded', :home='homeDecoded')
-      .vn-doc(v-if='!catalogDecoded', :class='{ "is-home": homeDecoded, "has-rail": railShown && !printView, "has-toc": hasToc && tocOn && !printView }')
+      .vn-doc(v-if='!catalogDecoded', :class='{ "is-home": homeDecoded, "has-rail": railShown && !printView, "rail-folded": railFolded, "toc-folded": tocFolded }')
         //- LEFT RAIL: the roadmap that holds this page, else its catalogue topics, else the admin navigation
         aside.vn-rail(v-if='railShown && !printView', :aria-label='railRoadmap ? railRoadmap.title : $t(`common:page.siteNav`, `Điều hướng`)')
           nav-roadmap(
@@ -45,6 +45,15 @@
           template(v-else)
             button.vn-railback(v-if='railRoadmap', type='button', @click='railMenu = false') ← {{ railRoadmap.title }}
             nav-sidebar(:items='sidebarDecoded', :nav-mode='navMode')
+        //- A hidden rail leaves one button in its place
+        aside.vn-railfold(v-if='railFolded')
+          button.vn-foldbtn(
+            type='button'
+            @click='setRailHidden(false)'
+            :title='$t(`common:roadmap.showRail`, `Hiện thanh bên`)'
+            :aria-label='$t(`common:roadmap.showRail`, `Hiện thanh bên`)'
+            )
+            v-icon(small) mdi-map-marker-path
 
         //- ARTICLE
         article.vn-article
@@ -117,9 +126,16 @@
 
         //- RIGHT COLUMN: table of contents and page tools
         //- Home has no TOC and no page tools: history stays in the header page menu
-        aside.vn-toc(v-if='!printView && !homeDecoded', :aria-label='$t(`common:page.toc`)')
+        aside.vn-toc(v-if='!printView && !homeDecoded && !tocFolded', :aria-label='$t(`common:page.toc`)')
           template(v-if='hasToc && tocOn')
-            .vn-label {{$t('common:page.toc')}}
+            .vn-toc__head
+              .vn-label {{$t('common:page.toc')}}
+              button.vn-toc__hide(
+                type='button'
+                @click='setTocHidden(true)'
+                :title='$t(`common:page.tocHide`, `Ẩn mục lục`)'
+                :aria-label='$t(`common:page.tocHide`, `Ẩn mục lục`)'
+                ) ×
             a(
               v-for='item of tocFlat'
               :key='item.anchor'
@@ -129,13 +145,38 @@
               ) {{item.title}}
           .vn-toc__tools
             +pageTools
+        //- A hidden TOC leaves a column of ticks. Hover or focus opens the full list.
+        nav.vn-tocfold(v-if='tocFolded', :aria-label='$t(`common:page.toc`)')
+          .vn-tocfold__ticks(aria-hidden='true')
+            i(
+              v-for='item of tocFlat'
+              :key='`t-` + item.anchor'
+              :class='{ "is-sub": item.sub, "is-active": item.anchor === activeAnchor }'
+              )
+          .vn-tocfold__panel.vn-toc
+            .vn-toc__head
+              .vn-label {{$t('common:page.toc')}}
+              button.vn-toc__hide(
+                type='button'
+                @click='setTocHidden(false)'
+                :title='$t(`common:page.tocShow`, `Hiện mục lục`)'
+                :aria-label='$t(`common:page.tocShow`, `Hiện mục lục`)'
+                )
+                v-icon(small) mdi-dock-right
+            a(
+              v-for='item of tocFlat'
+              :key='`f-` + item.anchor'
+              :href='item.anchor'
+              :class='{ "is-sub": item.sub, "is-active": item.anchor === activeAnchor }'
+              @click.prevent='onFoldLink($event, item.anchor)'
+              ) {{item.title}}
 
       //- Narrow screens: the rail and the TOC open as sheets from a bottom bar
-      .vn-readbar(v-if='readbarOn', :class='{ "has-rail": railAvailable, "rail-hidden": railHidden }')
+      .vn-readbar(v-if='readbarOn')
         button.is-toc(v-if='hasToc && tocOn', type='button', @click='tocSheet = true')
           v-icon(small) mdi-format-list-bulleted
           span {{$t('common:page.toc')}}
-        button.is-rail(v-if='railAvailable', type='button', @click='onRailButton')
+        button.is-rail(v-if='railAvailable', type='button', @click='railSheet = true')
           v-icon(small) mdi-map-marker-path
           span {{ railRoadmap ? railRoadmap.title : $t('common:page.siteNav', 'Điều hướng') }}
 
@@ -241,6 +282,7 @@ import { levelName } from '../../../modules/levels'
 import { isProgressExcluded, NO_PROGRESS_TAG } from '../../../modules/progress'
 import { DONE_STATUS, pickRoadmap, touchRoadmap } from '../../../modules/roadmap-context'
 import { fitWide } from '../../../modules/fit-wide'
+import { wrapByline } from '../../../modules/byline'
 import { registerCodeFold } from '../../../modules/code-fold'
 import { startAutoProgress } from '../../../modules/progress/auto-progress'
 import { notifyStatus } from '../../../modules/progress/notify-status'
@@ -255,8 +297,8 @@ Vue.component('Tabset', Tabset)
 
 // -> 'hidden' when the reader closed the rail; it stays closed on the next pages
 const RAIL_PREF_KEY = 'vnRailHidden'
-// -> At this width and below, the rail and the TOC open as sheets (the 900px media rule)
-const NARROW_MAX = 900
+// -> 'hidden' when the reader closed the TOC column
+const TOC_PREF_KEY = 'vnTocHidden'
 
 Prism.plugins.autoloader.languages_path = '/_assets/js/prism/'
 Prism.plugins.NormalizeWhitespace.setDefaults({
@@ -411,6 +453,7 @@ export default {
     return {
       currentRoadmapId: null,
       railHidden: false,
+      tocHidden: false,
       railSheet: false,
       // -> true: the rail shows the site navigation instead of the roadmap
       railMenu: false,
@@ -530,6 +573,12 @@ export default {
     railShown () {
       return this.railAvailable && !this.railHidden
     },
+    railFolded () {
+      return this.railAvailable && this.railHidden && !this.printView
+    },
+    tocFolded () {
+      return this.tocHidden && this.hasToc && this.tocOn && !this.printView
+    },
     tocDecoded () {
       try {
         return JSON.parse(Buffer.from(this.toc, 'base64').toString())
@@ -628,6 +677,7 @@ export default {
     }
     try {
       this.railHidden = window.localStorage.getItem(RAIL_PREF_KEY) === 'hidden'
+      this.tocHidden = window.localStorage.getItem(TOC_PREF_KEY) === 'hidden'
     } catch (err) {}
 
     // -> Keep this page's stored path current if it has been renamed or moved. A no-op
@@ -655,6 +705,9 @@ export default {
       window.boot.notify('page-ready')
       return
     }
+
+    // -> The author lines at the top show as one card
+    wrapByline(this.$refs.container)
 
     // -> Highlight Code Blocks
     Prism.highlightAllUnder(this.$refs.container)
@@ -769,27 +822,33 @@ export default {
       touchRoadmap(roadmap.id)
     },
     setRailHidden (hidden) {
-      // -> The text column changes width, so keep the first visible block at the same place
-      const bar = document.querySelector('.vn-topbar')
-      const topLine = bar ? bar.getBoundingClientRect().bottom : 0
-      const anchor = _.find(this.$refs.container.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, pre, table, .katex-display'), el => el.getBoundingClientRect().bottom > topLine)
-      const offset = anchor ? anchor.getBoundingClientRect().top : 0
-      this.railHidden = hidden
-      if (anchor) {
-        this.$nextTick(() => {
-          window.scrollBy(0, anchor.getBoundingClientRect().top - offset)
-        })
-      }
+      this.keepReadingPlace(() => { this.railHidden = hidden })
       try {
         window.localStorage.setItem(RAIL_PREF_KEY, hidden ? 'hidden' : 'shown')
       } catch (err) {}
     },
-    // -> The bottom button reopens a hidden rail on wide screens, else it opens the sheet
-    onRailButton () {
-      if (this.railHidden && window.innerWidth > NARROW_MAX) {
-        this.setRailHidden(false)
-      } else {
-        this.railSheet = true
+    setTocHidden (hidden) {
+      this.keepReadingPlace(() => { this.tocHidden = hidden })
+      try {
+        window.localStorage.setItem(TOC_PREF_KEY, hidden ? 'hidden' : 'shown')
+      } catch (err) {}
+    },
+    // -> A mouse click closes the folded TOC panel. Keyboard focus keeps it open.
+    onFoldLink (ev, anchor) {
+      if (ev.detail > 0) { ev.currentTarget.blur() }
+      this.goToAnchor(anchor)
+    },
+    // -> The text column changes width, so keep the first visible block at the same place
+    keepReadingPlace (change) {
+      const bar = document.querySelector('.vn-topbar')
+      const topLine = bar ? bar.getBoundingClientRect().bottom : 0
+      const anchor = _.find(this.$refs.container.querySelectorAll('h1, h2, h3, h4, h5, h6, p, li, pre, table, .katex-display'), el => el.getBoundingClientRect().bottom > topLine)
+      const offset = anchor ? anchor.getBoundingClientRect().top : 0
+      change()
+      if (anchor) {
+        this.$nextTick(() => {
+          window.scrollBy(0, anchor.getBoundingClientRect().top - offset)
+        })
       }
     },
     // -> An image opens at full size, unless it is a link
@@ -887,17 +946,29 @@ export default {
 // ---------------------------------
 // Three columns above 1220px. From 901 to 1220px the TOC moves to the bottom bar.
 // At 900px and below, the rail moves to the bottom bar too.
+// A hidden rail or TOC folds to a narrow column, so with both hidden the text is centered.
 
 .vn-doc {
+  --rail-w: 15rem;
+  --toc-w: 13rem;
+  --fold-w: 2.5rem;
   display: grid;
-  grid-template-columns: minmax(0, var(--read)) 13rem;
+  grid-template-columns: minmax(0, var(--read)) var(--toc-w);
   justify-content: center;
   gap: 32px;
   align-items: start;
   padding: 28px 20px 64px;
 
   &.has-rail {
-    grid-template-columns: 15rem minmax(0, var(--read)) 13rem;
+    grid-template-columns: var(--rail-w) minmax(0, var(--read)) var(--toc-w);
+  }
+
+  &.rail-folded {
+    grid-template-columns: var(--fold-w) minmax(0, var(--read)) var(--toc-w);
+  }
+
+  &.toc-folded {
+    --toc-w: var(--fold-w);
   }
 
   // -> Home: the page contents start at the left edge of the dashboard
@@ -926,6 +997,31 @@ export default {
 
 .vn-rail {
   padding-right: 4px;
+}
+
+.vn-railfold, .vn-tocfold {
+  position: sticky;
+  top: calc(var(--topbar-h) + 16px);
+}
+
+.vn-foldbtn {
+  width: var(--fold-w);
+  height: var(--fold-w);
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+
+  .v-icon {
+    color: inherit !important;
+  }
+
+  &:hover {
+    color: var(--ink);
+    border-color: var(--muted);
+  }
 }
 
 .vn-article {
@@ -1246,6 +1342,93 @@ export default {
   }
 }
 
+.vn-toc__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  .vn-label {
+    margin-bottom: 0;
+  }
+}
+
+// -> Same look as the roadmap hide button
+.vn-toc__hide {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--muted) !important;
+  font-size: 1.125rem;
+
+  .v-icon {
+    color: inherit !important;
+  }
+
+  &:hover {
+    background: var(--sunken);
+    color: var(--ink) !important;
+  }
+}
+
+// -> The folded TOC: one tick per heading at the right edge of the page
+.vn-tocfold {
+  justify-self: end;
+  padding: 8px 0 8px 12px;
+}
+
+.vn-tocfold__ticks {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  max-height: 60vh;
+  overflow: hidden;
+
+  i {
+    width: 16px;
+    height: 2px;
+    border-radius: 1px;
+    background: color-mix(in srgb, var(--muted) 80%, transparent);
+
+    &.is-sub {
+      width: 10px;
+    }
+
+    &.is-active {
+      background: var(--accent);
+    }
+  }
+}
+
+// -> Opacity, not visibility: a hidden link must still take keyboard focus.
+//    `.vn-toc` is in the selector to beat the sticky rule of the TOC column.
+.vn-tocfold__panel.vn-toc {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 18rem;
+  max-height: calc(100vh - var(--topbar-h) - 48px);
+  overflow-y: auto;
+  padding: 12px 12px 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateX(8px);
+  pointer-events: none;
+  transition: opacity 0.15s, transform 0.15s;
+
+  .vn-tocfold:hover &, .vn-tocfold:focus-within & {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+}
+
 .vn-toc__tools {
   margin-top: 16px;
   display: grid;
@@ -1264,8 +1447,8 @@ export default {
 // ---------------------------------
 // BOTTOM BAR
 // ---------------------------------
-// Wide screens: a pill to reopen a hidden rail. 901-1220px: also a TOC pill, because the
-// TOC column does not fit beside the rail. 900px and below: one bar with both buttons.
+// 901-1220px: a TOC pill, because the TOC column does not fit beside the rail.
+// 900px and below: one bar with both buttons.
 
 .vn-readbar {
   display: none;
@@ -1292,21 +1475,18 @@ export default {
       color: var(--muted) !important;
     }
   }
+}
 
-  &.has-rail.rail-hidden {
-    display: flex;
-
-    button.is-toc {
-      display: none;
-    }
-  }
+// -> A folded TOC has no page tools: they move to the article end
+.vn-doc.toc-folded .vn-endtools {
+  display: flex;
 }
 
 @media (max-width: 1220px) {
   .vn-doc.has-rail {
-    grid-template-columns: 15rem minmax(0, var(--read));
+    grid-template-columns: var(--rail-w) minmax(0, var(--read));
 
-    > .vn-toc {
+    > .vn-toc, > .vn-tocfold {
       display: none;
     }
 
@@ -1334,11 +1514,11 @@ export default {
     bottom: calc(152px + env(safe-area-inset-bottom, 0px));
   }
 
-  .vn-doc, .vn-doc.has-rail {
+  .vn-doc, .vn-doc.has-rail, .vn-doc.rail-folded {
     grid-template-columns: minmax(0, 1fr);
     padding-bottom: 96px;
 
-    > .vn-rail, > .vn-toc {
+    > .vn-rail, > .vn-toc, > .vn-railfold, > .vn-tocfold {
       display: none;
     }
 
@@ -1347,7 +1527,7 @@ export default {
     }
   }
 
-  .vn-readbar, .vn-readbar.has-rail.rail-hidden, .vn-doc.has-rail ~ .vn-readbar {
+  .vn-readbar, .vn-doc.has-rail ~ .vn-readbar {
     display: flex;
     left: 0;
     right: 0;
