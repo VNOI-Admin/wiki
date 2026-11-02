@@ -138,6 +138,11 @@
     }
   }
 
+  // -> GitHub alerts (> [!TIP]) have only a bottom margin: give them the callout spacing
+  .markdown-alert {
+    margin: 1rem 0 0;
+  }
+
   .alert-success {
     --alert: var(--done);
   }
@@ -198,8 +203,11 @@
     }
   }
 
-  // -> A list or paragraph keeps its top gap inside a quote or callout, so the text sat low
+  // -> A list or paragraph keeps its top gap inside a quote or callout, so the text sat low.
+  //    No bottom margin: the next paragraph has its own top gap, as after a callout.
   blockquote, .alert {
+    margin-bottom: 0;
+
     > :first-child {
       margin-top: 0;
       padding-top: 0;
