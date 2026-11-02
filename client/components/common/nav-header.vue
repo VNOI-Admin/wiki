@@ -10,7 +10,7 @@
     :clipped-left='!$vuetify.rtl'
     :clipped-right='$vuetify.rtl'
     )
-    .vn-topbar__in(:class='{ "is-wide": isWide }')
+    .vn-topbar__in
       //- Small screens: the header links move into a sheet
       button.vn-iconbtn.vn-topbar__menu(
         type='button'
@@ -256,12 +256,8 @@ export default {
     hasHeaderLinks () {
       return this.headerLinks.length > 0
     },
-    // -> Admin, editor and other tool views use the full width; reading views use the page column
     searchShown () {
       return !this.hideSearch && !this.dense
-    },
-    isWide () {
-      return this.dense || this.hideSearch || ['edit', 'admin', 'history', 'source'].includes(this.mode)
     },
     visibleLinks () {
       return _.take(this.headerLinks, this.visibleLinkCount)
@@ -516,17 +512,14 @@ export default {
 
 .vn-topbar__in {
   width: 100%;
-  max-width: var(--wrap);
+  // -> Full width on every page: the logo and the account menu line up with the article
+  //    side columns, and keep their place from page to page
   height: var(--topbar-h);
   margin: 0 auto;
   padding-inline: 20px;
   display: flex;
   align-items: center;
   gap: 18px;
-
-  &.is-wide {
-    max-width: none;
-  }
 }
 
 .vn-topbar__menu {

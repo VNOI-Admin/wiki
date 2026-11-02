@@ -1473,14 +1473,15 @@ export default {
 }
 
 // -> Wide screens: the side columns keep their width when the rail or the TOC closes,
-//    so the text never moves. Narrower screens give the free width to the text instead.
+//    so the text never moves. The rail and the TOC sit at the window edges, in line with
+//    the header. Narrower screens give the free width to the text instead.
 @media (min-width: 1221px) {
   .vn-doc:not(.is-home) {
     grid-template-columns: minmax(var(--rail-w), 1fr) minmax(0, var(--read)) minmax(13rem, 1fr);
 
     > .vn-rail, > .vn-railfold {
       grid-area: 1 / 1;
-      justify-self: end;
+      justify-self: start;
       width: var(--rail-w);
     }
 
@@ -1490,7 +1491,7 @@ export default {
 
     > .vn-toc {
       grid-area: 1 / 3;
-      justify-self: start;
+      justify-self: end;
       width: 13rem;
     }
 
