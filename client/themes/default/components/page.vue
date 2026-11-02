@@ -944,7 +944,7 @@ export default {
 // Three columns above 1220px. From 901 to 1220px the TOC moves to the bottom bar.
 // At 900px and below, the rail moves to the bottom bar too.
 // A hidden rail leaves a column with one button. A hidden TOC folds to a column of ticks.
-// With both hidden on a wide screen, a right padding keeps the text in the center.
+// Above 1220px the text stays in place (see the min-width rule below the bottom bar).
 
 .vn-doc {
   --rail-w: 15rem;
@@ -1472,9 +1472,31 @@ export default {
   }
 }
 
+// -> Wide screens: the side columns keep their width when the rail or the TOC closes,
+//    so the text never moves. Narrower screens give the free width to the text instead.
 @media (min-width: 1221px) {
-  .vn-doc.rail-folded.toc-folded {
-    padding-right: calc(20px + var(--railbtn-w) - var(--fold-w));
+  .vn-doc:not(.is-home) {
+    grid-template-columns: minmax(var(--rail-w), 1fr) minmax(0, var(--read)) minmax(13rem, 1fr);
+
+    > .vn-rail, > .vn-railfold {
+      grid-area: 1 / 1;
+      justify-self: end;
+      width: var(--rail-w);
+    }
+
+    > .vn-article {
+      grid-area: 1 / 2;
+    }
+
+    > .vn-toc {
+      grid-area: 1 / 3;
+      justify-self: start;
+      width: 13rem;
+    }
+
+    > .vn-tocfold {
+      grid-area: 1 / 3;
+    }
   }
 }
 
