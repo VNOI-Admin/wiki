@@ -50,7 +50,7 @@
         aside.vn-railfold(v-if='railFolded')
           button.vn-railopen(type='button', @click='setRailHidden(false)')
             v-icon(small) mdi-map-marker-path
-            span {{ railRoadmap ? $t('common:roadmap.show', 'Hiện lộ trình') : $t('common:page.siteNav', 'Điều hướng') }}
+            span {{ railRoadmap ? $t('common:roadmap.short', 'Lộ trình') : $t('common:page.siteNav', 'Điều hướng') }}
 
         //- ARTICLE
         article.vn-article

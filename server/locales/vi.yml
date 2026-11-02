@@ -105,6 +105,7 @@ common:
     viewFull: 'Xem toàn bộ lộ trình'
     switch: 'Đổi lộ trình'
     show: 'Hiện lộ trình'
+    short: 'Lộ trình'
     completed: 'Đã hoàn thành {{completed}} / {{total}}'
     hide: 'Ẩn thanh bên'
     mainMenu: 'Menu chính'
