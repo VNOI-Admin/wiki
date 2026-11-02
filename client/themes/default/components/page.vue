@@ -848,10 +848,10 @@ export default {
         })
       }
     },
-    // -> An image opens at full size, unless it is a link
+    // -> An image opens at full size, unless it is a link or an emoji
     openImage (e) {
       const img = e.target.closest('img')
-      if (!img || img.closest('a')) { return }
+      if (!img || img.closest('a') || img.classList.contains('emoji')) { return }
       this.lightboxImg = { src: img.currentSrc || img.src, alt: img.alt }
       this.lightbox = true
     },

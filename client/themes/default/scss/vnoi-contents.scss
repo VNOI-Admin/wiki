@@ -259,6 +259,15 @@
     border-radius: 8px;
   }
 
+  // -> Twemoji draws each emoji as an SVG image. `height: auto` above made it fill the column.
+  img.emoji {
+    width: auto;
+    height: 1.25em;
+    margin: 0 1px -4px;
+    border-radius: 0;
+    cursor: auto;
+  }
+
   details {
     border: 1px solid var(--line);
     border-radius: 12px;
