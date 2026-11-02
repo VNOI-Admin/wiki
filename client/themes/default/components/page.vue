@@ -45,15 +45,11 @@
           template(v-else)
             button.vn-railback(v-if='railRoadmap', type='button', @click='railMenu = false') ← {{ railRoadmap.title }}
             nav-sidebar(:items='sidebarDecoded', :nav-mode='navMode')
-        //- A hidden rail leaves one button in its place
+        //- A hidden rail leaves a button at the top left, in its own column
         aside.vn-railfold(v-if='railFolded')
-          button.vn-foldbtn(
-            type='button'
-            @click='setRailHidden(false)'
-            :title='$t(`common:roadmap.showRail`, `Hiện thanh bên`)'
-            :aria-label='$t(`common:roadmap.showRail`, `Hiện thanh bên`)'
-            )
+          button.vn-railopen(type='button', @click='setRailHidden(false)')
             v-icon(small) mdi-map-marker-path
+            span {{$t('common:roadmap.showRail', 'Hiện thanh bên')}}
 
         //- ARTICLE
         article.vn-article
@@ -173,12 +169,12 @@
 
       //- Narrow screens: the rail and the TOC open as sheets from a bottom bar
       .vn-readbar(v-if='readbarOn')
-        button.is-toc(v-if='hasToc && tocOn', type='button', @click='tocSheet = true')
-          v-icon(small) mdi-format-list-bulleted
-          span {{$t('common:page.toc')}}
         button.is-rail(v-if='railAvailable', type='button', @click='railSheet = true')
           v-icon(small) mdi-map-marker-path
           span {{ railRoadmap ? railRoadmap.title : $t('common:page.siteNav', 'Điều hướng') }}
+        button.is-toc(v-if='hasToc && tocOn', type='button', @click='tocSheet = true')
+          v-icon(small) mdi-format-list-bulleted
+          span {{$t('common:page.toc')}}
 
       v-bottom-sheet(v-model='tocSheet', content-class='vn-sheet', scrollable)
         .vn-sheet__panel
@@ -946,12 +942,14 @@ export default {
 // ---------------------------------
 // Three columns above 1220px. From 901 to 1220px the TOC moves to the bottom bar.
 // At 900px and below, the rail moves to the bottom bar too.
-// A hidden rail or TOC folds to a narrow column, so with both hidden the text is centered.
+// A hidden rail leaves a column with one button. A hidden TOC folds to a column of ticks.
+// With both hidden on a wide screen, a right padding keeps the text in the center.
 
 .vn-doc {
   --rail-w: 15rem;
   --toc-w: 13rem;
   --fold-w: 2.5rem;
+  --railbtn-w: 10rem;
   display: grid;
   grid-template-columns: minmax(0, var(--read)) var(--toc-w);
   justify-content: center;
@@ -964,7 +962,7 @@ export default {
   }
 
   &.rail-folded {
-    grid-template-columns: var(--fold-w) minmax(0, var(--read)) var(--toc-w);
+    grid-template-columns: var(--railbtn-w) minmax(0, var(--read)) var(--toc-w);
   }
 
   &.toc-folded {
@@ -1002,26 +1000,6 @@ export default {
 .vn-railfold, .vn-tocfold {
   position: sticky;
   top: calc(var(--topbar-h) + 16px);
-}
-
-.vn-foldbtn {
-  width: var(--fold-w);
-  height: var(--fold-w);
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--muted);
-
-  .v-icon {
-    color: inherit !important;
-  }
-
-  &:hover {
-    color: var(--ink);
-    border-color: var(--muted);
-  }
 }
 
 .vn-article {
@@ -1448,7 +1426,8 @@ export default {
 // BOTTOM BAR
 // ---------------------------------
 // 901-1220px: a TOC pill, because the TOC column does not fit beside the rail.
-// 900px and below: one bar with both buttons.
+// 900px and below: one bar with both buttons, the rail on the left.
+// Above 900px, a hidden rail leaves its own pill at the bottom left.
 
 .vn-readbar {
   display: none;
@@ -1457,23 +1436,40 @@ export default {
   bottom: 20px;
   z-index: 5;
   gap: 8px;
+}
 
-  button {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: var(--surface);
-    box-shadow: var(--shadow);
-    color: var(--ink);
-    font-weight: 600;
-    font-size: 0.9375rem;
+.vn-readbar button, .vn-railopen {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.9375rem;
 
-    .v-icon {
-      color: var(--muted) !important;
-    }
+  .v-icon {
+    color: var(--muted) !important;
+  }
+}
+
+.vn-railopen {
+  padding: 8px 12px;
+  box-shadow: none;
+  font-size: 0.875rem;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: var(--muted);
+  }
+}
+
+@media (min-width: 1221px) {
+  .vn-doc.rail-folded.toc-folded {
+    padding-right: calc(20px + var(--railbtn-w) - var(--fold-w));
   }
 }
 
@@ -1485,7 +1481,14 @@ export default {
 @media (max-width: 1220px) {
   .vn-doc.has-rail {
     grid-template-columns: var(--rail-w) minmax(0, var(--read));
+  }
 
+  // -> The TOC moves to the bottom bar, beside a shown or a folded rail
+  .vn-doc.rail-folded {
+    grid-template-columns: var(--railbtn-w) minmax(0, var(--read));
+  }
+
+  .vn-doc.has-rail, .vn-doc.rail-folded {
     > .vn-toc, > .vn-tocfold {
       display: none;
     }
@@ -1527,7 +1530,7 @@ export default {
     }
   }
 
-  .vn-readbar, .vn-doc.has-rail ~ .vn-readbar {
+  .vn-readbar, .vn-doc.has-rail ~ .vn-readbar, .vn-doc.rail-folded ~ .vn-readbar {
     display: flex;
     left: 0;
     right: 0;
