@@ -107,7 +107,6 @@ common:
     show: 'Hiện lộ trình'
     completed: 'Đã hoàn thành {{completed}} / {{total}}'
     hide: 'Ẩn thanh bên'
-    showRail: 'Hiện thanh bên'
     mainMenu: 'Menu chính'
     expandAll: 'Mở tất cả'
     collapseAll: 'Thu gọn'

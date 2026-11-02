@@ -45,11 +45,12 @@
           template(v-else)
             button.vn-railback(v-if='railRoadmap', type='button', @click='railMenu = false') ← {{ railRoadmap.title }}
             nav-sidebar(:items='sidebarDecoded', :nav-mode='navMode')
-        //- A hidden rail leaves a button at the top left, in its own column
+        //- A hidden rail leaves a button at the top left of the window. Its column keeps
+        //- the text clear of the button when the columns fill the width.
         aside.vn-railfold(v-if='railFolded')
           button.vn-railopen(type='button', @click='setRailHidden(false)')
             v-icon(small) mdi-map-marker-path
-            span {{$t('common:roadmap.showRail', 'Hiện thanh bên')}}
+            span {{ railRoadmap ? $t('common:roadmap.show', 'Hiện lộ trình') : $t('common:page.siteNav', 'Điều hướng') }}
 
         //- ARTICLE
         article.vn-article
@@ -1457,6 +1458,10 @@ export default {
 }
 
 .vn-railopen {
+  position: fixed;
+  left: 20px;
+  top: calc(var(--topbar-h) + 16px);
+  z-index: 4;
   padding: 8px 12px;
   box-shadow: none;
   font-size: 0.875rem;
