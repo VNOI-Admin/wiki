@@ -58,9 +58,16 @@
             .subtitle-2 {{ $t('common:progress.dialog.clearTitle', 'Clear all') }}
             .caption.grey--text {{ $t('common:progress.dialog.clearHint', 'Delete all tracked progress.') }}
           v-spacer
-          v-btn.text-none(@click='clearAll', :disabled='count < 1', outlined, small, color='red')
+          v-btn.text-none(@click='confirmClear = true', :disabled='count < 1 || confirmClear', outlined, small, color='red')
             v-icon(left, small) mdi-delete
             span {{ $t('common:progress.dialog.clear', 'Clear') }}
+        v-alert.mt-4.mb-0(v-if='confirmClear', color='red', outlined, dense)
+          .caption.mb-2 {{ confirmClearText }}
+          .d-flex
+            v-btn.text-none.mr-2(@click='clearAll', small, color='red', dark, depressed)
+              span {{ $t('common:progress.dialog.clear', 'Clear') }}
+            v-btn.text-none(@click='confirmClear = false', small, text)
+              span {{ $t('common:actions.cancel') }}
       v-card-chin
         v-spacer
         v-btn.text-none(text, @click='isShown = false') {{ $t('common:actions.close') }}
@@ -96,7 +103,8 @@ export default {
   data () {
     return {
       importError: '',
-      pendingRecords: null
+      pendingRecords: null,
+      confirmClear: false
     }
   },
   computed: {
@@ -122,6 +130,12 @@ export default {
         current: this.count,
         incoming: this.pendingRecords ? this.pendingRecords.length : 0
       })
+    },
+    confirmClearText () {
+      return this.$t('common:progress.dialog.confirmClear', {
+        defaultValue: 'Delete the progress of {{count}} pages? You cannot undo this.',
+        count: this.count
+      })
     }
   },
   methods: {
@@ -129,6 +143,7 @@ export default {
       if (!isOpen) {
         this.importError = ''
         this.pendingRecords = null
+        this.confirmClear = false
       }
     },
     exportData () {
@@ -175,6 +190,7 @@ export default {
       })
     },
     clearAll () {
+      this.confirmClear = false
       this.$progress.clearAll()
       this.$store.commit('showNotification', {
         message: this.$t('common:progress.dialog.cleared', 'All progress data cleared.'),

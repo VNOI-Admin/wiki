@@ -1,6 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const pageHelper = require('../helpers/page')
+const catalogHelper = require('../helpers/catalog')
 const _ = require('lodash')
 const CleanCSS = require('clean-css')
 const moment = require('moment')
@@ -427,9 +428,9 @@ router.get('/roadmaps', async (req, res, next) => {
     id: r.id,
     title: r.title,
     description: r.description,
-    nodeCount: WIKI.models.roadmaps.nodeCount(r.sections)
+    articleCount: WIKI.models.roadmaps.articleCount(r.sections)
   }))
-  _.set(res.locals, 'pageMeta.title', 'Learning Roadmaps')
+  _.set(res.locals, 'pageMeta.title', req.i18n.t('common:roadmap.listTitle', 'Lộ trình học'))
   res.render('roadmaps', {
     roadmaps: Buffer.from(JSON.stringify(summaries)).toString('base64')
   })
@@ -600,11 +601,48 @@ router.get('/*', async (req, res, next) => {
             WIKI.logger.warn(`Failed to load roadmaps for page ${page.id}: ${err.message}`)
           }
 
+          // -> The article list page shows as a catalogue with filters
+          let catalog = null
+          if (page.path === catalogHelper.CATALOG_PATH) {
+            try {
+              catalog = await catalogHelper.getCatalog(page)
+              // -> A page format the parser does not read: show the page as it is
+              if (catalog.items.length < 1) { catalog = null }
+            } catch (err) {
+              WIKI.logger.warn(`Failed to build the article catalogue: ${err.message}`)
+            }
+          }
+
+          // -> The home page shows the dashboard above its contents.
+          //    The dashboard lists the catalogue, so the reader needs read access to it.
+          let home = null
+          if (page.path.toLowerCase() === 'home' && WIKI.auth.checkAccess(req.user, ['read:pages'], { path: catalogHelper.CATALOG_PATH, locale: page.localeCode })) {
+            try {
+              home = await catalogHelper.getHome(page.localeCode)
+            } catch (err) {
+              WIKI.logger.warn(`Failed to build the home dashboard: ${err.message}`)
+            }
+          }
+
+          // -> An article listed in the catalogue: its topic, level and topic neighbours
+          let article = null
+          if (!catalog && !home && WIKI.auth.checkAccess(req.user, ['read:pages'], { path: catalogHelper.CATALOG_PATH, locale: page.localeCode })) {
+            try {
+              // -> A page in a roadmap shows the roadmap in its rail, so it needs no topic list
+              article = await catalogHelper.getArticleContext(page.localeCode, page.id, roadmaps.length < 1)
+            } catch (err) {
+              WIKI.logger.warn(`Failed to find page ${page.id} in the article catalogue: ${err.message}`)
+            }
+          }
+
           // -> Render view
           res.render('page', {
             page,
             sidebar,
             roadmaps,
+            catalog,
+            home,
+            article,
             injectCode,
             comments: commentTmpl,
             effectivePermissions,

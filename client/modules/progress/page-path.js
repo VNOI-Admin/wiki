@@ -66,6 +66,22 @@ export function parsePagePath (rawPath) {
 }
 
 /**
+ * Site link of a progress record. Records come from browser storage or an imported file.
+ *
+ * @param {Object} record Progress record (locale, path)
+ * @returns {string|null} Site path such as `/vi/algo/dp`, or null for a record without a valid path
+ */
+export function recordHref (record) {
+  if (!record || !record.locale || !record.path) { return null }
+  try {
+    return encodeURI(`/${record.locale}/${record.path}`.replace(/\/{2,}/g, '/'))
+  } catch (err) {
+    // -> A lone surrogate in an imported path
+    return null
+  }
+}
+
+/**
  * Build the alias key used to map a page path back to its numeric id.
  *
  * @param {string} locale Locale code

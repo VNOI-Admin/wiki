@@ -32,10 +32,27 @@ html(lang=siteConfig.lang)
       var siteConfig = !{JSON.stringify(siteConfig)}
       var siteLangs = !{JSON.stringify(langs)}
 
+    //- Theme before the first paint, so a dark page does not flash light (client-app.js sets it again).
+    //- The order: this browser's choice, the profile copy, the admin's dark mode, the system (modules/theme.js).
+    script.
+      (function () {
+        var dark = siteConfig.darkMode || (!!window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        try {
+          var t = window.localStorage.getItem('theme') || window.localStorage.getItem('themeAccount')
+          if (t) { dark = (t === 'dark') }
+        } catch (err) {}
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+      })()
+
     //- Dev Mode Warning
     if devMode
       script.
         siteConfig.devMode = true
+
+    //- Fonts
+    link(rel='preconnect', href='https://fonts.googleapis.com')
+    link(rel='preconnect', href='https://fonts.gstatic.com', crossorigin)
+    link(rel='stylesheet', href='https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap')
 
     //- Icon Set
     if config.theming.iconset === 'fa'

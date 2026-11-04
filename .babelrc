@@ -20,7 +20,7 @@
     [
       "prismjs", {
         "languages": ["clike", "markup"],
-        "plugins": ["line-numbers", "autoloader", "normalize-whitespace", "copy-to-clipboard", "toolbar"],
+        "plugins": ["line-numbers", "autoloader", "normalize-whitespace", "toolbar", "show-language"],
         "theme": "twilight",
         "css": true
       }

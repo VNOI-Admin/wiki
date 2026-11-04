@@ -1,28 +1,15 @@
 <template lang='pug'>
   v-app(:dark='$vuetify.theme.dark').profile
     nav-header
-    v-navigation-drawer.pb-0(v-model='profileDrawerShown', app, fixed, clipped, left, permanent)
-      v-list(dense, nav)
-        v-list-item(to='/profile', color='primary')
-          v-list-item-action: v-icon mdi-face-profile
-          v-list-item-content
-            v-list-item-title {{$t('profile:title')}}
-        //- v-list-item(to='/preferences', disabled)
-        //-   v-list-item-action: v-icon(color='grey lighten-1') mdi-cog-outline
-        //-   v-list-item-content
-        //-     v-list-item-title Preferences
-        //-     v-list-item-subtitle.caption.grey--text.text--lighten-1 Coming soon
-        v-list-item(to='/pages', color='primary')
-          v-list-item-action: v-icon mdi-file-document-outline
-          v-list-item-content
-            v-list-item-title {{$t('profile:pages.title')}}
-        //- v-list-item(to='/comments', disabled)
-        //-   v-list-item-action: v-icon(color='grey lighten-1') mdi-message-reply-text
-        //-   v-list-item-content
-        //-     v-list-item-title {{$t('profile:comments.title')}}
-        //-     v-list-item-subtitle.caption.grey--text.text--lighten-1 Coming soon
-
-    v-content(:class='$vuetify.theme.dark ? "grey darken-4" : "grey lighten-5"')
+    v-main.vn-pshell
+      //- Account sections, as tabs (the side drawer did not fit phones)
+      nav.vn-ptabs(:aria-label='$t(`profile:title`)')
+        router-link(to='/profile')
+          v-icon(small) mdi-face-profile
+          span {{$t('profile:title')}}
+        router-link(to='/pages')
+          v-icon(small) mdi-file-document-outline
+          span {{$t('profile:pages.title')}}
       transition(name='profile-router')
         router-view
 
@@ -58,11 +45,6 @@ router.afterEach((to, from) => {
 
 export default {
   i18nOptions: { namespaces: 'profile' },
-  data() {
-    return {
-      profileDrawerShown: true
-    }
-  },
   router,
   created() {
     this.$store.commit('page/SET_MODE', 'profile')
@@ -71,6 +53,44 @@ export default {
 </script>
 
 <style lang='scss'>
+.vn-pshell {
+  background: var(--bg);
+}
+
+.vn-ptabs {
+  max-width: var(--wrap);
+  margin: 0 auto;
+  // -> 12px: the left edge of the v-container contents below
+  padding: 16px 12px 0;
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: -1px;
+    padding: 10px 14px;
+    border-bottom: 2px solid transparent;
+    color: var(--muted) !important;
+    font-weight: 500;
+    text-decoration: none !important;
+
+    .v-icon {
+      color: inherit !important;
+    }
+
+    &:hover {
+      color: var(--ink) !important;
+    }
+
+    &.router-link-active {
+      border-bottom-color: var(--accent);
+      color: var(--ink) !important;
+    }
+  }
+}
 
 .profile-router {
   &-enter-active, &-leave-active {

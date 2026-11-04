@@ -27,6 +27,7 @@ import Cookies from 'js-cookie'
 import boot from './modules/boot'
 import localization from './modules/localization'
 import progress from './modules/progress'
+import { defaultDark, followSystemTheme, rememberAccountTheme, savedTheme } from './modules/theme'
 
 // ====================================
 // Load Helpers
@@ -141,6 +142,36 @@ Vue.use(localization.VueI18Next)
 Vue.use(helpers)
 Vue.use(progress, { store })
 Vue.use(Vuetify)
+
+// -> Vuetify 2.3 renders a dialog at its first open and then moves it to the app root,
+//    which drops the focus it just gave the dialog: Esc and Tab then miss the dialog.
+//    Give the focus again once the dialog is in place, and give it back to the opener on close.
+Vue.mixin({
+  created () {
+    if (!['v-dialog', 'v-bottom-sheet'].includes(this.$options.name)) { return }
+    let opener = null
+    this.$watch('isActive', open => {
+      if (open) {
+        opener = document.activeElement
+        setTimeout(() => {
+          const content = this.$refs.content
+          if (this.isActive && content && !content.contains(document.activeElement)) {
+            content.focus()
+          }
+        }, 0)
+        return
+      }
+      const back = opener
+      opener = null
+      this.$nextTick(() => {
+        const lost = !document.activeElement || document.activeElement === document.body
+        if (back && back !== document.body && back.isConnected && lost) {
+          back.focus({ preventScroll: true })
+        }
+      })
+    })
+  }
+})
 Vue.use(VueMoment, { moment })
 Vue.use(Vuescroll)
 
@@ -197,14 +228,17 @@ let bootstrap = () => {
 
   const i18n = localization.init()
 
-  let darkModeEnabled = siteConfig.darkMode
-  const localTheme = localStorage.getItem('theme')
+  let darkModeEnabled = defaultDark()
+  const localTheme = savedTheme()
   const userAppearance = store.get('user/appearance') || ''
 
-  if (userAppearance.length > 0) {
-    darkModeEnabled = (userAppearance === 'dark')
-  } else if (localTheme) {
+  rememberAccountTheme(userAppearance)
+
+  // -> The last choice in this browser (header toggle or profile select) wins over the profile value
+  if (localTheme) {
     darkModeEnabled = (localTheme === 'dark')
+  } else if (userAppearance.length > 0) {
+    darkModeEnabled = (userAppearance === 'dark')
   }
 
   window.WIKI = new Vue({
@@ -221,6 +255,15 @@ let bootstrap = () => {
       }
     }),
     mounted () {
+      // -> CSS tokens follow the Vuetify dark flag, whoever changes it (header toggle, profile)
+      // -> No transitions during the switch: every color changes in the same frame
+      const root = document.documentElement
+      this.$watch(() => this.$vuetify.theme.dark, dark => {
+        root.classList.add('is-theme-switch')
+        root.dataset.theme = dark ? 'dark' : 'light'
+        window.requestAnimationFrame(() => window.requestAnimationFrame(() => root.classList.remove('is-theme-switch')))
+      }, { immediate: true })
+      followSystemTheme(this.$vuetify, () => !!savedTheme() || !!store.get('user/appearance'))
       this.$moment.locale(siteConfig.lang)
       if ((store.get('user/dateFormat') || '').length > 0) {
         this.$moment.updateLocale(this.$moment.locale(), {

@@ -1,136 +1,74 @@
 <template lang="pug">
-  div(v-intersect.once='onIntersect')
-    v-textarea#discussion-new(
-      outlined
-      flat
-      :placeholder='$t(`common:comments.newPlaceholder`)'
-      auto-grow
-      dense
-      rows='3'
-      hide-details
-      v-model='newcomment'
-      color='blue-grey darken-2'
-      :background-color='$vuetify.theme.dark ? `grey darken-5` : `white`'
-      v-if='permissions.write'
-      :aria-label='$t(`common:comments.fieldContent`)'
-    )
-    v-row.mt-2(dense, v-if='!isAuthenticated && permissions.write')
-      v-col(cols='12', lg='6')
-        v-text-field(
-          outlined
-          color='blue-grey darken-2'
-          :background-color='$vuetify.theme.dark ? `grey darken-5` : `white`'
-          :placeholder='$t(`common:comments.fieldName`)'
-          hide-details
-          dense
-          autocomplete='name'
-          v-model='guestName'
-          :aria-label='$t(`common:comments.fieldName`)'
-        )
-      v-col(cols='12', lg='6')
-        v-text-field(
-          outlined
-          color='blue-grey darken-2'
-          :background-color='$vuetify.theme.dark ? `grey darken-5` : `white`'
-          :placeholder='$t(`common:comments.fieldEmail`)'
-          hide-details
-          type='email'
-          dense
-          autocomplete='email'
-          v-model='guestEmail'
-          :aria-label='$t(`common:comments.fieldEmail`)'
-        )
-    .d-flex.align-center.pt-3(v-if='permissions.write')
-      v-icon.mr-1(color='blue-grey') mdi-language-markdown-outline
-      .caption.blue-grey--text {{$t('common:comments.markdownFormat')}}
-      v-spacer
-      .caption.mr-3(v-if='isAuthenticated')
-        i18next(tag='span', path='common:comments.postingAs')
-          strong(place='name') {{userDisplayName}}
-      v-btn(
-        dark
-        color='blue-grey darken-2'
-        @click='postComment'
-        depressed
-        :aria-label='$t(`common:comments.postComment`)'
-        )
-        v-icon(left) mdi-comment
-        span.text-none {{$t('common:comments.postComment')}}
-    v-divider.mt-3(v-if='permissions.write')
-    .pa-5.d-flex.align-center.justify-center(v-if='isLoading && !hasLoadedOnce')
-      v-progress-circular(
-        indeterminate
-        size='20'
-        width='1'
-        color='blue-grey'
-      )
-      .caption.blue-grey--text.pl-3: em {{$t('common:comments.loading')}}
-    v-timeline(
-      dense
-      v-else-if='comments && comments.length > 0'
-      )
-      v-timeline-item.comments-post(
-        color='pink darken-4'
-        large
+  .vn-cmts
+    //- LIST
+    p.vn-cmts__note(v-if='isLoading && !hasLoadedOnce') {{$t('common:comments.loading')}}
+    p.vn-cmts__note(v-else-if='loadError')
+      span {{$t('common:comments.loadError', 'Không tải được bình luận.')}}
+      button.vn-cmts__retry(type='button', @click='fetch()') {{$t('common:actions.retry', 'Thử lại')}}
+    .vn-cmts__list(v-else-if='comments && comments.length > 0')
+      article.vn-cmt(
         v-for='cm of comments'
         :key='`comment-` + cm.id'
         :id='`comment-post-id-` + cm.id'
         )
-        template(v-slot:icon)
-          v-avatar(color='blue-grey')
-            //- v-img(src='http://i.pravatar.cc/64')
-            span.white--text.title {{cm.initials}}
-        v-card.elevation-1
-          v-card-text
-            .comments-post-actions(v-if='permissions.manage && !isBusy && commentEditId === 0')
-              v-icon.mr-3(small, @click='editComment(cm)') mdi-pencil
-              v-icon(small, @click='deleteCommentConfirm(cm)') mdi-delete
-            .comments-post-name.caption: strong {{cm.authorName}}
-            .comments-post-date.overline.grey--text {{cm.createdAt | moment('from') }} #[em(v-if='cm.createdAt !== cm.updatedAt') - {{$t('common:comments.modified', { reldate: $options.filters.moment(cm.updatedAt, 'from') })}}]
-            .comments-post-content.mt-3(v-if='commentEditId !== cm.id', v-html='cm.render')
-            .comments-post-editcontent.mt-3(v-else)
-              v-textarea(
-                outlined
-                flat
-                auto-grow
-                dense
-                rows='3'
-                hide-details
-                v-model='commentEditContent'
-                color='blue-grey darken-2'
-                :background-color='$vuetify.theme.dark ? `grey darken-5` : `white`'
-              )
-              .d-flex.align-center.pt-3
-                v-spacer
-                v-btn.mr-3(
-                  dark
-                  color='blue-grey darken-2'
-                  @click='editCommentCancel'
-                  outlined
-                  )
-                  v-icon(left) mdi-close
-                  span.text-none {{$t('common:actions.cancel')}}
-                v-btn(
-                  dark
-                  color='blue-grey darken-2'
-                  @click='updateComment'
-                  depressed
-                  )
-                  v-icon(left) mdi-comment
-                  span.text-none {{$t('common:comments.updateComment')}}
-    .pt-5.text-center.body-2.blue-grey--text(v-else-if='permissions.write') {{$t('common:comments.beFirst')}}
-    .text-center.body-2.blue-grey--text(v-else) {{$t('common:comments.none')}}
+        span.vn-cmt__av(aria-hidden='true') {{cm.initials}}
+        .vn-cmt__who
+          b {{cm.authorName}}
+          span(:title='cm.createdAt') {{cm.createdAt | moment('from') }}
+          span(v-if='cm.createdAt !== cm.updatedAt', :title='cm.updatedAt') · {{$t('common:comments.modified', { reldate: $options.filters.moment(cm.updatedAt, 'from') })}}
+          span.vn-cmt__acts(v-if='canChange(cm) && !isBusy && commentEditId === 0')
+            button(type='button', @click='editComment(cm)') {{$t('common:actions.edit')}}
+            button(
+              type='button'
+              :class='{ "is-armed": armedId === cm.id }'
+              @click='deleteCommentConfirm(cm)'
+              ) {{armedId === cm.id ? $t('common:comments.deleteSure', 'Xóa thật?') : $t('common:actions.delete')}}
+        .vn-cmt__body(v-if='commentEditId !== cm.id', v-html='cm.render')
+        .vn-cform.is-edit(v-else)
+          textarea(
+            v-model='commentEditContent'
+            rows='3'
+            @keydown.enter='onSubmitKey($event, updateComment)'
+            :aria-label='$t(`common:comments.fieldContent`)'
+            )
+          .vn-cform__foot
+            span.vn-cform__btns
+              button.vn-btn.is-ghost(type='button', @click='editCommentCancel') {{$t('common:actions.cancel')}}
+              button.vn-btn(type='button', @click='updateComment') {{$t('common:comments.updateComment')}}
+    p.vn-cmts__note(v-else-if='permissions.write') {{$t('common:comments.beFirst')}}
+    p.vn-cmts__note(v-else) {{$t('common:comments.none')}}
 
-    v-dialog(v-model='deleteCommentDialogShown', max-width='500')
-      v-card
-        .dialog-header.is-red {{$t('common:comments.deleteConfirmTitle')}}
-        v-card-text.pt-5
-          span {{$t('common:comments.deleteWarn')}}
-          .caption: strong {{$t('common:comments.deletePermanentWarn')}}
-        v-card-chin
-          v-spacer
-          v-btn(text, @click='deleteCommentDialogShown = false') {{$t('common:actions.cancel')}}
-          v-btn(color='red', dark, @click='deleteComment') {{$t('common:actions.delete')}}
+    //- NEW COMMENT
+    form.vn-cform(v-if='permissions.write', @submit.prevent='postComment')
+      span.vn-cmt__av(aria-hidden='true') {{myInitials}}
+      textarea#discussion-new(
+        v-model='newcomment'
+        rows='3'
+        maxlength='4000'
+        @keydown.enter='onSubmitKey($event, postComment)'
+        :placeholder='$t(`common:comments.newPlaceholder`)'
+        :aria-label='$t(`common:comments.fieldContent`)'
+        )
+      .vn-cform__guest(v-if='!isAuthenticated')
+        input(
+          v-model='guestName'
+          autocomplete='name'
+          :placeholder='$t(`common:comments.fieldName`)'
+          :aria-label='$t(`common:comments.fieldName`)'
+          )
+        input(
+          v-model='guestEmail'
+          type='email'
+          autocomplete='email'
+          :placeholder='$t(`common:comments.fieldEmail`)'
+          :aria-label='$t(`common:comments.fieldEmail`)'
+          )
+      .vn-cform__foot
+        span {{$t('common:comments.markdownFormat')}}
+        button.vn-btn(type='submit') {{$t('common:comments.postComment')}}
+    a.vn-btn.is-ghost.vn-cmts__login(v-else-if='!isAuthenticated', href='/login', @click='rememberPage') {{$t('common:comments.loginToComment', 'Đăng nhập để bình luận')}}
+    p.vn-cmts__note(v-else) {{$t('common:comments.readOnly', 'Bạn chỉ có quyền xem bình luận.')}}
+
 </template>
 
 <script>
@@ -138,6 +76,11 @@ import gql from 'graphql-tag'
 import { get } from 'vuex-pathify'
 import validate from 'validate.js'
 import _ from 'lodash'
+import { initialsOf } from '../modules/initials'
+import { rememberPage } from '../modules/login-return'
+
+// -> A second click on "Xóa" within this time deletes the comment
+const ARM_MS = 4000
 
 export default {
   data () {
@@ -145,13 +88,15 @@ export default {
       newcomment: '',
       isLoading: true,
       hasLoadedOnce: false,
+      loadError: false,
       comments: [],
       guestName: '',
       guestEmail: '',
       commentToDelete: {},
       commentEditId: 0,
       commentEditContent: null,
-      deleteCommentDialogShown: false,
+      armedId: 0,
+      armTimer: null,
       isBusy: false,
       scrollOpts: {
         duration: 1500,
@@ -164,12 +109,35 @@ export default {
     pageId: get('page/id'),
     permissions: get('page/effectivePermissions@comments'),
     isAuthenticated: get('user/authenticated'),
-    userDisplayName: get('user/name')
+    userDisplayName: get('user/name'),
+    userId: get('user/id'),
+    myInitials () {
+      return initialsOf(this.isAuthenticated ? this.userDisplayName : this.guestName)
+    }
+  },
+  watch: {
+    // -> The article meta row and the section heading show the count
+    comments (list) {
+      this.$store.set('page/commentsCount', list.length)
+    }
+  },
+  mounted () {
+    this.fetch(true)
+  },
+  beforeDestroy () {
+    clearTimeout(this.armTimer)
   },
   methods: {
-    onIntersect (entries, observer, isIntersecting) {
-      if (isIntersecting) {
-        this.fetch(true)
+    rememberPage,
+    // -> Moderators change every comment; a signed-in author changes their own
+    canChange (cm) {
+      return this.permissions.manage || (this.isAuthenticated && this.permissions.write && cm.authorId === this.userId)
+    },
+    // -> Ctrl+Enter or Cmd+Enter submits
+    onSubmitKey (evt, submit) {
+      if (evt.ctrlKey || evt.metaKey) {
+        evt.preventDefault()
+        submit()
       }
     },
     async fetch (silent = false) {
@@ -182,6 +150,7 @@ export default {
                 list(locale: $locale, path: $path) {
                   id
                   render
+                  authorId
                   authorName
                   createdAt
                   updatedAt
@@ -196,16 +165,13 @@ export default {
           fetchPolicy: 'network-only'
         })
         this.comments = _.get(results, 'data.comments.list', []).map(c => {
-          const nameParts = c.authorName.toUpperCase().split(' ')
-          let initials = _.head(nameParts).charAt(0)
-          if (nameParts.length > 1) {
-            initials += _.last(nameParts).charAt(0)
-          }
-          c.initials = initials
+          c.initials = initialsOf(c.authorName)
           return c
         })
+        this.loadError = false
       } catch (err) {
         console.warn(err)
+        this.loadError = true
         if (!silent) {
           this.$store.commit('showNotification', {
             style: 'red',
@@ -350,6 +316,7 @@ export default {
         if (this.commentEditContent === null) {
           throw new Error('Failed to load comment content.')
         }
+        this.commentEditId = cm.id
       } catch (err) {
         console.warn(err)
         this.$store.commit('showNotification', {
@@ -358,7 +325,6 @@ export default {
           icon: 'alert'
         })
       }
-      this.commentEditId = cm.id
       this.isBusy = false
       this.$store.commit(`loadingStop`, 'comments-edit')
     },
@@ -437,8 +403,15 @@ export default {
      * Show Delete Comment Confirmation Dialog
      */
     deleteCommentConfirm (cm) {
-      this.commentToDelete = cm
-      this.deleteCommentDialogShown = true
+      clearTimeout(this.armTimer)
+      if (this.armedId === cm.id) {
+        this.armedId = 0
+        this.commentToDelete = cm
+        this.deleteComment()
+        return
+      }
+      this.armedId = cm.id
+      this.armTimer = setTimeout(() => { this.armedId = 0 }, ARM_MS)
     },
     /**
      * Delete Comment
@@ -446,7 +419,6 @@ export default {
     async deleteComment () {
       this.$store.commit(`loadingStart`, 'comments-delete')
       this.isBusy = true
-      this.deleteCommentDialogShown = false
 
       try {
         const resp = await this.$apollo.mutate({
@@ -499,55 +471,190 @@ export default {
 </script>
 
 <style lang="scss">
-.comments-post {
-  position: relative;
+.vn-cmts {
+  display: grid;
+  gap: 16px;
+}
 
-  &:hover {
-    .comments-post-actions {
-      opacity: 1;
+.vn-cmts__list {
+  display: grid;
+  gap: 18px;
+}
+
+.vn-cmts__note {
+  margin: 0 !important;
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
+.vn-cmts__login {
+  justify-self: start;
+}
+
+.vn-cmts__retry {
+  margin-left: 8px;
+  color: var(--accent);
+  font: inherit;
+}
+
+.vn-cmt {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 4px 12px;
+  scroll-margin-top: calc(var(--topbar-h) + 24px);
+}
+
+.vn-cmt__av {
+  grid-row: span 2;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.vn-cmt__who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: 0.875rem;
+
+  b {
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  > span {
+    color: var(--muted);
+  }
+}
+
+.vn-cmt__acts {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+
+  button {
+    font-size: 0.8125rem;
+    color: var(--muted);
+
+    &:hover {
+      color: var(--accent);
     }
   }
 
-  &-actions {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    opacity: 0;
-    transition: opacity .4s ease;
+  button.is-armed {
+    color: var(--mark-red);
+  }
+}
+
+.vn-cmt__body {
+  display: grid;
+  gap: 8px;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+
+  > * {
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  &-content {
-    > p:first-child {
-      padding-top: 0;
-    }
+  pre {
+    padding: 10px 12px !important;
+    border-radius: 8px;
+    background: var(--code-bg);
+    overflow-x: auto;
 
-    p {
-      padding-top: 1rem;
-      margin-bottom: 0;
-    }
-
-    img {
-      max-width: 100%;
-      border-radius: 5px;
-    }
-
-    code {
-      background-color: rgba(mc('pink', '500'), .1);
+    > code {
+      padding: 0;
+      background: none;
       box-shadow: none;
-    }
-
-    pre > code {
-      margin-top: 1rem;
-      padding: 12px;
-      background-color: #111;
-      box-shadow: none;
-      border-radius: 5px;
-      width: 100%;
-      color: #FFF;
-      font-weight: 400;
-      font-size: .85rem;
-      font-family: Roboto Mono, monospace;
+      color: var(--code-ink);
+      font: 0.8125rem/1.5 var(--font-mono);
     }
   }
+
+  :not(pre) > code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--sunken);
+    box-shadow: none;
+    color: var(--ink);
+    font: 0.875em var(--font-mono);
+  }
+
+  img {
+    max-width: 100%;
+    border-radius: 8px;
+  }
+}
+
+.vn-cform {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 8px 12px;
+
+  &.is-edit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  textarea,
+  input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--ink);
+    font: 0.9375rem/1.55 var(--font-ui);
+
+    &:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: -1px;
+      border-color: transparent;
+    }
+  }
+
+  textarea {
+    min-height: 5.5rem;
+    resize: vertical;
+  }
+}
+
+.vn-cform__guest,
+.vn-cform__foot {
+  grid-column: 2;
+
+  .is-edit & {
+    grid-column: 1;
+  }
+}
+
+.vn-cform__guest {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 8px;
+}
+
+.vn-cform__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.vn-cform__btns {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
 }
 </style>

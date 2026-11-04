@@ -1252,11 +1252,37 @@
 
 @media print {
   .nav-header,
+  .vn-topbar,
+  .vn-rail,
+  .vn-toc,
+  .vn-readbar,
+  .vn-readprog,
+  .vn-endtools,
+  .vn-totop,
+  .vn-printbar,
+  .vn-codefold,
+  .page-progress,
+  .vn-comments,
+  .vn-foot,
   .v-navigation-drawer,
   .v-btn--fab,
   .page-col-sd,
   .v-tooltip__content
   {
+    display: none !important;
+  }
+
+  // -> The article takes the full width
+  .vn-doc {
+    display: block !important;
+  }
+
+  // -> Print every line of a folded code block
+  .code-toolbar.is-long > .prismjs {
+    max-height: none !important;
+  }
+
+  .code-toolbar.is-long::after {
     display: none !important;
   }
 
@@ -1320,3 +1346,5 @@
     display: none;
   }
 }
+
+@import "vnoi-contents";

@@ -1,6 +1,7 @@
 const stream = require('stream')
 const Promise = require('bluebird')
 const pipeline = Promise.promisify(stream.pipeline)
+const snippetHelper = require('../../../helpers/search-snippet')
 
 /* global WIKI */
 
@@ -79,14 +80,43 @@ module.exports = {
         ORDER BY relevance DESC
         LIMIT ${WIKI.config.search.maxHits}
       `, qryParams)
+      const snippets = await this.snippets(results, snippetHelper.pickTerm(q))
       return {
-        results,
+        results: results.map(r => ({ ...r, snippet: snippets[`${r.locale}/${r.path}`] || '' })),
         suggestions: [],
         totalHits: results.length
       }
     } catch (err) {
       WIKI.logger.warn('Search Engine Error:')
       WIKI.logger.warn(err)
+    }
+  },
+  /**
+   * Excerpts: a window of the page source around the first match of a word.
+   * A second query reads the source of the returned pages only.
+   *
+   * @param {Object[]} results Search results (locale, path)
+   * @param {String} term Word to find
+   * @returns {Promise<Object>} Excerpt per `locale/path`
+   */
+  async snippets(results, term) {
+    if (results.length < 1) { return {} }
+    try {
+      const rows = await WIKI.models.knex('pages')
+        .select('path', 'localeCode', WIKI.models.knex.raw(
+          `GREATEST(1, LOCATE(?, content) - ${snippetHelper.LEAD}) AS snippetStart, SUBSTRING(content, GREATEST(1, LOCATE(?, content) - ${snippetHelper.LEAD}), ${snippetHelper.SIZE}) AS snippetRaw`,
+          [term, term]
+        ))
+        .whereIn(['path', 'localeCode'], results.map(r => [r.path, r.locale]))
+      const out = {}
+      for (const row of rows) {
+        out[`${row.localeCode}/${row.path}`] = snippetHelper.makeSnippet(row.snippetRaw, row.snippetStart)
+      }
+      return out
+    } catch (err) {
+      // -> Results without excerpts are better than no results
+      WIKI.logger.warn(`(SEARCH/MARIADB) Excerpts failed: ${err.message}`)
+      return {}
     }
   },
   /**

@@ -1,42 +1,37 @@
 <template lang="pug">
   v-app(:dark='$vuetify.theme.dark')
     nav-header
-    v-main
-      v-toolbar(:color='$vuetify.theme.dark ? `grey darken-4-d3` : `grey lighten-3`', flat, dense, v-if='$vuetify.breakpoint.smAndUp')
-        v-breadcrumbs.breadcrumbs-nav.pl-0(:items='breadcrumbs', divider='/')
-          template(slot='item', slot-scope='props')
-            v-icon(v-if='props.item.path === "/"', small, @click='goHome') mdi-home
-            v-btn.ma-0(v-else, :href='props.item.path', small, text) {{props.item.name}}
-      v-divider
-      v-container(fluid)
-        v-row(justify='center')
-          v-col(cols='12', lg='9', xl='7')
-            v-card
-              v-toolbar(color='primary', dark, dense, flat)
-                v-icon(left) mdi-folder-open
-                v-toolbar-title.subtitle-1 {{ folderTitle || path }}
-                v-spacer
-                v-btn(v-if='canWrite === `true`', :href='`/e/` + locale + `/` + path', small, outlined)
-                  v-icon(left, small) mdi-plus
-                  span Create page here
-              v-list(v-if='parsedItems.length > 0', two-line)
-                template(v-for='(item, idx) of parsedItems')
-                  v-divider(v-if='idx > 0', :key='`div-` + item.id')
-                  v-list-item(:key='item.id', :href='`/` + item.locale + `/` + item.path')
-                    v-list-item-avatar
-                      v-icon(:color='item.isFolder ? `amber darken-2` : `blue-grey`') {{ item.isFolder ? `mdi-folder` : `mdi-text-box` }}
-                    v-list-item-content
-                      v-list-item-title {{ item.title }}
-                      v-list-item-subtitle {{ item.path }}
-                    v-list-item-action
-                      v-tooltip(left, v-if='statusFor(item)')
-                        template(v-slot:activator='{ on }')
-                          v-icon(v-on='on', :color='statusFor(item).color', small) {{ statusFor(item).icon }}
-                        span {{ statusFor(item).label }}
-                    v-list-item-action
-                      v-icon(small) mdi-chevron-right
-              v-card-text(v-else)
-                .text-center.grey--text.py-5 This folder is empty.
+    v-main.vn-tool
+      header.vn-ptop
+        nav.vn-fcrumbs(:aria-label='$t(`common:page.breadcrumb`, `Đường dẫn`)')
+          template(v-for='(crumb, idx) of breadcrumbs')
+            span(v-if='idx > 0', aria-hidden='true') /
+            a(:href='crumb.path', :key='crumb.path') {{ crumb.name }}
+        h1
+          v-icon mdi-folder-open-outline
+          span {{ folderTitle || path }}
+        .vn-ptop__acts(v-if='canWrite === `true`')
+          a.vn-btn.is-ghost(:href='`/e/` + locale + `/` + path')
+            v-icon(small) mdi-plus
+            span {{ $t('common:folder.createHere', 'Tạo trang ở đây') }}
+      .vn-pbody
+        ul.vn-flist(v-if='parsedItems.length > 0')
+          li(v-for='item of parsedItems', :key='item.id')
+            a(:href='`/` + item.locale + `/` + item.path')
+              v-icon(:class='item.isFolder ? `is-folder` : ``') {{ item.isFolder ? `mdi-folder` : `mdi-text-box-outline` }}
+              span.vn-flist__t
+                b {{ item.title }}
+                span {{ item.path }}
+              v-icon(
+                v-if='statusFor(item)'
+                small
+                :color='statusFor(item).color'
+                :title='statusFor(item).label'
+                :aria-label='statusFor(item).label'
+                ) {{ statusFor(item).icon }}
+              v-icon.vn-flist__chev(small) mdi-chevron-right
+        .vn-fempty(v-else) {{ $t('common:folder.empty', 'Thư mục này trống.') }}
+    search-results
 </template>
 
 <script>
@@ -76,7 +71,7 @@ export default {
     breadcrumbs () {
       const segments = this.path.split('/')
       let cur = `/${this.locale}`
-      return [{ path: '/', name: 'Home' }].concat(segments.map(seg => {
+      return [{ path: '/', name: this.$t('common:header.home', 'Trang chủ') }].concat(segments.map(seg => {
         cur += `/${seg}`
         return { path: cur, name: seg }
       }))
@@ -101,9 +96,6 @@ export default {
     })
   },
   methods: {
-    goHome () {
-      window.location.assign('/')
-    },
     /**
      * @param {Object} item Listing entry
      * @returns {Object|null} Status to show, or null when there is nothing to mark
@@ -118,5 +110,88 @@ export default {
 </script>
 
 <style lang="scss">
+.vn-fcrumbs {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: var(--muted);
 
+  a {
+    color: var(--muted) !important;
+  }
+}
+
+.vn-ptop h1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  .v-icon {
+    color: var(--muted) !important;
+  }
+}
+
+.vn-flist {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+
+  li + li {
+    border-top: 1px solid var(--line);
+  }
+
+  a {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    color: var(--ink) !important;
+    text-decoration: none !important;
+
+    &:hover {
+      background: var(--sunken);
+    }
+  }
+
+  .v-icon {
+    color: var(--muted);
+
+    &.is-folder {
+      color: var(--star) !important;
+    }
+  }
+}
+
+.vn-flist__t {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+
+  b {
+    font-weight: 600;
+  }
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: 500 0.8125rem var(--font-mono);
+    color: var(--muted);
+  }
+}
+
+.vn-fempty {
+  padding: 32px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  text-align: center;
+  color: var(--muted);
+}
 </style>

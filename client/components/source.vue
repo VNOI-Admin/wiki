@@ -1,26 +1,24 @@
 <template lang='pug'>
   v-app(:dark='$vuetify.theme.dark').source
     nav-header
-    v-content
-      v-toolbar(color='primary', dark)
-        i18next.subheading(v-if='versionId > 0', path='common:page.viewingSourceVersion', tag='div')
+    v-main.vn-tool
+      header.vn-ptop
+        i18next(v-if='versionId > 0', path='common:page.viewingSourceVersion', tag='h1')
           strong(place='date', :title='$options.filters.moment(versionDate, `LLL`)') {{versionDate | moment('lll')}}
           strong(place='path') /{{path}}
-        i18next.subheading(v-else, path='common:page.viewingSource', tag='div')
+        i18next(v-else, path='common:page.viewingSource', tag='h1')
           strong(place='path') /{{path}}
-        template(v-if='$vuetify.breakpoint.mdAndUp')
-          v-spacer
-          .caption.blue--text.text--lighten-3 {{$t('common:page.id', { id: pageId })}}
-          .caption.blue--text.text--lighten-3.ml-4(v-if='versionId > 0') {{$t('common:page.versionId', { id: versionId })}}
-          v-btn.ml-4(v-if='versionId > 0', depressed, color='blue darken-1', @click='goHistory')
-            v-icon mdi-history
-          v-btn.ml-4(depressed, color='blue darken-1', @click='goLive') {{$t('common:page.returnNormalView')}}
-      v-card(tile)
-        v-card-text
-          v-card.grey.radius-7(flat, :class='$vuetify.theme.dark ? `darken-4` : `lighten-4`')
-            v-card-text
-              pre
-                slot
+        .vn-ptop__ids
+          span {{$t('common:page.id', { id: pageId })}}
+          span(v-if='versionId > 0') {{$t('common:page.versionId', { id: versionId })}}
+        .vn-ptop__acts
+          button.vn-btn.is-ghost(v-if='versionId > 0', type='button', @click='goHistory')
+            v-icon(small) mdi-history
+            span {{$t('common:header.history')}}
+          button.vn-btn(type='button', @click='goLive') {{$t('common:page.returnNormalView')}}
+      .vn-pbody
+        pre.vn-source
+          slot
 
     nav-footer
     notify
@@ -81,25 +79,28 @@ export default {
 </script>
 
 <style lang='scss'>
+.vn-source {
+  margin: 0;
+  padding: 16px 20px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  font: 400 0.875rem/1.7 var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 
-.source {
-  pre > code {
+  > code {
+    padding: 0;
     box-shadow: none;
-    background-color: transparent;
-    color: mc('grey', '800');
-    font-family: 'Roboto Mono', sans-serif;
-    font-weight: 400;
-    font-size: 1rem;
-
-    @at-root .theme--dark.source pre > code {
-      background-color: mc('grey', '900');
-      color: mc('grey', '400');
-    }
+    background: transparent !important;
+    color: inherit !important;
+    font: inherit;
 
     &::before {
       display: none;
     }
   }
 }
-
 </style>

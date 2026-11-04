@@ -1,0 +1,34 @@
+# ===============================================
+# ARTICLE CATALOGUE
+# ===============================================
+
+extend type Query {
+  catalog: CatalogQuery
+}
+
+type CatalogQuery {
+  searchIndex(locale: String!): CatalogSearchIndex
+}
+
+type CatalogSearchIndex {
+  articles: [CatalogArticle]!
+  roadmapItems: [CatalogRoadmapItem]!
+}
+
+type CatalogArticle {
+  title: String!
+  href: String!
+  pageId: Int
+  stars: Int!
+  topic: String!
+}
+
+type CatalogRoadmapItem {
+  nodeId: String!
+  title: String!
+  href: String
+  roadmapId: String!
+  roadmapTitle: String!
+  stage: Int!
+  stageTitle: String!
+}

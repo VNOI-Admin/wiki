@@ -1,16 +1,18 @@
 <template lang='pug'>
-  v-container(fluid, grid-list-lg)
+  v-container.vn-pf(fluid, grid-list-lg)
     v-layout(row wrap)
       v-flex(xs12)
-        .profile-header
-          img.animated.fadeInUp(src='/_assets/svg/icon-profile.svg', alt='Users', style='width: 80px;')
-          .profile-header-title
-            .headline.primary--text.animated.fadeInLeft {{$t('profile:title')}}
-            .subheading.grey--text.animated.fadeInLeft {{$t('profile:subtitle')}}
-          v-spacer
-          v-btn.animated.fadeInDown(color='success', depressed, @click='saveProfile', :loading='saveLoading', large)
-            v-icon(left) mdi-check
+        .vn-pf__head
+          img.vn-pf__av(v-if='picture.kind === `image`', :src='picture.url', alt='')
+          .vn-pf__av(v-else, aria-hidden='true') {{ picture.initials }}
+          .vn-pf__who
+            h1 {{ user.name }}
+            span(v-if='user.email') {{ user.email }}
+          button.vn-btn(type='button', @click='saveProfile', :disabled='saveLoading')
+            v-progress-circular(v-if='saveLoading', indeterminate, size='16', width='2')
+            v-icon(v-else, small) mdi-check
             span {{$t('common:actions.save')}}
+        profile-progress
           //- v-btn.animated.fadeInDown(outlined, color='primary', disabled).mr-0
           //-   v-icon(left) mdi-earth
           //-   span {{$t('profile:viewPublicProfile')}}
@@ -291,6 +293,7 @@
                       ref='iptAppearance'
                       :items='appearances'
                       v-model='user.appearance'
+                      @change='applyAppearance'
                       :label='$t(`profile:appearance`)'
                       solo
                       flat
@@ -350,22 +353,27 @@ import Cookies from 'js-cookie'
 import validate from 'validate.js'
 
 import PasswordStrength from '../common/password-strength.vue'
+import ProfileProgress from './profile-progress.vue'
+import { avatarOf } from '../../modules/initials'
+import { setTheme } from '../../modules/theme'
 
-/* global WIKI, siteConfig */
+/* global WIKI */
 
 export default {
   i18nOptions: {
     namespaces: ['profile', 'auth']
   },
   components: {
-    PasswordStrength
+    PasswordStrength,
+    ProfileProgress
   },
   data() {
     return {
       saveLoading: false,
       changePassLoading: false,
       user: {
-        name: 'unknown',
+        // -> The signed-in name shows at once; the query fills in the rest
+        name: this.$store.get('user/name') || '',
         location: '',
         jobTitle: '',
         timezone: '',
@@ -664,32 +672,10 @@ export default {
     },
     pictureUrl: get('user/pictureUrl'),
     picture () {
-      if (this.pictureUrl && this.pictureUrl.length > 1) {
-        return {
-          kind: 'image',
-          url: this.pictureUrl
-        }
-      } else {
-        const nameParts = this.user.name.toUpperCase().split(' ')
-        let initials = _.head(nameParts).charAt(0)
-        if (nameParts.length > 1) {
-          initials += _.last(nameParts).charAt(0)
-        }
-        return {
-          kind: 'initials',
-          initials
-        }
-      }
+      return avatarOf(this.pictureUrl, this.$store.get('user/id'), this.user.name)
     }
   },
   watch: {
-    'user.appearance': (newValue, oldValue) => {
-      if (newValue === '') {
-        WIKI.$vuetify.theme.dark = siteConfig.darkMode
-      } else {
-        WIKI.$vuetify.theme.dark = (newValue === 'dark')
-      }
-    },
     'user.dateFormat': (newValue, oldValue) => {
       if (newValue === '') {
         WIKI.$moment.updateLocale(WIKI.$moment.locale(), null)
@@ -710,6 +696,10 @@ export default {
     }
   },
   methods: {
+    // -> Only a change in the select applies the theme. The profile load does not, so it cannot undo a header toggle.
+    applyAppearance (value) {
+      setTheme(this.$vuetify, value)
+    },
     /**
      * Focus an input after delay
      */
@@ -919,5 +909,84 @@ export default {
 </script>
 
 <style lang='scss'>
+.vn-pf {
+  max-width: var(--wrap);
+  margin-inline: auto;
+  padding-block: 32px 56px;
+  color: var(--ink);
+}
 
+.vn-pf__head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+
+  > .vn-btn {
+    margin-left: auto;
+  }
+}
+
+.vn-pf__av {
+  width: 64px;
+  height: 64px;
+  flex: none;
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 1.375rem;
+  font-weight: 700;
+}
+
+.vn-pf__who {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+
+  h1 {
+    margin: 0;
+    font-size: clamp(1.5rem, 3.4vw, 2.1rem);
+    font-weight: 800;
+    line-height: 1.2;
+  }
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--muted);
+  }
+}
+
+// -> The account cards take the site look: a border, no shadow, a plain head
+.vn-pf .v-card {
+  border: 1px solid var(--line) !important;
+  border-radius: 12px !important;
+  background: var(--surface) !important;
+  box-shadow: none !important;
+  overflow: hidden;
+
+  > .v-toolbar {
+    background: var(--sunken) !important;
+    color: var(--ink) !important;
+    box-shadow: none !important;
+
+    .v-toolbar__title {
+      font-weight: 600;
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .vn-pf__head {
+    flex-wrap: wrap;
+
+    > .vn-btn {
+      margin-left: 0;
+    }
+  }
+}
 </style>
