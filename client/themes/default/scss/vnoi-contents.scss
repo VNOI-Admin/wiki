@@ -13,8 +13,12 @@
   line-height: 1.75;
   overflow-wrap: break-word;
 
-  // -> The live site injects `text-align: justify`; ragged text reads better on phones
-  text-align: left;
+  // -> Body text runs flush to both edges; headings and table cells stay left-aligned
+  text-align: justify;
+
+  h1, h2, h3, h4, h5, h6, th, td {
+    text-align: left;
+  }
 
   a {
     color: var(--accent);
