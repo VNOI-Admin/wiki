@@ -257,6 +257,12 @@
     max-width: 100%;
     height: auto;
     border-radius: 8px;
+
+    // -> Transparent images often hold dark text that vanishes on the dark page
+    @at-root :root[data-theme="dark"] #{&}:not(.emoji) {
+      background: #fff;
+      padding: 4px;
+    }
   }
 
   // -> Twemoji draws each emoji as an SVG image. `height: auto` above made it fill the column.
