@@ -75,6 +75,17 @@
     border-top: 0;
   }
 
+  // -> A first heading that repeats the page title (page.vue hideTitleHeading)
+  .is-title-repeat {
+    display: none;
+  }
+
+  .is-title-repeat + * {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
   .toc-anchor {
     color: var(--muted);
   }
@@ -292,6 +303,20 @@
   //    formula, the copy escapes the scroll box of a table or display formula and widens the page
   .katex {
     position: relative;
+  }
+
+  // -> \color{name} writes a fixed inline color: on the dark surface blue has 2.2:1 and black
+  //    cannot be read, and on white orange has 1.8:1. Each named color in the articles takes
+  //    the token of its hue, which keeps 4.5:1 in both themes. \phantom (transparent) stays.
+  .katex {
+    $named: ("black": --ink, "blue": --accent, "red": --mark-red, "green": --done, "orange": --code-num, "purple": --code-kw);
+    @each $name, $token in $named {
+      // -> Text on a \colorbox keeps its color: the box keeps its light fill in both themes
+      [style*="color:#{$name};"]:not([style*="background"]):not([style*="background"] *),
+      [style*="color: #{$name};"]:not([style*="background"]):not([style*="background"] *) {
+        color: var(#{$token}) !important;
+      }
+    }
   }
 
   // -> fit-wide.js marks a formula or a table that is wider than the column

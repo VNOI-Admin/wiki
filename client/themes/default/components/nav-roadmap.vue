@@ -3,8 +3,9 @@
     .nav-roadmap-header
       .nav-roadmap-head
         v-menu(v-if='roadmaps.length > 1', offset-y, bottom, content-class='vn-menu')
-          template(v-slot:activator='{ on }')
+          template(v-slot:activator='{ on, attrs }')
             button.nav-roadmap-title(
+              v-bind='attrs'
               v-on='on'
               type='button'
               :title='$t(`common:roadmap.switch`, `Đổi lộ trình`)'

@@ -6,8 +6,8 @@
         v-icon(small) mdi-history
         span {{$t('common:header.history')}}
       v-menu(offset-y, top, min-width='260', content-class='vn-menu')
-        template(v-slot:activator='{ on }')
-          button.vn-linkbtn(type='button', v-on='on')
+        template(v-slot:activator='{ on, attrs }')
+          button.vn-linkbtn(type='button', v-bind='attrs', v-on='on')
             v-icon(small) mdi-share-variant
             span {{$t('common:page.share')}}
         social-sharing(:url='pageUrl', :title='title', :description='description')
@@ -214,7 +214,7 @@
         img(v-if='lightboxImg', :src='lightboxImg.src', :alt='lightboxImg.alt', @click='lightbox = false')
 
       //- Editor speed dial, when the admin turns it on
-      v-tooltip(:right='$vuetify.rtl', :left='!$vuetify.rtl', v-if='hasAnyPagePermissions && editShortcutsObj.editFab')
+      v-tooltip(:right='$vuetify.rtl', :left='!$vuetify.rtl', v-if='hasEditFab')
         template(v-slot:activator='{ on: onEditActivator }')
           v-speed-dial(
             v-model='pageEditFab'
@@ -256,13 +256,13 @@
       button.vn-totop(
         v-if='upBtnShown && !printView'
         type='button'
-        :class='{ "has-fab": hasAnyPagePermissions && editShortcutsObj.editFab, "has-bar": readbarOn }'
+        :class='{ "has-fab": hasEditFab, "has-bar": readbarOn }'
         @click='$vuetify.goTo(0, scrollOpts)'
         :aria-label='$t(`common:actions.returnToTop`)'
         :title='$t(`common:actions.returnToTop`)'
         )
         v-icon mdi-arrow-up
-    nav-footer(v-if='!printView')
+    nav-footer(v-if='!printView', :class='{ "has-bar": readbarOn, "has-fab": hasEditFab }')
     notify
     search-results
 </template>
@@ -298,6 +298,25 @@ const RAIL_PREF_KEY = 'vnRailHidden'
 const TOC_PREF_KEY = 'vnTocHidden'
 
 Prism.plugins.autoloader.languages_path = '/_assets/js/prism/'
+// -> Fence names with no Prism grammar file. For them the autoloader requested a missing
+//    file: a 404 and a console error. Plain text gets an empty grammar (no request);
+//    the other names use the grammar of the same language.
+Prism.languages.text = Prism.languages.txt = Prism.languages.plaintext = {}
+const FENCE_ALIASES = { sh: 'bash', zsh: 'bash' }
+// -> Heading text and page title compare without the anchor mark, case or extra spaces
+const plainTitle = t => _.toString(t).replace(/¶/g, '').normalize('NFC').replace(/\s+/g, ' ').trim().toLocaleLowerCase('vi')
+const sameTitle = (a, b) => plainTitle(a) !== '' && plainTitle(a) === plainTitle(b)
+
+function aliasFences (root) {
+  root.querySelectorAll('code[class*="language-"]').forEach(code => {
+    const m = code.className.match(/\blanguage-([\w-]+)/)
+    const to = m && FENCE_ALIASES[m[1].toLowerCase()]
+    if (!to) { return }
+    for (const el of [code, code.parentElement]) {
+      if (el) { el.className = el.className.replace(/\blanguage-[\w-]+/, `language-${to}`) }
+    }
+  })
+}
 Prism.plugins.NormalizeWhitespace.setDefaults({
   'remove-trailing': true,
   'remove-indent': true,
@@ -451,6 +470,7 @@ export default {
       currentRoadmapId: null,
       railHidden: false,
       tocHidden: false,
+      titleHeadingHidden: false,
       railSheet: false,
       // -> true: the rail shows the site navigation instead of the roadmap
       railMenu: false,
@@ -583,9 +603,21 @@ export default {
         return []
       }
     },
+    // -> Most articles start with "# <title>", which repeats the page title above it.
+    //    That heading is hidden (hideTitleHeading), so its TOC entry goes and its sections
+    //    move up one level.
+    titleHeadingAnchor () {
+      const first = this.tocDecoded[0]
+      return first && sameTitle(first.title, this.title) ? first.anchor : null
+    },
+    tocItems () {
+      if (!this.titleHeadingHidden) { return this.tocDecoded }
+      const [first, ...rest] = this.tocDecoded
+      return [...(first.children || []), ...rest]
+    },
     // -> Two levels, as one list: level-2 items get an indent
     tocFlat () {
-      return _.flatMap(this.tocDecoded, item => [
+      return _.flatMap(this.tocItems, item => [
         { anchor: item.anchor, title: item.title, sub: false },
         ..._.map(item.children || [], child => ({ anchor: child.anchor, title: child.title, sub: true }))
       ])
@@ -631,6 +663,9 @@ export default {
     hasDeletePagesPermission: get('page/effectivePermissions@pages.delete'),
     hasReadSourcePermission: get('page/effectivePermissions@source.read'),
     hasReadHistoryPermission: get('page/effectivePermissions@history.read'),
+    hasEditFab () {
+      return this.hasAnyPagePermissions && this.editShortcutsObj.editFab
+    },
     hasAnyPagePermissions () {
       return this.hasAdminPermission || this.hasWritePagesPermission || this.hasManagePagesPermission ||
         this.hasDeletePagesPermission || this.hasReadSourcePermission || this.hasReadHistoryPermission
@@ -703,10 +738,13 @@ export default {
       return
     }
 
+    this.hideTitleHeading()
+
     // -> The author lines at the top show as one card
     wrapByline(this.$refs.container)
 
     // -> Highlight Code Blocks
+    aliasFences(this.$refs.container)
     Prism.highlightAllUnder(this.$refs.container)
 
     // -> Render Mermaid diagrams
@@ -829,6 +867,17 @@ export default {
       try {
         window.localStorage.setItem(TOC_PREF_KEY, hidden ? 'hidden' : 'shown')
       } catch (err) {}
+    },
+    // -> The first heading of the contents, when it only repeats the page title
+    hideTitleHeading () {
+      const root = this.$refs.container
+      const body = root.children.length === 1 && root.firstElementChild.tagName === 'DIV' ? root.firstElementChild : root
+      const head = body.firstElementChild
+      const anchor = this.titleHeadingAnchor
+      if (anchor && head && /^H[1-6]$/.test(head.tagName) && (`#${head.id}` === anchor || `#${encodeURIComponent(head.id)}` === anchor)) {
+        head.classList.add('is-title-repeat')
+        this.titleHeadingHidden = true
+      }
     },
     // -> A mouse click closes the folded TOC panel. Keyboard focus keeps it open.
     onFoldLink (ev, anchor) {
@@ -1211,8 +1260,10 @@ export default {
   }
 
   // -> Above the bottom bar, which shows at these widths
-  @media (max-width: 1220px) {
-    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  &.has-bar {
+    @media (max-width: 1220px) {
+      bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    }
   }
 }
 
@@ -1532,6 +1583,27 @@ export default {
         display: none;
       }
     }
+  }
+}
+
+// -> The back-to-top button, the edit button and the bottom bar are fixed over the end of
+//    the page. The footer gets that much room below its last line, so every footer link
+//    can scroll clear of them.
+.vn-foot {
+  padding-bottom: 72px;
+
+  &.has-fab {
+    padding-bottom: 144px;
+  }
+}
+
+@media (max-width: 1220px) {
+  .vn-foot.has-bar {
+    padding-bottom: calc(132px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .vn-foot.has-bar.has-fab {
+    padding-bottom: calc(204px + env(safe-area-inset-bottom, 0px));
   }
 }
 

@@ -91,5 +91,15 @@
 }
 
 @import 'markdown-it-github-alerts/styles/github-colors-light.css';
-@import 'markdown-it-github-alerts/styles/github-colors-dark-media.css';
 @import 'markdown-it-github-alerts/styles/github-base.css';
+
+// -> The alert colors follow the site theme, not the system theme (the package dark file
+//    reads prefers-color-scheme). The dark tokens keep 4.5:1 on the dark surface.
+:root[data-theme="dark"] {
+  --color-note: var(--accent);
+  --color-tip: var(--done);
+  --color-warning: var(--star);
+  --color-severe: var(--code-num);
+  --color-caution: var(--mark-red);
+  --color-important: var(--code-kw);
+}

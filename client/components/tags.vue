@@ -30,6 +30,7 @@
           prepend-icon='mdi-text-box-search-outline'
           append-icon='mdi-arrow-right'
           clearable
+          :aria-label='$t(`tags:searchWithinResultsPlaceholder`)'
         )
         template(v-if='locales.length > 1')
           v-divider.mx-3(vertical)
@@ -40,6 +41,7 @@
             :background-color='$vuetify.theme.dark ? `grey darken-3` : `white`'
             hide-details
             :label='$t(`tags:locale`)'
+            :aria-label='$t(`tags:locale`)'
             item-text='name'
             item-value='code'
             rounded
@@ -56,6 +58,7 @@
           :background-color='$vuetify.theme.dark ? `grey darken-3` : `white`'
           hide-details
           :label='$t(`tags:orderBy`)'
+          :aria-label='$t(`tags:orderBy`)'
           rounded
           single-line
           dense
@@ -63,11 +66,11 @@
           style='max-width: 250px;'
         )
         v-btn-toggle.ml-2(v-model='orderByDirection', rounded, mandatory)
-          v-btn(text, height='40'): v-icon(size='20') mdi-chevron-double-up
-          v-btn(text, height='40'): v-icon(size='20') mdi-chevron-double-down
+          v-btn(text, height='40', :aria-label='$t(`tags:orderAscending`, `Tăng dần`)'): v-icon(size='20') mdi-chevron-double-up
+          v-btn(text, height='40', :aria-label='$t(`tags:orderDescending`, `Giảm dần`)'): v-icon(size='20') mdi-chevron-double-down
       v-divider
       .text-center.pt-10(v-if='selection.length < 1')
-        img(src='/_assets/svg/icon-price-tag.svg')
+        img(src='/_assets/svg/icon-price-tag.svg', alt='')
         .subtitle-2.grey--text {{$t('tags:selectOneMoreTagsHint')}}
       .py-2(v-else)
         v-data-iterator(
@@ -91,11 +94,11 @@
               .subtitle-2.grey--text.mt-5 {{$t('tags:retrievingResultsLoading')}}
           template(v-slot:no-data)
             .text-center.pt-10
-              img(src='/_assets/svg/icon-info.svg')
+              img(src='/_assets/svg/icon-info.svg', alt='')
               .subtitle-2.grey--text {{$t('tags:noResults')}}
           template(v-slot:no-results)
             .text-center.pt-10
-              img(src='/_assets/svg/icon-info.svg')
+              img(src='/_assets/svg/icon-info.svg', alt='')
               .subtitle-2.grey--text {{$t('tags:noResultsWithFilter')}}
           template(v-slot:default='props')
             v-row(align='stretch')
