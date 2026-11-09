@@ -179,3 +179,5 @@ admin:
 tags:
   # -> The tag chips sit above the results now, not in a left drawer
   selectOneMoreTagsHint: 'Chọn một hoặc nhiều thẻ.'
+  orderAscending: 'Tăng dần'
+  orderDescending: 'Giảm dần'

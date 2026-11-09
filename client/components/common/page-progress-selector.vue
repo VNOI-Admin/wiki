@@ -1,8 +1,9 @@
 <template lang="pug">
   .page-progress(v-if='isEnabled')
     v-menu(offset-y, bottom, min-width='220', content-class='vn-menu')
-      template(v-slot:activator='{ on: menu }')
+      template(v-slot:activator='{ on: menu, attrs }')
         button.vn-pbtn(
+          v-bind='attrs'
           v-on='menu'
           type='button'
           :class='`s-` + currentStatus.id'

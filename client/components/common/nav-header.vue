@@ -730,8 +730,14 @@ export default {
   .vn-topbar__lg {
     display: none !important;
   }
+  // -> Hide the label from view only: it stays the button's name for a screen reader
   .vn-acctbtn:not(.is-in) span {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .vn-acctbtn {
     width: 40px;

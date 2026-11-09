@@ -97,6 +97,14 @@ html, body {
   outline-offset: 2px;
 }
 
+// -> These containers clip their overflow (a one-line nav, a scrolled rail, a sideways strip),
+//    which cuts a ring drawn outside the control. Draw the ring inside the control there.
+.vn-nav, .vn-rail, .vn-toc, .vn-facets, .vn-opts, .vn-hlist, .vn-reading__list, .vn-popular, .code-toolbar {
+  :focus-visible {
+    outline-offset: -2px;
+  }
+}
+
 // -> Set for two frames when the theme changes (client-app.js)
 html.is-theme-switch *,
 html.is-theme-switch *::before,

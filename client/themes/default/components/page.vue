@@ -6,8 +6,8 @@
         v-icon(small) mdi-history
         span {{$t('common:header.history')}}
       v-menu(offset-y, top, min-width='260', content-class='vn-menu')
-        template(v-slot:activator='{ on }')
-          button.vn-linkbtn(type='button', v-on='on')
+        template(v-slot:activator='{ on, attrs }')
+          button.vn-linkbtn(type='button', v-bind='attrs', v-on='on')
             v-icon(small) mdi-share-variant
             span {{$t('common:page.share')}}
         social-sharing(:url='pageUrl', :title='title', :description='description')
