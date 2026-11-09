@@ -1,4 +1,4 @@
-import { installMenuKeys, menuOf } from './menu-keys'
+import { installMenuKeys, menuOf, triggerOf } from './menu-keys'
 
 /**
  * Keyboard and screen reader fixes for Vuetify 2.3 components, installed once for the app.
@@ -16,7 +16,7 @@ function dialogOpener () {
   let opener = active && active !== document.body ? active : lastPressed
   const menu = opener && menuOf(opener)
   if (menu && menu.$refs.content && menu.$refs.content.contains(opener)) {
-    opener = menu.getActivator() || opener
+    opener = triggerOf(menu) || opener
   }
   return opener
 }
@@ -42,7 +42,10 @@ function dialogFocus (vm) {
     const back = opener
     opener = null
     vm.$nextTick(() => {
-      const lost = !document.activeElement || document.activeElement === document.body
+      // -> A control in the closing dialog still has the focus here, and loses it once hidden
+      const active = document.activeElement
+      const content = vm.$refs.content
+      const lost = !active || active === document.body || (content && content.contains(active))
       if (back && back !== document.body && back.isConnected && lost) {
         back.focus({ preventScroll: true })
       }
@@ -88,12 +91,14 @@ export default {
     }, true)
 
     // -> Chrome does not scroll a partly hidden control into view when it takes the focus,
-    //    so in a sideways strip its label and ring stay cut. Show the whole control.
-    //    Keyboard focus only: a click never moves the page under the pointer.
+    //    so in a sideways scroll strip its label and ring stay cut. Show the whole control.
+    //    Keyboard focus on a button or link only: a text field matches :focus-visible on a
+    //    click too, and a clipped box (overflow: hidden) is no strip and must not scroll.
     document.addEventListener('focusin', ev => {
       const el = ev.target
       const strip = el instanceof Element ? el.parentElement : null
-      if (strip && strip.scrollWidth > strip.clientWidth && getComputedStyle(strip).overflowX !== 'visible' && el.matches(':focus-visible')) {
+      if (!strip || el.matches('input, textarea, select') || !el.matches(':focus-visible')) { return }
+      if (strip.scrollWidth > strip.clientWidth && ['auto', 'scroll'].includes(getComputedStyle(strip).overflowX)) {
         el.scrollIntoView({ block: 'nearest', inline: 'nearest' })
       }
     })

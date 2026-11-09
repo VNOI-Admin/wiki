@@ -36,12 +36,15 @@ export default {
     paused () { return this.hovered || this.focused }
   },
   watch: {
-    notificationState (on) {
-      if (on) {
-        document.addEventListener('keydown', this.onKeydown)
-      } else {
-        document.removeEventListener('keydown', this.onKeydown)
-        this.hovered = this.focused = false
+    notificationState: {
+      immediate: true,
+      handler (on) {
+        if (on) {
+          document.addEventListener('keydown', this.onKeydown)
+        } else {
+          document.removeEventListener('keydown', this.onKeydown)
+          this.hovered = this.focused = false
+        }
       }
     }
   },
@@ -50,8 +53,8 @@ export default {
   },
   methods: {
     onKeydown (ev) {
-      // -> Esc in a dialog or a menu closes that one only
-      const inPopup = ev.target instanceof Element && ev.target.closest('[role="dialog"], [role="menu"], .v-dialog, .v-menu__content')
+      // -> Esc in a dialog, a menu or an open select closes that one only
+      const inPopup = ev.target instanceof Element && ev.target.closest('[role="dialog"], [role="menu"], .v-dialog__content, .v-menu__content, .v-select--is-menu-active')
       if (ev.key === 'Escape' && !ev.defaultPrevented && !inPopup) {
         this.notificationState = false
       }

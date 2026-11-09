@@ -309,10 +309,11 @@
   //    cannot be read, and on white orange has 1.8:1. Each named color in the articles takes
   //    the token of its hue, which keeps 4.5:1 in both themes. \phantom (transparent) stays.
   .katex {
-    $named: (black: --ink, blue: --accent, red: --mark-red, green: --done, orange: --code-num, purple: --code-kw);
+    $named: ("black": --ink, "blue": --accent, "red": --mark-red, "green": --done, "orange": --code-num, "purple": --code-kw);
     @each $name, $token in $named {
-      [style*="color:#{$name};"]:not([style*="background"]),
-      [style*="color: #{$name};"]:not([style*="background"]) {
+      // -> Text on a \colorbox keeps its color: the box keeps its light fill in both themes
+      [style*="color:#{$name};"]:not([style*="background"]):not([style*="background"] *),
+      [style*="color: #{$name};"]:not([style*="background"]):not([style*="background"] *) {
         color: var(#{$token}) !important;
       }
     }

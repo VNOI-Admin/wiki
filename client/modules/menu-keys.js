@@ -15,6 +15,14 @@ const OPEN_KEYS = ['ArrowDown', 'ArrowUp', 'Enter', ' ']
 const OPEN_WAIT = 1000
 
 /**
+ * The trigger element of a menu. Vuetify getActivator() with no event caches its first
+ * guess, so read the same values here without that side effect.
+ */
+export function triggerOf (vm) {
+  return vm.activatorElement || (vm.activatorNode[0] && vm.activatorNode[0].elm) || null
+}
+
+/**
  * The v-menu instance that renders `el`, a trigger or an element in its content
  */
 export function menuOf (el) {
@@ -31,13 +39,14 @@ export function menuOf (el) {
   for (const root of document.querySelectorAll('.v-menu')) {
     const find = vm => (isMenu(vm) && vm.$el === root ? vm : vm.$children.map(find).find(Boolean))
     const vm = root.__vue__ && find(root.__vue__)
-    const trigger = vm && vm.getActivator()
-    if (trigger && trigger.contains(el)) { return vm }
+    const trigger = vm && triggerOf(vm)
+    if (trigger && trigger.contains && trigger.contains(el)) { return vm }
   }
   return null
 }
 
-const isVnMenu = vm => !!vm && /\bvn-menu\b/.test(vm.contentClass || '')
+// -> A hover menu (the difficulty legend) is a popover with no items: it keeps its own keys
+const isVnMenu = vm => !!vm && !vm.openOnHover && /\bvn-menu\b/.test(vm.contentClass || '')
 
 function itemsOf (vm) {
   const content = vm.$refs.content
@@ -49,20 +58,26 @@ function focusItem (vm, which) {
   if (items.length === 0) { return }
   const checked = items.find(el => el.getAttribute('aria-checked') === 'true')
   const target = which === 'last' ? items[items.length - 1] : (which === 'checked' && checked) || items[0]
-  target.focus({ preventScroll: true })
+  showItem(target)
 }
 
-// -> Give the focus back to the trigger when the menu closes with focus inside it
+// -> preventScroll keeps the page still while the menu takes its place; a tall menu
+//    (the language list) then scrolls itself to the item
+function showItem (item) {
+  item.focus({ preventScroll: true })
+  item.scrollIntoView({ block: 'nearest' })
+}
+
+// -> Give the focus back to the trigger when the menu closes with focus inside it.
+//    A click outside the menu moves the focus first, so it stays where the click put it.
 function watchClose (vm) {
   if (vm._vnMenuKeys) { return }
   vm._vnMenuKeys = true
   vm.$watch('isActive', open => {
     if (open) { return }
     const content = vm.$refs.content
-    const active = document.activeElement
-    const lost = !active || active === document.body || (content && content.contains(active))
-    const trigger = vm.getActivator()
-    if (lost && trigger && trigger.isConnected) {
+    const trigger = triggerOf(vm)
+    if (content && content.contains(document.activeElement) && trigger && trigger.isConnected) {
       trigger.focus({ preventScroll: true })
     }
   })
@@ -103,20 +118,21 @@ function onContentKey (vm, ev) {
   let next = null
   switch (ev.key) {
     case 'ArrowDown': next = items[(at + 1) % items.length]; break
-    case 'ArrowUp': next = items[(at - 1 + items.length) % items.length]; break
+    // -> From the first item, or from no item, ArrowUp goes to the last item
+    case 'ArrowUp': next = items[at > 0 ? at - 1 : items.length - 1]; break
     case 'Home': next = items[0]; break
     case 'End': next = items[items.length - 1]; break
     case 'Tab':
       // -> Close the menu. The focus goes to the trigger, and the browser then moves it on.
       watchClose(vm)
       vm.isActive = false
-      if (vm.getActivator()) { vm.getActivator().focus({ preventScroll: true }) }
+      if (triggerOf(vm)) { triggerOf(vm).focus({ preventScroll: true }) }
       return
     default: return
   }
   if (next) {
     ev.preventDefault()
-    next.focus({ preventScroll: true })
+    showItem(next)
   }
 }
 
@@ -127,7 +143,7 @@ export function installMenuKeys () {
     if (!isVnMenu(vm)) { return }
     if (vm.$refs.content && vm.$refs.content.contains(ev.target)) {
       onContentKey(vm, ev)
-    } else if (vm.getActivator() && vm.getActivator().contains(ev.target)) {
+    } else if (triggerOf(vm) && triggerOf(vm).contains(ev.target)) {
       onTriggerKey(vm, ev)
     }
   })
