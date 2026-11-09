@@ -75,6 +75,17 @@
     border-top: 0;
   }
 
+  // -> A first heading that repeats the page title (page.vue hideTitleHeading)
+  .is-title-repeat {
+    display: none;
+  }
+
+  .is-title-repeat + * {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
   .toc-anchor {
     color: var(--muted);
   }
