@@ -4,11 +4,19 @@
     top
     multi-line
     v-model='notificationState'
-    :timeout='6000'
+    :timeout='paused ? -1 : 6000'
+    :class='{ "is-paused": paused }'
+    @mouseenter.native='hovered = true'
+    @mouseleave.native='hovered = false'
+    @focusin.native='focused = true'
+    @focusout.native='focused = false'
     )
     .text-left
       v-icon.mr-3(dark) mdi-{{ notification.icon }}
       span {{ notification.message }}
+    template(v-slot:action='{ attrs }')
+      v-btn(v-bind='attrs', icon, dark, small, @click='notificationState = false', :aria-label='$t(`common:actions.close`, `Đóng`)')
+        v-icon(small) mdi-close
 </template>
 
 <script>
@@ -16,11 +24,38 @@ import { get, sync } from 'vuex-pathify'
 
 export default {
   data() {
-    return { }
+    return {
+      hovered: false,
+      focused: false
+    }
   },
   computed: {
     notification: get('notification'),
-    notificationState: sync('notification@isActive')
+    notificationState: sync('notification@isActive'),
+    // -> The toast stays while the pointer or the focus is on it
+    paused () { return this.hovered || this.focused }
+  },
+  watch: {
+    notificationState (on) {
+      if (on) {
+        document.addEventListener('keydown', this.onKeydown)
+      } else {
+        document.removeEventListener('keydown', this.onKeydown)
+        this.hovered = this.focused = false
+      }
+    }
+  },
+  beforeDestroy () {
+    document.removeEventListener('keydown', this.onKeydown)
+  },
+  methods: {
+    onKeydown (ev) {
+      // -> Esc in a dialog or a menu closes that one only
+      const inPopup = ev.target instanceof Element && ev.target.closest('[role="dialog"], [role="menu"], .v-dialog, .v-menu__content')
+      if (ev.key === 'Escape' && !ev.defaultPrevented && !inPopup) {
+        this.notificationState = false
+      }
+    }
   }
 }
 </script>
@@ -48,6 +83,10 @@ export default {
       left: 0;
       animation: nav-notify-anim 6s linear;
     }
+  }
+
+  &.is-paused .v-snack__wrapper::after {
+    animation: none;
   }
 }
 
