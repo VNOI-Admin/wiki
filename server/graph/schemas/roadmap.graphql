@@ -6,9 +6,11 @@ extend type Mutation {
   roadmap: RoadmapMutation
 }
 
+# Only the admin roadmap editor reads these: they include disabled roadmaps.
+# Reader pages get enabled roadmaps from the page controllers.
 type RoadmapQuery {
-  list: [RoadmapSummary]!
-  single(id: String!): RoadmapFull
+  list: [RoadmapSummary]! @auth(requires: ["write:pages", "manage:pages", "manage:system"])
+  single(id: String!): RoadmapFull @auth(requires: ["write:pages", "manage:pages", "manage:system"])
 }
 
 type RoadmapMutation {
