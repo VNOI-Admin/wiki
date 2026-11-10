@@ -398,6 +398,8 @@ export default {
       }
       const target = strip(new URL(link.url, window.location.origin).pathname)
       const here = strip(window.location.pathname)
+      // -> The roadmap list link also owns each roadmap page (/roadmaps -> /roadmap/<id>)
+      if (target === '/roadmaps' && here.startsWith('/roadmap/')) { return true }
       return target.length > 0 && (here === target || here.startsWith(target + '/'))
     },
     openSearch () {

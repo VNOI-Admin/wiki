@@ -97,9 +97,6 @@ import { POPULAR_TERMS } from '../../../modules/search-rank'
 
 // -> Estimated from the credits in the article sources (November 2026)
 const AUTHOR_ESTIMATE = '60+'
-// -> Cards that enter one after another, and the last step of that delay
-const REVEAL_CARDS = '.vn-stat, .vn-feat, .vn-topic'
-const REVEAL_MAX_STEP = 8
 
 export default {
   props: {
@@ -212,36 +209,7 @@ export default {
     barHeight (topic, value) {
       const max = Math.max(1, ...topic.spread)
       return Math.round(value / max * 100) + '%'
-    },
-    // -> Each block of a section below the hero (heading, paragraph, card grid) fades in as
-    //    it scrolls into view; blocks already in view fade in on load. Cards of a grid follow
-    //    one after another. Without JS, with reduced motion or in print, all shows at once.
-    setupReveal () {
-      const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      if (reduced || !('IntersectionObserver' in window)) { return }
-      const blocks = Array.from(this.$el.querySelectorAll('.vn-hsec > *'))
-      blocks.forEach(b => {
-        b.classList.add('vn-reveal')
-        b.querySelectorAll(REVEAL_CARDS).forEach((el, i) => {
-          el.classList.add('vn-reveal__card')
-          el.style.setProperty('--i', Math.min(i, REVEAL_MAX_STEP))
-        })
-      })
-      this.revealObserver = new IntersectionObserver(entries => {
-        entries.forEach(e => {
-          if (!e.isIntersecting) { return }
-          e.target.classList.add('is-in')
-          this.revealObserver.unobserve(e.target)
-        })
-      }, { rootMargin: '0px 0px -8% 0px' })
-      blocks.forEach(b => this.revealObserver.observe(b))
     }
-  },
-  mounted () {
-    this.setupReveal()
-  },
-  beforeDestroy () {
-    if (this.revealObserver) { this.revealObserver.disconnect() }
   }
 }
 </script>
@@ -490,36 +458,6 @@ export default {
   padding-block: 28px;
 }
 
-// -> Scroll reveal. Only `backwards` fill: once done, the cards' own hover transforms apply again.
-@keyframes vn-rise {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-}
-
-.vn-reveal:not(.is-in),
-.vn-reveal:not(.is-in) .vn-reveal__card {
-  opacity: 0;
-}
-
-.vn-reveal.is-in {
-  animation: vn-rise 0.5s ease backwards;
-
-  .vn-reveal__card {
-    animation: vn-rise 0.45s ease backwards;
-    animation-delay: calc(0.1s + var(--i, 0) * 60ms);
-  }
-}
-
-@media print {
-  .vn-reveal,
-  .vn-reveal .vn-reveal__card {
-    opacity: 1 !important;
-    animation: none !important;
-  }
-}
-
 .vn-hsec__head {
   display: flex;
   flex-wrap: wrap;
@@ -581,12 +519,6 @@ export default {
     radial-gradient(120% 90% at 50% 0%, var(--accent-soft), var(--surface) 70%) padding-box,
     linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 25%, var(--line)) 55%, #8b5cf6) border-box;
   box-shadow: 0 10px 32px -12px color-mix(in srgb, var(--accent) 55%, transparent);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 40px -12px color-mix(in srgb, var(--accent) 70%, transparent);
-  }
 }
 
 .vn-stat__n {

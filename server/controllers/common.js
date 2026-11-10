@@ -424,6 +424,11 @@ router.get('/roadmaps', async (req, res, next) => {
     .where('isEnabled', true)
     .orderBy('sortOrder')
     .select('id', 'title', 'description', 'sortOrder', 'sections')
+  // -> With a single roadmap the list is an extra click: open it directly.
+  //    Temporary (302), so the list comes back once a second roadmap is enabled.
+  if (roadmaps.length === 1) {
+    return res.redirect(`/roadmap/${encodeURIComponent(roadmaps[0].id)}`)
+  }
   const summaries = roadmaps.map(r => ({
     id: r.id,
     title: r.title,
