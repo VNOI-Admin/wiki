@@ -1,6 +1,6 @@
 {
-  "name": "Wiki.js",
-  "short_name": "Wiki.js",
+  "name": "VNOI Wiki",
+  "short_name": "VNOI Wiki",
   "start_url": "/",
   "icons": [
       {
@@ -15,6 +15,6 @@
       }
   ],
   "theme_color": "#1976d2",
-  "background_color": "#1976d2",
+  "background_color": "#ffffff",
   "display": "standalone"
 }
