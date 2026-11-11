@@ -448,6 +448,13 @@
       text-shadow: none;
     }
 
+    // -> The twilight Prism theme selects with a faint white, which a light block hides.
+    //    Selected tokens take the code ink, so they stay readable on the blue.
+    &::selection, ::selection {
+      background: var(--code-sel);
+      color: var(--code-ink);
+    }
+
     .line-numbers-rows {
       border-right-color: var(--line);
 
