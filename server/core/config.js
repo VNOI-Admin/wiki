@@ -56,6 +56,11 @@ module.exports = {
       appconfig.port = process.env.PORT || 80
     }
 
+    // Used by auto deployment scripts to override the port
+    if (process.env.WIKI_PORT) {
+      appconfig.port = parseInt(process.env.WIKI_PORT, 10)
+    }
+
     const packageInfo = require(path.join(WIKI.ROOTPATH, 'package.json'))
 
     // Load DB Password from Docker Secret File

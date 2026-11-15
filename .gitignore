@@ -49,3 +49,5 @@ test-results/
 /server/locales/**/*.yml
 !/server/locales/vi.yml
 vnoi_wiki/
+# Deploy script state
+/.deploy

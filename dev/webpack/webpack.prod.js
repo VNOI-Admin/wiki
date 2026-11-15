@@ -24,7 +24,10 @@ const babelDir = path.join(process.cwd(), '.webpack-cache/babel')
 
 process.noDeprecation = true
 
-fs.emptyDirSync(path.join(process.cwd(), 'assets'))
+
+const outRoot = process.env.WIKI_BUILD_OUT ? path.resolve(process.env.WIKI_BUILD_OUT) : process.cwd()
+
+fs.emptyDirSync(path.join(outRoot, 'assets'))
 
 module.exports = {
   mode: 'production',
@@ -34,7 +37,7 @@ module.exports = {
     setup: './client/index-setup.js'
   },
   output: {
-    path: path.join(process.cwd(), 'assets'),
+    path: path.join(outRoot, 'assets'),
     publicPath: '/_assets/',
     filename: `js/[name].js?${now}`,
     chunkFilename: `js/[name].js?${now}`,
