@@ -39,26 +39,7 @@
       .vn-hsec__head
         h2 {{ $t('common:home.aboutTitle', 'Giới thiệu VNOI Wiki') }}
       p.vn-about__p {{ $t('common:home.about1', 'Thư viện VNOI Wiki là thư viện tài liệu Lập trình thi đấu Tiếng Việt lớn nhất với gần 200 bài viết học thuật do đội ngũ admin, tình nguyện viên VNOI cùng các tác giả khác biên soạn và đóng góp. Bên cạnh đó, VNOI Wiki cũng thường xuyên đóng góp và đăng tải các nội dung liên quan như Tạp chí VNOI (các mục Bài viết học thuật và Kĩ thuật thú vị), phỏng vấn các nhân vật nổi tiếng trong lĩnh vực Công nghệ thông tin và Lập trình thi đấu, các bài viết thuộc các chủ đề Khoa học máy tính khác.') }}
-      .vn-statblock
-        .vn-statblock__cap {{ $t('common:home.statsTitle', 'Những con số ấn tượng') }}
-        .vn-stats
-          .vn-stat(v-for='s of stats3', :key='s.key')
-            span.vn-stat__n {{ s.value }}
-            span.vn-stat__l {{ s.label }}
       p.vn-about__p {{ $t('common:home.about2', 'Trong suốt quá trình xây dựng và phát triển thư viện tài liệu, VNOI Wiki vẫn luôn đồng hành cùng nhiều thế hệ học sinh và giáo viên Tin học trên khắp đất nước trên con đường chinh phục Lập trình thi đấu và các kì thi như Học sinh giỏi Quốc gia/Quốc tế, ICPC, Olympic Sinh viên,... góp phần xây dựng một cộng đồng Tin học lớn mạnh tại Việt Nam.') }}
-
-    //- FEATURES
-    section.vn-hsec
-      .vn-hsec__head
-        h2 {{ $t('common:home.featuresTitle', 'Các tính năng nổi bật') }}
-      .vn-feats
-        .vn-feat(v-for='(f, fi) of features', :key='f.key')
-          .vn-feat__top
-            span.vn-feat__icon
-              v-icon {{ f.icon }}
-            span.vn-feat__k {{ String(fi + 1).padStart(2, '0') }}
-          h3.vn-feat__t {{ f.title }}
-          p.vn-feat__d {{ f.desc }}
 
     //- TOPICS
     section.vn-hsec(v-if='home.topics.length > 0')
@@ -69,24 +50,19 @@
         a.vn-topic(v-for='(t, ti) of home.topics', :key='ti', :href='catalogHref + `?topic=` + encodeURIComponent(`t:` + t.name)')
           span.vn-topic__t {{ t.name }}
           span.vn-topic__c {{ countLabel(t.count) }}
-          span.vn-topic__spread(role='img', :aria-label='spreadLabel(t.spread)')
-            i(v-for='(v, k) of t.spread', :key='k', :style='{ height: barHeight(t, v) }')
-          span.vn-topic__x(aria-hidden='true')
-            span(v-for='k in 5', :key='k') {{ k }}★
 
     //- HELP
     section.vn-hsec
       .vn-help
         v-icon.vn-help__icon mdi-forum-outline
         p
-          | {{ $t('common:home.helpLead', 'Bạn đọc bài viết nhưng không hiểu? Hãy hỏi ở') }}
+          | {{ $t('common:home.helpLead', 'Bạn có thể gửi câu hỏi hoặc góp ý cho chúng mình về các bài viết tại') }}
           |
           a(href='https://www.facebook.com/groups/163215593699283/', target='_blank', rel='noopener') {{ $t('common:home.helpFacebook', 'Group Facebook') }}
           |
           | {{ $t('common:home.helpOr', 'hoặc') }}
           |
-          a(href='https://discord.gg/m5rVAz7DXx', target='_blank', rel='noopener') Discord From VNOI with love
-          | .
+          a(href='https://discord.gg/m5rVAz7DXx', target='_blank', rel='noopener') Discord from VNOI with love
 </template>
 
 <script>
@@ -94,9 +70,6 @@ import _ from 'lodash'
 import { recordHref } from '../../../modules/progress/page-path'
 import { CLOSED_STATUSES, READING_STATUS, getNodeStatus, nodeHref, nodeStats, pickRoadmap, touchRoadmap } from '../../../modules/roadmap-context'
 import { POPULAR_TERMS } from '../../../modules/search-rank'
-
-// -> Estimated from the credits in the article sources (November 2026)
-const AUTHOR_ESTIMATE = '60+'
 
 export default {
   props: {
@@ -114,42 +87,6 @@ export default {
     },
     roadmap () {
       return pickRoadmap(this.home.roadmaps)
-    },
-    stats3 () {
-      return [
-        { key: 'articles', value: '~200', label: this.$t('common:home.statArticles', 'bài viết học thuật') },
-        { key: 'authors', value: AUTHOR_ESTIMATE, label: this.$t('common:home.statAuthors', 'tác giả biên soạn') },
-        // -> The catalogue's algorithm topics; a guess when the catalogue is empty
-        { key: 'topics', value: this.home.topics.length || '10', label: this.$t('common:home.statTopics', 'chủ đề thuật toán lớn') }
-      ]
-    },
-    features () {
-      return [
-        {
-          key: 'fresh',
-          icon: 'mdi-lightbulb-on-outline',
-          title: this.$t('common:home.feat1Title', 'Cập nhật kiến thức mới và chất lượng nhất'),
-          desc: this.$t('common:home.feat1Desc', 'Bài viết do đội ngũ VNOI biên soạn, review kĩ và cập nhật thường xuyên.')
-        },
-        {
-          key: 'problems',
-          icon: 'mdi-format-list-checks',
-          title: this.$t('common:home.feat2Title', 'Danh sách bài tập đính kèm từng bài viết'),
-          desc: this.$t('common:home.feat2Desc', 'Luyện tập ngay sau khi đọc lý thuyết với các bài tập chọn lọc.')
-        },
-        {
-          key: 'roadmap',
-          icon: 'mdi-map-marker-path',
-          title: this.$t('common:home.feat3Title', 'Tích hợp VNOI Roadmap vào VNOI Wiki'),
-          desc: this.$t('common:home.feat3Desc', 'Học theo lộ trình từ cơ bản đến nâng cao, mở ngay bên cạnh bài viết.')
-        },
-        {
-          key: 'progress',
-          icon: 'mdi-account-check-outline',
-          title: this.$t('common:home.feat4Title', 'Đọc bài viết và theo dõi tiến độ với tài khoản VNOJ'),
-          desc: this.$t('common:home.feat4Desc', 'Đánh dấu bài đang đọc, đã hoàn thành và đồng bộ giữa các thiết bị.')
-        }
-      ]
     },
     // -> Read in each status computation, so a status change re-renders the card
     records () {
@@ -201,14 +138,6 @@ export default {
     },
     countLabel (count) {
       return this.$t('common:roadmap.articleCount', { defaultValue: '{{count}} bài', count })
-    },
-    spreadLabel (spread) {
-      const list = spread.map((n, k) => `${k + 1}★: ${n}`).join(', ')
-      return this.$t('common:home.spread', { defaultValue: 'Số bài theo độ khó: {{list}}', list })
-    },
-    barHeight (topic, value) {
-      const max = Math.max(1, ...topic.spread)
-      return Math.round(value / max * 100) + '%'
     }
   }
 }
@@ -476,129 +405,12 @@ export default {
   }
 }
 
-// -> About: two paragraphs around the numbers
 .vn-about__p {
   margin: 0;
   font-size: 1rem;
   line-height: 1.7;
   text-align: justify;
   color: var(--ink);
-}
-
-.vn-statblock {
-  display: grid;
-  gap: 14px;
-  padding-block: 12px;
-}
-
-.vn-home .vn-statblock__cap {
-  text-align: center;
-  font: 600 0.75rem var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
-.vn-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-// -> A gradient ring and a soft glow of the accent color
-.vn-stat {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 6px;
-  padding: 26px 20px;
-  border: 1px solid transparent;
-  border-radius: 16px;
-  text-align: center;
-  background:
-    radial-gradient(120% 90% at 50% 0%, var(--accent-soft), var(--surface) 70%) padding-box,
-    linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 25%, var(--line)) 55%, #8b5cf6) border-box;
-  box-shadow: 0 10px 32px -12px color-mix(in srgb, var(--accent) 55%, transparent);
-}
-
-.vn-stat__n {
-  font-size: clamp(2.2rem, 4.2vw, 3rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
-  font-variant-numeric: tabular-nums;
-  background: linear-gradient(135deg, var(--accent), #8b5cf6);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 2px 10px color-mix(in srgb, var(--accent) 35%, transparent));
-}
-
-.vn-stat__l {
-  font-size: 0.9375rem;
-  font-weight: 500;
-  color: var(--muted);
-}
-
-// -> Features: white cards on a tinted panel, so the section stands out
-.vn-feats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  padding: 12px;
-  border-radius: 16px;
-  background: var(--accent-soft);
-}
-
-.vn-feat {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 20px;
-  border-radius: 12px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.vn-feat__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-
-.vn-feat__icon {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: var(--accent);
-
-  .v-icon {
-    color: var(--on-accent) !important;
-    font-size: 24px;
-  }
-}
-
-.vn-feat__k {
-  font: 600 0.8125rem var(--font-mono);
-  color: var(--muted);
-}
-
-.vn-home .vn-feat__t {
-  margin: 0;
-  font-size: 1.0625rem;
-  font-weight: 700;
-  line-height: 1.35;
-  color: var(--ink);
-}
-
-.vn-feat__d {
-  margin: 0;
-  font-size: 0.9375rem;
-  line-height: 1.55;
-  color: var(--muted);
 }
 
 // -> Help: where to ask, at the end of the page
@@ -637,9 +449,9 @@ export default {
 
 .vn-topic {
   display: grid;
-  // -> A long title takes the free space, so the charts of one row line up
-  grid-template-rows: 1fr auto auto auto;
-  gap: 10px;
+  // -> A long title takes the free space, so the counts of one row line up
+  grid-template-rows: 1fr auto;
+  gap: 6px;
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -662,55 +474,15 @@ export default {
   color: var(--muted);
 }
 
-.vn-topic__spread,
-.vn-topic__x {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 3px;
-}
-
-.vn-topic__spread {
-  align-items: end;
-  height: 26px;
-
-  i {
-    display: block;
-    min-height: 2px;
-    border-radius: 2px 2px 0 0;
-    background: var(--accent);
-    opacity: 0.85;
-  }
-}
-
-.vn-topic__x {
-  margin-top: -6px;
-  text-align: center;
-  font: 500 0.75rem var(--font-mono);
-  color: var(--muted);
-}
-
 @media (max-width: 900px) {
   .vn-hero {
     grid-template-columns: minmax(0, 1fr);
     gap: 28px;
     padding-block: 36px 28px;
   }
-
-  .vn-feats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 640px) {
-  .vn-stats,
-  .vn-feats {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .vn-stat {
-    padding: 14px 16px;
-  }
-
   .vn-popular {
     flex-wrap: nowrap;
     overflow-x: auto;
