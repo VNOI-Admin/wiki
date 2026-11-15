@@ -2,6 +2,7 @@ const _ = require('lodash')
 const cheerio = require('cheerio')
 const uslug = require('uslug')
 const pageHelper = require('../../../helpers/page')
+const { headingText } = require('../../../helpers/heading')
 const URL = require('url').URL
 
 const mustacheRegExp = /(\{|&#x7b;?){2}(.+?)(\}|&#x7d;?){2}/i
@@ -201,7 +202,7 @@ module.exports = {
 
     let headers = []
     $('h1,h2,h3,h4,h5,h6').each((i, elm) => {
-      let headerSlug = uslug($(elm).text())
+      let headerSlug = uslug(headingText($, elm))
       // -> If custom ID is defined, try to use that instead
       if ($(elm).attr('id')) {
         headerSlug = $(elm).attr('id')
