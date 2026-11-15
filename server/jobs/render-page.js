@@ -1,5 +1,6 @@
 const _ = require('lodash')
 const cheerio = require('cheerio')
+const { headingText, headingHtml } = require('../helpers/heading')
 
 /* global WIKI */
 
@@ -62,8 +63,10 @@ module.exports = async (pageId) => {
       const leafSlug = $('.toc-anchor', el).first().attr('href')
       $('.toc-anchor', el).remove()
 
+      const html = headingHtml($, el)
       _.get(toc, leafPath).push({
-        title: _.trim($(el).text()),
+        title: headingText($, el),
+        ...(html ? { html } : {}),
         anchor: leafSlug,
         children: []
       })

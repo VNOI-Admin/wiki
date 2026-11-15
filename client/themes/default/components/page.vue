@@ -139,8 +139,11 @@
               :key='item.anchor'
               :href='item.anchor'
               :class='{ "is-sub": item.sub, "is-active": item.anchor === activeAnchor }'
+              :title='item.html ? item.title : null'
               @click.prevent='goToAnchor(item.anchor)'
-              ) {{item.title}}
+              )
+              span(v-if='item.html', v-html='item.html')
+              template(v-else) {{item.title}}
           .vn-toc__tools
             +pageTools
         //- A hidden TOC leaves a column of ticks. Hover or focus opens the full list.
@@ -166,8 +169,11 @@
               :key='`f-` + item.anchor'
               :href='item.anchor'
               :class='{ "is-sub": item.sub, "is-active": item.anchor === activeAnchor }'
+              :title='item.html ? item.title : null'
               @click.prevent='onFoldLink($event, item.anchor)'
-              ) {{item.title}}
+              )
+              span(v-if='item.html', v-html='item.html')
+              template(v-else) {{item.title}}
 
       //- Narrow screens: the rail and the TOC open as sheets from a bottom bar
       .vn-readbar(v-if='readbarOn')
@@ -190,8 +196,11 @@
               :key='`m-` + item.anchor'
               :href='item.anchor'
               :class='{ "is-sub": item.sub, "is-active": item.anchor === activeAnchor }'
+              :title='item.html ? item.title : null'
               @click.prevent='tocSheet = false; goToAnchor(item.anchor)'
-              ) {{item.title}}
+              )
+              span(v-if='item.html', v-html='item.html')
+              template(v-else) {{item.title}}
       v-bottom-sheet(v-if='railAvailable', v-model='railSheet', content-class='vn-sheet', scrollable)
         .vn-sheet__panel
           nav-roadmap(
@@ -619,8 +628,8 @@ export default {
     // -> Two levels, as one list: level-2 items get an indent
     tocFlat () {
       return _.flatMap(this.tocItems, item => [
-        { anchor: item.anchor, title: item.title, sub: false },
-        ..._.map(item.children || [], child => ({ anchor: child.anchor, title: child.title, sub: true }))
+        { anchor: item.anchor, title: item.title, html: item.html, sub: false },
+        ..._.map(item.children || [], child => ({ anchor: child.anchor, title: child.title, html: child.html, sub: true }))
       ])
     },
     // -> One heading is no table of contents
@@ -1371,6 +1380,12 @@ export default {
       font-weight: 500;
     }
   }
+}
+
+// -> Math in a heading keeps the TOC line height
+.vn-toc .katex {
+  font-size: 1em;
+  line-height: inherit;
 }
 
 .vn-toc__head {
