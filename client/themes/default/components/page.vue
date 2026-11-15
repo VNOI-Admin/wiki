@@ -764,15 +764,25 @@ export default {
     })
 
     // -> Handle anchor scrolling
+    //    Look the target up by id: a heading id can start with a digit or hold characters
+    //    that are not valid in a CSS selector, and goTo('#id') then throws.
+    //    Scroll again once the fonts load, since math and code fonts move the headings down.
     if (window.location.hash && window.location.hash.length > 1) {
+      const hash = window.location.hash
+      const jump = () => {
+        if (window.location.hash !== hash) { return }
+        this.scrollToHash(hash)
+      }
+      const jumpWhenLaidOut = () => {
+        this.$nextTick(jump)
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(() => window.requestAnimationFrame(jump))
+        }
+      }
       if (document.readyState === 'complete') {
-        this.$nextTick(() => {
-          this.$vuetify.goTo(decodeURIComponent(window.location.hash), this.scrollOpts)
-        })
+        jumpWhenLaidOut()
       } else {
-        window.addEventListener('load', () => {
-          this.$vuetify.goTo(decodeURIComponent(window.location.hash), this.scrollOpts)
-        })
+        window.addEventListener('load', jumpWhenLaidOut, { once: true })
       }
     }
 
@@ -782,7 +792,13 @@ export default {
         el.onclick = ev => {
           ev.preventDefault()
           ev.stopPropagation()
-          const href = decodeURIComponent(ev.currentTarget.hash ?? ev.currentTarget.href?.baseVal ?? '')
+          const rawHash = ev.currentTarget.hash ?? ev.currentTarget.href?.baseVal ?? ''
+          const href = decodeURIComponent(rawHash)
+
+          // -> Put the target in the address bar, so a heading link can be copied and shared
+          if (rawHash.startsWith('#') && rawHash.length > 1) {
+            window.history.replaceState(null, '', rawHash)
+          }
 
           // mjx component is an SVG element, which is not a valid target for goTo
           // so we need to find the nearest parent element that is an HTMLElement
@@ -913,6 +929,18 @@ export default {
       if (!img || img.closest('a') || img.classList.contains('emoji')) { return }
       this.lightboxImg = { src: img.currentSrc || img.src, alt: img.alt }
       this.lightbox = true
+    },
+    scrollToHash (hash) {
+      let id
+      try {
+        id = decodeURIComponent(hash.replace(/^#/, ''))
+      } catch (err) {
+        id = hash.replace(/^#/, '')
+      }
+      const target = document.getElementById(id)
+      if (!target) { return }
+      if (target.classList.contains('toc-header')) { this.activeAnchor = '#' + id }
+      Promise.resolve(this.$vuetify.goTo(target, this.scrollOpts)).catch(() => {})
     },
     goToAnchor (anchor) {
       // -> The clicked entry stays active until the reader scrolls: a short section can

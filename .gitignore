@@ -51,3 +51,4 @@ test-results/
 vnoi_wiki/
 # Deploy script state
 /.deploy
+/deploy
