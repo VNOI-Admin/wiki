@@ -34,17 +34,12 @@
             span {{ st.stats.total ? st.stats.completed + '/' + st.stats.total : '–' }}
         a.vn-btn(:href='`/roadmap/` + roadmap.id') {{ $t('common:home.viewRoadmap', 'Xem lộ trình') }}
 
-    //- NEWEST ARTICLES
-    section.vn-hsec(v-if='home.newest.length > 0')
+    //- ABOUT
+    section.vn-hsec
       .vn-hsec__head
-        h2 {{ $t('common:home.newest', 'Bài mới') }}
-      .vn-hlist
-        a.vn-hrow(v-for='a of home.newest', :key='a.pageId', :href='a.href')
-          span.vn-hrow__t {{ a.title }}
-          span.vn-hrow__d {{ a.createdAt | moment('L') }}
-          span.vn-hrow__s
-            span {{ a.topic }}
-            vn-stars(v-if='a.stars', :value='a.stars')
+        h2 {{ $t('common:home.aboutTitle', 'Giới thiệu VNOI Wiki') }}
+      p.vn-about__p {{ $t('common:home.about1', 'Thư viện VNOI Wiki là thư viện tài liệu Lập trình thi đấu Tiếng Việt lớn nhất với gần 200 bài viết học thuật do đội ngũ admin, tình nguyện viên VNOI cùng các tác giả khác biên soạn và đóng góp. Bên cạnh đó, VNOI Wiki cũng thường xuyên đóng góp và đăng tải các nội dung liên quan như Tạp chí VNOI (các mục Bài viết học thuật và Kĩ thuật thú vị), phỏng vấn các nhân vật nổi tiếng trong lĩnh vực Công nghệ thông tin và Lập trình thi đấu, các bài viết thuộc các chủ đề Khoa học máy tính khác.') }}
+      p.vn-about__p {{ $t('common:home.about2', 'Trong suốt quá trình xây dựng và phát triển thư viện tài liệu, VNOI Wiki vẫn luôn đồng hành cùng nhiều thế hệ học sinh và giáo viên Tin học trên khắp đất nước trên con đường chinh phục Lập trình thi đấu và các kì thi như Học sinh giỏi Quốc gia/Quốc tế, ICPC, Olympic Sinh viên,... góp phần xây dựng một cộng đồng Tin học lớn mạnh tại Việt Nam.') }}
 
     //- TOPICS
     section.vn-hsec(v-if='home.topics.length > 0')
@@ -55,21 +50,28 @@
         a.vn-topic(v-for='(t, ti) of home.topics', :key='ti', :href='catalogHref + `?topic=` + encodeURIComponent(`t:` + t.name)')
           span.vn-topic__t {{ t.name }}
           span.vn-topic__c {{ countLabel(t.count) }}
-          span.vn-topic__spread(role='img', :aria-label='spreadLabel(t.spread)')
-            i(v-for='(v, k) of t.spread', :key='k', :style='{ height: barHeight(t, v) }')
-          span.vn-topic__x(aria-hidden='true')
-            span(v-for='k in 5', :key='k') {{ k }}★
+
+    //- HELP
+    section.vn-hsec
+      .vn-help
+        v-icon.vn-help__icon mdi-forum-outline
+        p
+          | {{ $t('common:home.helpLead', 'Bạn có thể gửi câu hỏi hoặc góp ý cho chúng mình về các bài viết tại') }}
+          |
+          a(href='https://www.facebook.com/groups/163215593699283/', target='_blank', rel='noopener') {{ $t('common:home.helpFacebook', 'Group Facebook') }}
+          |
+          | {{ $t('common:home.helpOr', 'hoặc') }}
+          |
+          a(href='https://discord.gg/m5rVAz7DXx', target='_blank', rel='noopener') Discord from VNOI with love
 </template>
 
 <script>
 import _ from 'lodash'
-import VnStars from '../../../components/common/vn-stars.vue'
 import { recordHref } from '../../../modules/progress/page-path'
 import { CLOSED_STATUSES, READING_STATUS, getNodeStatus, nodeHref, nodeStats, pickRoadmap, touchRoadmap } from '../../../modules/roadmap-context'
 import { POPULAR_TERMS } from '../../../modules/search-rank'
 
 export default {
-  components: { VnStars },
   props: {
     home: {
       type: Object,
@@ -136,14 +138,6 @@ export default {
     },
     countLabel (count) {
       return this.$t('common:roadmap.articleCount', { defaultValue: '{{count}} bài', count })
-    },
-    spreadLabel (spread) {
-      const list = spread.map((n, k) => `${k + 1}★: ${n}`).join(', ')
-      return this.$t('common:home.spread', { defaultValue: 'Số bài theo độ khó: {{list}}', list })
-    },
-    barHeight (topic, value) {
-      const max = Math.max(1, ...topic.spread)
-      return Math.round(value / max * 100) + '%'
     }
   }
 }
@@ -411,66 +405,40 @@ export default {
   }
 }
 
-.vn-hlist {
-  display: grid;
+.vn-about__p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.7;
+  text-align: justify;
+  color: var(--ink);
+}
+
+// -> Help: where to ask, at the end of the page
+.vn-help {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
   border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
   border-radius: 12px;
   background: var(--surface);
-  overflow: hidden;
-}
 
-.vn-hrow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 4px 14px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--line);
-  color: var(--ink) !important;
-  text-decoration: none !important;
-
-  &:last-child {
-    border-bottom: 0;
+  p {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.6;
   }
 
-  &:hover {
-    background: var(--sunken);
+  a {
+    color: var(--accent) !important;
+    font-weight: 600;
   }
 }
 
-// -> Two rows per line on wide screens, one on phones
-@media (min-width: 761px) {
-  .vn-hlist {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .vn-hrow:nth-child(odd) {
-    border-right: 1px solid var(--line);
-  }
-  .vn-hrow:nth-last-child(-n+2):nth-child(odd) {
-    border-bottom: 0;
-  }
-}
-
-.vn-hrow__t {
-  min-width: 0;
-  font-weight: 500;
-}
-
-.vn-hrow__d {
-  font: 500 0.8125rem var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  color: var(--muted);
-}
-
-.vn-hrow__s {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.8125rem;
-  color: var(--muted);
+.vn-home .vn-help__icon {
+  flex: none;
+  color: var(--accent) !important;
 }
 
 .vn-topics {
@@ -481,9 +449,9 @@ export default {
 
 .vn-topic {
   display: grid;
-  // -> A long title takes the free space, so the charts of one row line up
-  grid-template-rows: 1fr auto auto auto;
-  gap: 10px;
+  // -> A long title takes the free space, so the counts of one row line up
+  grid-template-rows: 1fr auto;
+  gap: 6px;
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -503,33 +471,6 @@ export default {
 
 .vn-topic__c {
   font: 500 0.8125rem var(--font-mono);
-  color: var(--muted);
-}
-
-.vn-topic__spread,
-.vn-topic__x {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 3px;
-}
-
-.vn-topic__spread {
-  align-items: end;
-  height: 26px;
-
-  i {
-    display: block;
-    min-height: 2px;
-    border-radius: 2px 2px 0 0;
-    background: var(--accent);
-    opacity: 0.85;
-  }
-}
-
-.vn-topic__x {
-  margin-top: -6px;
-  text-align: center;
-  font: 500 0.75rem var(--font-mono);
   color: var(--muted);
 }
 

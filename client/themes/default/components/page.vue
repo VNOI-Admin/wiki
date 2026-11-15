@@ -26,9 +26,10 @@
           span {{$t('common:page.exitPrint', 'Thoát bản in')}}
       //- The article list page shows as a catalogue with filters
       articles-catalog(v-if='catalogDecoded', :catalog='catalogDecoded', :title='title')
-      //- Home: the dashboard, then the page contents
+      //- Home: the dashboard alone. The page contents stay in the DOM (the mounted hooks
+      //- read the container) but are hidden; an unpublished home still shows its warning.
       home-dashboard(v-if='homeDecoded', :home='homeDecoded')
-      .vn-doc(v-if='!catalogDecoded', :class='{ "is-home": homeDecoded, "has-rail": railShown && !printView, "rail-folded": railFolded, "toc-folded": tocFolded }')
+      .vn-doc(v-if='!catalogDecoded', v-show='!homeDecoded || !isPublished', :class='{ "is-home": homeDecoded, "has-rail": railShown && !printView, "rail-folded": railFolded, "toc-folded": tocFolded }')
         //- LEFT RAIL: the roadmap that holds this page, else its catalogue topics, else the admin navigation
         aside.vn-rail(v-if='railShown && !printView', :aria-label='railRoadmap ? railRoadmap.title : $t(`common:page.siteNav`, `Điều hướng`)')
           nav-roadmap(
@@ -87,7 +88,7 @@
               v-icon(small) {{ editShortcutsObj.editMenuExternalIcon }}
               span {{$t(`common:page.editExternal`, { name: editShortcutsObj.editMenuExternalName })}}
 
-          .contents(ref='container', @click='openImage')
+          .contents(ref='container', v-show='!homeDecoded', @click='openImage')
             slot(name='contents')
 
           .vn-tags(v-if='visibleTags.length > 0')
