@@ -289,6 +289,7 @@ import { levelName } from '../../../modules/levels'
 import { isProgressExcluded, NO_PROGRESS_TAG } from '../../../modules/progress'
 import { DONE_STATUS, pickRoadmap, touchRoadmap } from '../../../modules/roadmap-context'
 import { fitWide } from '../../../modules/fit-wide'
+import { headingMath } from '../../../modules/toc-math'
 import { wrapByline } from '../../../modules/byline'
 import { registerCodeFold } from '../../../modules/code-fold'
 import { startAutoProgress } from '../../../modules/progress/auto-progress'
@@ -489,6 +490,8 @@ export default {
       lightbox: false,
       lightboxImg: null,
       activeAnchor: '',
+      // -> TOC markup of math headings, read from the page: anchor -> { html, title }
+      tocMath: {},
       pageEditFab: false,
       scrollOpts: {
         duration: 0,
@@ -626,10 +629,17 @@ export default {
       return [...(first.children || []), ...rest]
     },
     // -> Two levels, as one list: level-2 items get an indent
+    //    A math heading takes its markup from the page (see readTocMath), else from the stored TOC.
     tocFlat () {
+      const entry = (item, sub) => {
+        const math = this.tocMath[item.anchor]
+        return math
+          ? { anchor: item.anchor, title: math.title || item.title, html: math.html, sub }
+          : { anchor: item.anchor, title: item.title, html: item.html, sub }
+      }
       return _.flatMap(this.tocItems, item => [
-        { anchor: item.anchor, title: item.title, html: item.html, sub: false },
-        ..._.map(item.children || [], child => ({ anchor: child.anchor, title: child.title, html: child.html, sub: true }))
+        entry(item, false),
+        ..._.map(item.children || [], child => entry(child, true))
       ])
     },
     // -> One heading is no table of contents
@@ -749,6 +759,9 @@ export default {
     }
 
     this.hideTitleHeading()
+
+    // -> Before fit-wide.js and the other passes below change the headings
+    this.readTocMath()
 
     // -> The author lines at the top show as one card
     wrapByline(this.$refs.container)
@@ -895,6 +908,27 @@ export default {
       } catch (err) {}
     },
     // -> The first heading of the contents, when it only repeats the page title
+    /**
+     * Copy each math heading of the page into its TOC entry. Pages rendered before math
+     * headings were handled keep a TOC with the formula as text three times.
+     */
+    readTocMath () {
+      const root = this.$refs.container
+      if (!root) { return }
+      const found = {}
+      for (const item of this.tocFlat) {
+        let id
+        try {
+          id = decodeURIComponent(_.toString(item.anchor).replace(/^#/, ''))
+        } catch (err) {
+          continue
+        }
+        const heading = id ? document.getElementById(id) : null
+        const math = heading && root.contains(heading) ? headingMath(heading) : null
+        if (math) { found[item.anchor] = math }
+      }
+      this.tocMath = found
+    },
     hideTitleHeading () {
       const root = this.$refs.container
       const body = root.children.length === 1 && root.firstElementChild.tagName === 'DIV' ? root.firstElementChild : root
@@ -1412,8 +1446,26 @@ export default {
 
 // -> Math in a heading keeps the TOC line height
 .vn-toc .katex {
+  // -> The hidden MathML copy is position: absolute; keep it inside the formula,
+  //    or it escapes into the scroll box of the TOC column
+  position: relative;
   font-size: 1em;
   line-height: inherit;
+
+  // -> A formula takes the color of its TOC line (muted, hover, active), not \color
+  [style*="color"]:not([style*="background"]) {
+    color: inherit !important;
+  }
+}
+
+.vn-toc mjx-container {
+  display: inline !important;
+  margin: 0 !important;
+
+  svg {
+    display: inline;
+    vertical-align: middle;
+  }
 }
 
 .vn-toc__head {
