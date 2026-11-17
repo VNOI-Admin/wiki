@@ -11,11 +11,15 @@ function headingText ($, el) {
 }
 
 // -> The heading markup for the table of contents, only when it holds math; null otherwise
+//    (KaTeX or MathJax). Ids go, so the TOC repeats none of the page; SVG ids stay for MathJax glyphs.
 function headingHtml ($, el) {
-  if ($(el).find('.katex').length < 1) { return null }
+  if ($(el).find('.katex, mjx-container').length < 1) { return null }
   const copy = $(el).clone()
   copy.find('.toc-anchor').remove()
   copy.find('a').each((i, a) => { $(a).replaceWith($(a).contents()) })
+  copy.find('[id]').each((i, n) => {
+    if ($(n).closest('svg').length < 1) { $(n).removeAttr('id') }
+  })
   return copy.html().trim()
 }
 

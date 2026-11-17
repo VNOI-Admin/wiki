@@ -41,4 +41,21 @@ describe('helpers/heading', () => {
     expect(html).not.toMatch(/<a[\s>]/)
     expect(html).toContain('here')
   })
+
+  it('keeps no element ids in the TOC markup', () => {
+    const $ = load(`<h2>Eq ${katex.renderToString('\\htmlId{ktx-a}{x}', { trust: true })}</h2>`)
+    const html = headingHtml($, $('h2').get(0))
+
+    expect(html).toContain('class="katex"')
+    expect(html).not.toContain('id="ktx-a"')
+  })
+
+  it('gives markup for a MathJax heading, keeping its SVG glyph ids', () => {
+    const svg = '<svg><defs><path id="MJX-1-TEX-I-1D454" d="M0"></path></defs><use xlink:href="#MJX-1-TEX-I-1D454"></use></svg>'
+    const $ = load(`<h2>Tính <mjx-container class="MathJax" jax="SVG">${svg}</mjx-container></h2>`)
+    const html = headingHtml($, $('h2').get(0))
+
+    expect(html).toContain('<mjx-container')
+    expect(html).toContain('id="MJX-1-TEX-I-1D454"')
+  })
 })
